@@ -1,310 +1,106 @@
-//O'hello
-//author: Nat Sothanaphan
-//compiled with Dev-C++ 4.9.9.2
+// O'hello
+// Authors: Nat Sothanaphan & Sorawee Porncharoenwase
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-#include<math.h>
-#include<sys/timeb.h> //required for 'ftime'
-#include<windows.h>
-#include"edgeconfig2.h" //precomputed edge configurations
-#include"mobtable.h" //precomputed mobility table
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <ctime>
+#include <sys/timeb.h> //required for 'ftime'
 
-char version[]="test69";
-char date[]="10 Oct 2012";
+//(own header)
+#include "edgeconfig2.h" //precomputed edge configurations
+#include "mobtable.h" //precomputed mobility table
+
+//Oak's definitions
+
+#include <iostream>
+#include <string>
+#include <signal.h>
+#include <cassert>
+
+//(own header)
+#include "mystdio.h"
+#include "precompute.h"
+#include "config.h"
+
+#define printf printw
+
+const int EXIT = 555;
+const int MAXN = 8;
+
+int rand(int a){
+	return rand() % a;
+}
+
+int rand(int a, int b){
+	return (rand() % (b - a + 1)) + a;
+	
+}
+
+void alert(std::string s){
+	printf("\n%s\n\n", s.c_str());
+}
+
+void clrscr(){
+	system("clear");
+}
+
+void finish(int sig){
+    exit(0);
+}
+
+void presstogo(){
+	printf("press any key to continue");
+	getch();
+}
+
+std::string getString(){
+	std::string x;
+	std::cin >> x;
+	return x;
+}
+
+int getInt(){
+	int a;
+	scanf("%d", &a);
+	return a;
+}
+
+//End of Oak's definitions
+
+//general info
+char version[] = "test70";
+char author[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
+char date[] = "August 4, 2013";
+char language[] = "C++";
+char compiler[] = "LLVM-G++";
 
 FILE *save; //save file
 
 //used in function 'flip' and 'move'
 //to return board + a number
 struct kirby{
-       int board[64];
-       int num;
+	int board[64];
+	int num;
 };
 
 //used in function 'gamefortest'
 //to return WLD values
 struct triad{
-       int win;
-       int lose;
-       int draw;
+	int win, lose, draw;
 };
 
-//used in function 'comsettings'
+//used in function 'settings'
 //to return AI settings
 struct comset{
-       int mode;
-       int depth;
-       int depthperfect;
-       float times;
+	int mode, depth, depthperfect;
+	float times;
 };
 
 //index array for mobility table
 int mobindex[38];
 
-//black disk appearance
-char black[3][6]={"XXXXX","XXXXX","XXXXX"};
-
-//white disk appearance
-char white[3][6]={"ooooo","o   o","ooooo"};
-
-//disk appearance choice
-char choice[][3][6]={
-     {"XXXXX","XXXXX","XXXXX"},
-     {"ooooo","o   o","ooooo"},
-     {{219,219,219,219,219},{219,219,219,219,219},{219,219,219,219,219}}, //dense
-     {{177,177,177,177,177},{177,177,177,177,177},{177,177,177,177,177}}, //not very dense
-     {"XXXXX","X   X","XXXXX"},
-     {"ooooo","ooooo","ooooo"},
-     {{1,1,1,1,1},{1,1,1,1,1},{1,1,1,1,1}}, //not dense smile
-     {{2,2,2,2,2},{2,2,2,2,2},{2,2,2,2,2}}, //dense smile
-     {{1,1,1,1,1},{1,32,32,32,1},{1,1,1,1,1}}, //not dense smile with hole
-     {{2,2,2,2,2},{2,32,32,32,2},{2,2,2,2,2}}, //dense smile with hole
-     {{32,15,32,15,32},{15,32,15,32,15},{32,15,32,15,32}}, //flower
-     {"     ","black","     "},
-     {"     ","white","     "},
-     {"     ","  .  ","     "}
-};
-int numchoice=14; //number of choices
-
-//count the number of nodes searched
-int node;
-
-//number of nodes between rotation effect displays
-int rotatetime=20000;
-//rotation effect on/off
-int rotateon=1;
-
-//time between each frame of flip animation
-float fliptime=0.3;
-//flip animation on/off
-int flipon=1;
-//flip appearance
-char fliplook[3][6]={{32,32,179,32,32},{32,32,179,32,32},{32,32,179,32,32}};
-
-//move order
-//priority:
-// 1 8 2 3
-// . 9 7 6
-// . . 4 5
-// . . . .
-int moveorder[60]={
-    0,7,56,63,
-    2,5,16,23,40,47,58,61,
-    3,4,24,31,32,39,59,60,
-    18,21,42,45,
-    19,20,26,29,34,37,43,44,
-    11,12,25,30,33,38,51,52,
-    10,13,17,22,41,46,50,53,
-    1,6,8,15,48,55,57,62,
-    9,14,49,54
-};
-
-int IsUpBorder[64]={
-    1,1,1,1,1,1,1,1,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0
-};
-
-int IsDownBorder[64]={
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    1,1,1,1,1,1,1,1
-};
-
-int IsLeftBorder[64]={
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0
-};
-
-int IsRightBorder[64]={
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1
-};
-
-int IsUpleftBorder[64]={
-    1,1,1,1,1,1,1,1,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0
-};
-
-int IsUprightBorder[64]={
-    1,1,1,1,1,1,1,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1
-};
-
-int IsDownleftBorder[64]={
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,0,0,0,0,0,0,0,
-    1,1,1,1,1,1,1,1
-};
-
-int IsDownrightBorder[64]={
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    0,0,0,0,0,0,0,1,
-    1,1,1,1,1,1,1,1
-};
-
-int IsUpMovable[64]={
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1
-};
-
-int IsDownMovable[64]={
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0
-};
-
-int IsLeftMovable[64]={
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1
-};
-
-int IsRightMovable[64]={
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0
-};
-
-int IsUpleftMovable[64]={
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1
-};
-
-int IsUprightMovable[64]={
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0
-};
-
-int IsDownleftMovable[64]={
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,1,1,1,1,1,1,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0
-};
-
-int IsDownrightMovable[64]={
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    1,1,1,1,1,1,0,0,
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0
-};
-
-//variables for settings 0=off,1=on
-int rands=1; //random feature
-int smove=1; //move display
-
-//allow parallel opening
-int ParallelAllow=0;
-
-//choice for comsettings interface 1=new,2=old
-int comsetchoice=1;
-
-//default weights
-int dweight[]={-1,40,100,600,800,140,250,100,45,2,60,40,200,800,100,250,100,1,1000000};
-int weightnum=19; //number of weights
-
-//custom weights
-int weightchoice[][100]={
-    {1,100,0,1000,0,0,0,0,55,1,0,0,1000,0,0,0,0,0,10000},
-    {1,100,200,4000,1000,1000,0,0,55,1,100,50,250,50,50,0,0,0,50000},
-    {-1,40,100,600,800,140,250,100,45,2,60,40,200,800,100,250,100,1,1000000}
-};
-//name of choices
-char weightchoicename[][100]={
-     "1st generation",
-     "2nd generation",
-     "3rd generation (default)"
-};
-int weightchoicenum=3; //number of weight choices
-
+int node; //count the number of nodes searched
 //weights
 int weight[100];
 //weight's 'nickname'
@@ -336,7 +132,7 @@ int wf;
 void nickname();
 void weightdefault();
 int main();
-struct comset comsettings();
+comset comsettings();
 int load();
 void syntax();
 void about();
@@ -404,15 +200,14 @@ void nickname(){
 
 //set weights(and their nicknames) as defaults
 void weightdefault(){
-     int i;
-     for(i=0;i<weightnum;i++) weight[i]=dweight[i];
+     for(int i = 0; i < weightnum; i++) weight[i] = dweight[i];
      nickname();
 }
 
 //interface
 int main(){
-    char string[10];
-    int i;
+	system("stty erase ^?");
+	signal(SIGINT, finish);
     int mode;
     int depth;
     int depthperfect;
@@ -428,33 +223,12 @@ int main(){
     int sentdoubledepthperfect[2];
     float sentdoubletimes[2];
     int loadvalue;
-    struct comset pack;
+    comset pack;
     srand(time(NULL)); //set up the random number generator
-    
-    HANDLE wHnd;    // Handle to write to the console.
-    HANDLE rHnd;    // Handle to read from the console.
-
-    // Set up the handles for reading/writing:
-    wHnd = GetStdHandle(STD_OUTPUT_HANDLE);
-    rHnd = GetStdHandle(STD_INPUT_HANDLE);
-
-    // Change the window title:
-    SetConsoleTitle(TEXT("project O'hello - Nat Sothanaphan"));
-
-    // Set up the required window size:
-    SMALL_RECT windowSize = {0, 0, 79, 56};
-    
-    // Change the console window size:
-    SetConsoleWindowInfo(wHnd, TRUE, &windowSize);
-    
-    // Create a COORD to hold the buffer size:
-    COORD bufferSize = {80, 100};
-
-    // Change the internal buffer size:
-    SetConsoleScreenBufferSize(wHnd, bufferSize);
-    
+	
     start:
-    system("cls"); //clear screen    
+	
+    clrscr(); //clear screen
     printf("\n version %s                   /%c%c%c%c%c%c%c%c%c%c\n",version,196,196,196,196,196,196,196,196,196,92);
     printf("                                  %c         %c\n",179,179);
     printf("                                  %c O'hello %c\n",179,179);
@@ -468,223 +242,272 @@ int main(){
     printf("4. O'hello [black] vs O'hello [white]\n");
     printf("5. weight test\n");
     printf("6. about program\n\n");
-    
+	
     //set weight as defaults
     weightdefault();
-    
     //set board
     //board: 0=space,1=player 1,2=player 2
-    int board[64]={};
-    board[27]=2;
-    board[28]=1;
-    board[35]=1;
-    board[36]=2;
-    int no[2]={2,2}; //set number of each player's disks
-    int player=1; //set current player
+    int board[64] = {};
+    board[27] = 2;
+    board[28] = 1;
+    board[35] = 1;
+    board[36] = 2;
+    int no[2] = {2, 2}; //set number of each player's disks
+    int player = 1; //set current player
 
     loop1:
-    scanf("%s",string); //scan string
-    if(strcmp(string,"randon")==0){
-                                   rands=1;
-                                   printf("\nrandom feature on!\n\n");
-                                   goto loop1;
-                                   }
-    if(strcmp(string,"randoff")==0){
-                                    rands=0;
-                                    printf("\nrandom feature off!\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"moveon")==0){
-                                   smove=1;
-                                   printf("\nmove display on!\n\n");
-                                   goto loop1;
-                                   }
-    if(strcmp(string,"moveoff")==0){
-                                    smove=0;
-                                    printf("\nmove display off!\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"spinon")==0){
-                                   rotateon=1;
-                                   printf("\nrotation effect on!\n\n");
-                                   goto loop1;
-                                   }
-    if(strcmp(string,"spinoff")==0){
-                                    rotateon=0;
-                                    printf("\nrotation effect off!\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"flipon")==0){
-                                   flipon=1;
-                                   printf("\nflip animation on!\n\n");
-                                   goto loop1;
-                                   }
-    if(strcmp(string,"flipoff")==0){
-                                    flipon=0;
-                                    printf("\nflip animation off!\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"menu")==0) goto start;
-    if(strcmp(string,"quit")==0) exit(0);
-    if(strcmp(string,"syntax")==0){syntax(); goto loop1;}
-    if(strcmp(string,"load")==0){
-                                 loadvalue=load();
-                                 if(loadvalue==555) goto loop1;
-                                 else goto start;
-                                 }
-    if(strcmp(string,"speed")==0){speedtest(); goto loop1;}
-    if(strcmp(string,"hello")==0){sayhello(); goto loop1;}
-    if(strlen(string)!=1){
-                          printf("\nincorrect syntax!\n\n");
-                          goto loop1;
-                          }
-    if(string[0]=='0'){settings(); goto start;}
-    if(string[0]=='1'){
-                       //human vs human
-                       do{
-                          for(i=0;i<64;i++) sentboard[i]=board[i];
-                          for(i=0;i<2;i++) sentno[i]=no[i];
-                          }while(human(sentboard,sentno,player)==555);
-                       goto start;
-                       }
-    else if(string[0]=='2' || string[0]=='3'){
-         //human vs computer,computer vs human
-         printf("\nselect search mode for O'hello:\n");
-         printf("-------------------------------\n\n");
-         //get settings
-         pack=comsettings();
-         mode=pack.mode;
-         depth=pack.depth;
-         depthperfect=pack.depthperfect;
-         times=pack.times;
-         if(string[0]=='2'){
-                            do{
-                               for(i=0;i<64;i++) sentboard[i]=board[i];
-                               for(i=0;i<2;i++) sentno[i]=no[i];
-                               }while(comhuman(sentboard,sentno,player,2,mode,depth,depthperfect,times)==555);
-                            goto start;
-                            }
-         else{
-              do{
-                 for(i=0;i<64;i++) sentboard[i]=board[i];
-                 for(i=0;i<2;i++) sentno[i]=no[i];
-                 }while(comhuman(sentboard,sentno,player,1,mode,depth,depthperfect,times)==555);
-              goto start;
-              }
-    }
-    else if(string[0]=='4'){
-         //computer vs computer
-         for(i=0;i<=1;i++){
-                           printf("\nselect search mode for O'hello %d:\n",i+1);
-                           printf("---------------------------------\n\n");
-                           //get settings
-                           pack=comsettings();
-                           doublemode[i]=pack.mode;
-                           doubledepth[i]=pack.depth;
-                           doubledepthperfect[i]=pack.depthperfect;
-                           doubletimes[i]=pack.times;
-                           printf("\n");
-                           }
-         do{
-            for(i=0;i<64;i++) sentboard[i]=board[i];
-            for(i=0;i<2;i++) sentno[i]=no[i];
-            for(i=0;i<2;i++) sentdoublemode[i]=doublemode[i];
-            for(i=0;i<2;i++) sentdoubledepth[i]=doubledepth[i];
-            for(i=0;i<2;i++) sentdoubledepthperfect[i]=doubledepthperfect[i];
-            for(i=0;i<2;i++) sentdoubletimes[i]=doubletimes[i];
-            }while(comcom(sentboard,sentno,player,sentdoublemode,sentdoubledepth,sentdoubledepthperfect,sentdoubletimes)==555);
-         goto start;
-         }
-    else if(string[0]=='5'){weighttest(); goto start;}
-    else if(string[0]=='6'){about(); goto start;}
-    else{printf("\ninvalid mode!\n\n"); goto loop1;}
+	std::string option = getString();
+	
+    if(option == "randon"){
+		rands = true;
+		alert("random feature on!");
+		goto loop1;
+	}
+    if(option == "randoff"){
+		rands = false;
+		alert("random feature off!");
+		goto loop1;
+	}
+    if(option == "moveon"){
+		smove = true;
+		alert("move display on!");
+		goto loop1;
+	}
+    if(option == "moveoff"){
+		smove = false;
+		alert("move display off!");
+		goto loop1;
+	}
+    if(option == "spinon"){
+		rotateon = true;
+		alert("rotation effect on!");
+		goto loop1;
+	}
+    if(option == "spinoff"){
+		rotateon = false;
+		alert("rotation effect off!");
+		goto loop1;
+	}
+    if(option == "flipon"){
+		flipon = true;
+		alert("flip animation on!");
+		goto loop1;
+	}
+    if(option == "flipoff"){
+		flipon = false;
+		alert("flip animation off!");
+		goto loop1;
+	}
+    if(option == "menu") goto start;
+    if(option == "quit") finish(0);
+    if(option == "syntax"){
+		syntax();
+		goto loop1;
+	}
+    if(option == "load"){
+		loadvalue = load();
+		if(loadvalue == EXIT) goto loop1;
+		else goto start;
+	}
+    if(option == "speed"){
+		speedtest();
+		goto loop1;
+	}
+    if(option == "hello"){
+		sayhello();
+		goto loop1;
+	}
+    if(option.size() != 1){
+		alert("incorrect syntax!");
+		goto loop1;
+	}
+    if(option == "0"){
+		settings();
+		goto start;
+	}
+    if(option == "1"){
+		//human vs human
+		do{
+			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+			for(int i = 0; i < 2; i++) sentno[i] = no[i];
+		}while(human(sentboard, sentno, player) == EXIT);
+		goto start;
+	}else if(option == "2" or option == "3"){
+		 //human vs computer,computer vs human
+		clrscr();
+		printf("\nselect search mode for O'hello:\n");
+		printf("-------------------------------\n\n");
+		//get settings
+		pack = comsettings();
+		mode = pack.mode;
+		depth = pack.depth;
+		depthperfect = pack.depthperfect;
+		times = pack.times;
+		if(option[0] == '2'){
+			 do{
+			 	for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+			 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
+			 }while(comhuman(sentboard, sentno, player, 2, mode, depth, depthperfect, times) == EXIT);
+			 goto start;
+		}else{
+		 do{
+		 	for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+		 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
+		 }while(comhuman(sentboard, sentno, player, 1, mode, depth, depthperfect, times) == EXIT);
+		 goto start;
+		}
+    }else if(option[0] == '4'){
+		//computer vs computer
+		for(int i = 0; i < 2; i++){
+			printf("\nselect search mode for O'hello %d:\n", i + 1);
+			printf("---------------------------------\n\n");
+			//get settings
+            pack = comsettings();
+            doublemode[i] = pack.mode;
+            doubledepth[i] = pack.depth;
+            doubledepthperfect[i] = pack.depthperfect;
+            doubletimes[i] = pack.times;
+            printf("\n");
+		}
+        do{
+			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+			for(int i = 0; i < 2; i++) sentno[i] = no[i];
+            for(int i = 0; i < 2; i++) sentdoublemode[i] = doublemode[i];
+            for(int i = 0; i < 2; i++) sentdoubledepth[i] = doubledepth[i];
+            for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
+            for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
+		}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
+        goto start;
+	}else if(option[0] == '5'){
+		weighttest();
+		goto start;
+	}else if(option[0] == '6'){
+		about();
+		goto start;
+	}else{
+		alert("invalid mode!");
+		goto loop1;
+	}
+	finish(0);
 }
 
 //AI settings interface
-struct comset comsettings(){
-       struct comset pack;
-       char string[3];
-       
-       //old interface
-       if(comsetchoice==2){
-                           printf("0.random: random play\n");
-                           printf("1.fsearch: fixed depth search\n");
-                           printf("2.tsearch: time limit search\n\n");
-                           setmode:
-                           scanf("%d",&pack.mode);
-                           if(pack.mode<0 || pack.mode>2){printf("\ninvalid mode!\n\n"); goto setmode;}
-                           if(pack.mode==2) pack.mode=3; //make compatible with other functions
-                           pack.depth=-1;
-                           pack.depthperfect=1;
-                           pack.times=-1;
-                           setdetail:
-                           if(pack.mode==1){
-                                           printf("\ninput search depth and depthperfect: ");
-                                           scanf("%d",&pack.depth);
-                                           scanf("%d",&pack.depthperfect);
-                                           if(pack.depth<1 || pack.depthperfect<1){printf("\ninvalid depth!\n"); goto setdetail;}
-                                           }
-                           else if(pack.mode==3){
-                                printf("\nNOTE: time taken will be about 0.5x-2x time limit");
-                                printf("\n\ninput time limit (sec): ");
-                                scanf("%f",&pack.times);
-                                if(pack.times<0){printf("\ninvalid time!\n"); goto setdetail;}
-                                }
-                           return pack;
-                           }
-       
-       //new interface
-       if(comsetchoice==1){
-                           printf("1.search with fixed depth\n");
-                           printf("2.search with time limit\n\n");
-                           newsetmode:
-                           scanf("%d",&pack.mode);
-                           if(pack.mode<0 || pack.mode>2){printf("\ninvalid mode!\n\n"); goto newsetmode;}
-                           if(pack.mode==2) pack.mode=3; //make compatible with other functions
-                           pack.depth=-1;
-                           pack.depthperfect=1;
-                           pack.times=-1;
-                           if(pack.mode==1){
-                                            printf("\n");
-                                            printf("select search depth:\n");
-                                            printf("--------------------\n");
-                                            printf(" 1  - depth 1\n");
-                                            printf(" 2  - depth 2\n");
-                                            printf(" 3  - depth 3\n");
-                                            printf(" 4  - depth 4\n");
-                                            printf(" 4a - depth 4 + last 10 perfect\n");
-                                            printf(" 6  - depth 6\n");
-                                            printf(" 6a - depth 6 + last 12 perfect\n");
-                                            printf(" 8  - depth 8 + last 14 perfect\n\n");
-                                            newsetdepth:
-                                            scanf("%s",string);
-                                            if(strcmp(string,"1")==0){pack.depth=1; pack.depthperfect=1;}
-                                            else if(strcmp(string,"2")==0){pack.depth=2; pack.depthperfect=2;}
-                                            else if(strcmp(string,"3")==0){pack.depth=3; pack.depthperfect=3;}
-                                            else if(strcmp(string,"4")==0){pack.depth=4; pack.depthperfect=4;}
-                                            else if(strcmp(string,"4a")==0){pack.depth=4; pack.depthperfect=10;}
-                                            else if(strcmp(string,"6")==0){pack.depth=6; pack.depthperfect=6;}
-                                            else if(strcmp(string,"6a")==0){pack.depth=6; pack.depthperfect=12;}
-                                            else if(strcmp(string,"8")==0){pack.depth=8; pack.depthperfect=14;}
-                                            else{printf("\ninvalid selection!\n\n"); goto newsetdepth;}
-                                            }
-                           else{
-                                newsettimes:
-                                printf("\nNOTE: time taken will be about 0.5x-2x time limit");
-                                printf("\n\ninput time limit (sec): ");
-                                scanf("%f",&pack.times);
-                                if(pack.times<0){printf("\ninvalid time!\n"); goto newsettimes;}
-                                }
-                           return pack;
-                           }
+comset comsettings(){
+	comset pack;
+	if(comsetchoice == 2){
+		// old interface
+		printf("0. random: random play\n");
+		printf("1. fsearch: fixed depth search\n");
+		printf("2. tsearch: time limit search\n\n");
+		
+		setmode:
+		scanf("%d", &pack.mode);
+		if(pack.mode < 0 or pack.mode > 2){
+			alert("invalid mode!");
+			goto setmode;
+		}
+		if(pack.mode == 2) pack.mode = 3; //make compatible with other functions
+		pack.depth = -1;
+		pack.depthperfect = 1;
+		pack.times = -1;
+		
+		setdetail:
+		if(pack.mode == 1){
+			printf("\ninput search depth and depthperfect: ");
+			scanf("%d", &pack.depth);
+			scanf("%d", &pack.depthperfect);
+			if(pack.depth < 1 or pack.depthperfect < 1){
+				printf("\ninvalid depth!\n");
+				goto setdetail;
+			}
+		}else if(pack.mode == 3){
+		    printf("\nNOTE: time taken will be about 0.5x-2x time limit");
+		    printf("\n\ninput time limit (sec): ");
+		    scanf("%f", &pack.times);
+		    if(pack.times<0){
+				printf("\ninvalid time!\n");
+				goto setdetail;
+			}
+		}
+	}else{
+		// new interface
+		assert(comsetchoice == 1);
+		printf("1. search with fixed depth\n");
+		printf("2. search with time limit\n\n");
+		
+		newsetmode:
+		scanf("%d", &pack.mode);
+		if(pack.mode < 0 or pack.mode > 2){
+			alert("invalid mode!"); 
+			goto newsetmode;
+		}
+		if(pack.mode == 2) pack.mode = 3; //make compatible with other functions
+		pack.depth = -1;
+		pack.depthperfect = 1;
+		pack.times = -1;
+		if(pack.mode == 1){
+			printf("\n");
+			printf("select search depth:\n");
+			printf("--------------------\n");
+			printf(" 1  - depth 1\n");
+			printf(" 2  - depth 2\n");
+			printf(" 3  - depth 3\n");
+			printf(" 4  - depth 4\n");
+			printf(" 4a - depth 4 + last 10 perfect\n");
+			printf(" 6  - depth 6\n");
+			printf(" 6a - depth 6 + last 12 perfect\n");
+			printf(" 8  - depth 8 + last 14 perfect\n\n");
+			
+			newsetdepth:
+			
+			std::string option = getString();
+			if(option == "1"){
+				pack.depth = 1;
+				pack.depthperfect = 1;
+			}else if(option == "2"){
+				pack.depth = 2;
+				pack.depthperfect = 2;
+			}else if(option == "3"){
+				pack.depth = 3;
+				pack.depthperfect = 3;
+			}else if(option == "4"){
+				pack.depth = 4;
+				pack.depthperfect = 4;
+			}else if(option == "4a"){
+				pack.depth = 4;
+				pack.depthperfect = 10;
+			}else if(option == "6"){
+				pack.depth = 6;
+				pack.depthperfect = 6;
+			}else if(option == "6a"){
+				pack.depth = 6;
+				pack.depthperfect = 12;
+			}else if(option == "8"){
+				pack.depth = 8;
+				pack.depthperfect = 14;
+			}else{
+				alert("invalid selection!");
+				goto newsetdepth;
+			}
+		}else{
+		    newsettimes:
+		    printf("\nNOTE: time taken will be about 0.5x-2x time limit");
+		    printf("\n\ninput time limit (sec): ");
+		    scanf("%f", &pack.times);
+		    if(pack.times < 0){
+				printf("\ninvalid time!\n");
+				goto newsettimes;
+			}
+		}
+	}
+	return pack;
 }
 
 //load engine
-//return 555 if file is corrupted
+//return EXIT if file is corrupted
 //return 0 if load successfully
 int load(){
     char filename[100];
-    int i;
     int prerand;
     int board[64];
     int no[2];
@@ -707,142 +530,195 @@ int load(){
     float sentdoubletimes[2];
     
     printf("\nfile name (no extension): ");
-    scanf("%s",filename);
-    save=fopen(strcat(filename,".ohl"),"r");
-    if(save==NULL){printf("\n\ncan't open %s or file doesn't exist\n\n",filename); return 555;}
+    scanf("%s", filename);
+    save = fopen(strcat(filename, ".ohl"), "r");
+    if(save == NULL){
+		printf("\n\ncan't open %s or file doesn't exist\n\n",filename); 
+		return EXIT;
+	}
     printf("\n\nopening %s\n",filename);
     //get rands
-    prerand=-1;
-    fscanf(save,"%d",&prerand);
-    if(prerand!=0 && prerand!=1){printf("\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-    rands=prerand;
-    printf("\nvalue rands=%d",rands);
+    prerand = -1;
+    fscanf(save, "%d", &prerand);
+    if(prerand != 0 and prerand != 1){
+		printf("\n%s is corrupted!\n\n", filename);
+		fclose(save);
+		return EXIT;
+	}
+    rands = prerand;
+    printf("\nvalue rands=%d", rands);
     //get board[64] (along with no[2])
     printf("\nvalue board=");
-    no[0]=0;
-    no[1]=0;
-    for(i=0;i<64;i++){
-                      board[i]=-1;
-                      fscanf(save,"%d",&board[i]);
-                      if(board[i]==0){
-                                      //the 4 centers can't be empty -- this will affect the searches
-                                      //since they aren't included in moveorder[60]
-                                      if(i==27 || i==28 || i==35 || i==36){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                                      else printf("0");
-                                      }
-                      else if(board[i]==1){printf("1"); no[0]++;}
-                      else if(board[i]==2){printf("2"); no[1]++;}
-                      else{printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                      }
+    no[0] = 0;
+    no[1] = 0;
+    for(int i = 0; i < 64; ++i){
+		board[i] = -1;
+		fscanf(save, "%d", &board[i]);
+		if(board[i] == 0){
+			//the 4 centers can't be empty -- this will affect the searches
+			//since they aren't included in moveorder[60]
+			if(i == 27 or i == 28 or i == 35 or i == 36){
+				printf("\n\n%s is corrupted!\n\n", filename);
+				fclose(save);
+				return EXIT;
+			}else{
+				printf("0");
+			}
+		}else if(board[i] == 1){
+			printf("1");
+			no[0]++;
+		}else if(board[i] == 2){
+			printf("2");
+			no[1]++;
+		}
+		else{
+			printf("\n\n%s is corrupted!\n\n", filename);
+			fclose(save);
+			return EXIT;
+		}
+	}
     //get player
-    player=-1;
-    fscanf(save,"%d",&player);
-    if(player!=1 && player!=2){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-    printf("\nvalue player=%d",player);
+    player = -1;
+    fscanf(save, "%d", &player);
+    if(player != 1 and player != 2){
+		printf("\n\n%s is corrupted!\n\n", filename);
+		fclose(save);
+		return EXIT;
+	}
+    printf("\nvalue player=%d", player);
     //get loadmode
-    int loadmode=-1;
-    fscanf(save,"%d",&loadmode);
-    if(loadmode==1){
-                    //human vs human
-                    printf("\nvalue loadmode=1");
-                    printf("\n\ngame successfully loaded!");
-                    printf("\n\npress any key to continue");
-                    getch();
-                    do{
-                       for(i=0;i<64;i++) sentboard[i]=board[i];
-                       for(i=0;i<2;i++) sentno[i]=no[i];
-                       }while(human(sentboard,sentno,player)==555);
-                    return 0;
-                    }
-    else if(loadmode==2 || loadmode==3){
-         //computer vs human,human vs computer
-         printf("\nvalue loadmode=%d",loadmode);
-         //get mode
-         mode=-1;
-         fscanf(save,"%d",&mode);
-         if(mode<0 || mode>3){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-         printf("\nvalue mode=%d",mode);
-         //get depth or times
-         depth=-1;
-         depthperfect=-1;
-         times=-1;
-         if(mode==1 || mode==2){
-                    fscanf(save,"%d",&depth);
-                    if(depth<1){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                    printf("\nvalue depth=%d",depth);
-                    fscanf(save,"%d",&depthperfect);
-                    if(depthperfect<1){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                    printf("\nvalue depthperfect=%d",depthperfect);
-                    }
-         if(mode==3){
-                     fscanf(save,"%f",&times);
-                     if(times<0){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                     printf("\nvalue times=%f",times);
-                     }
-         printf("\n\ngame successfully loaded!");
-         printf("\n\npress any key to continue");
-         getch();
-         if(loadmode==2){
-                         do{
-                            for(i=0;i<64;i++) sentboard[i]=board[i];
-                            for(i=0;i<2;i++) sentno[i]=no[i];
-                            }while(comhuman(sentboard,sentno,player,2,mode,depth,depthperfect,times)==555);
-                         return 0;
-                         }
-         else{
-              do{
-                 for(i=0;i<64;i++) sentboard[i]=board[i];
-                 for(i=0;i<2;i++) sentno[i]=no[i];
-                 }while(comhuman(sentboard,sentno,player,1,mode,depth,depthperfect,times)==555);
-              return 0;
-              }
-         }
-    else if(loadmode==4){
-         //computer vs computer
-         printf("\nvalue loadmode=4");
-         for(i=0;i<=1;i++){
-                           //get doublemode
-                           doublemode[i]=-1;
-                           fscanf(save,"%d",&doublemode[i]);
-                           if(doublemode[i]<0 || doublemode[i]>3){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                           printf("\nvalue doublemode[%d]=%d",i,doublemode[i]);
-                           //get doubledepth or doubletimes
-                           doubledepth[i]=-1;
-                           doubledepthperfect[i]=-1;
-                           doubletimes[i]=-1;
-                           if(doublemode[i]==1 || doublemode[i]==2){
-                                               fscanf(save,"%d",&doubledepth[i]);
-                                               if(doubledepth[i]<1){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                                               printf("\nvalue doubledepth[%d]=%d",i,doubledepth[i]);
-                                               fscanf(save,"%d",&doubledepthperfect[i]);
-                                               if(doubledepthperfect[i]<1){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                                               printf("\nvalue doubledepthperfect[%d]=%d",i,doubledepthperfect[i]);
-                                               }
-                           if(doublemode[i]==3){
-                                                fscanf(save,"%f",&doubletimes[i]);
-                                                if(doubletimes[i]<0){printf("\n\n%s is corrupted!\n\n",filename); fclose(save); return 555;}
-                                                printf("\nvalue doubletimes[%d]=%f",i,doubletimes[i]);
-                                                }
-                           }
-         printf("\n\ngame successfully loaded!");
-         printf("\n\npress any key to continue");
-         getch();
-         do{
-            for(i=0;i<64;i++) sentboard[i]=board[i];
-            for(i=0;i<2;i++) sentno[i]=no[i];
-            for(i=0;i<2;i++) sentdoublemode[i]=doublemode[i];
-            for(i=0;i<2;i++) sentdoubledepth[i]=doubledepth[i];
-            for(i=0;i<2;i++) sentdoubledepthperfect[i]=doubledepthperfect[i];
-            for(i=0;i<2;i++) sentdoubletimes[i]=doubletimes[i];
-            }while(comcom(sentboard,sentno,player,sentdoublemode,sentdoubledepth,sentdoubledepthperfect,sentdoubletimes)==555);
-         return 0;
-         }
-    else{printf("\n\n%s is corrupted!\n\n",filename); return 555;}
+    int loadmode = -1;
+    fscanf(save, "%d", &loadmode);
+    if(loadmode == 1){
+		//human vs human
+		printf("\nvalue loadmode=1\n\n");
+		printf("game successfully loaded!\n\n");
+		presstogo();
+		do{
+			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+			for(int i = 0; i < 2; i++) sentno[i] = no[i];
+		}while(human(sentboard,sentno,player) == EXIT);
+		return 0;
+	}else if(loadmode == 2 or loadmode == 3){
+		//computer vs human, human vs computer
+		printf("\nvalue loadmode=%d", loadmode);
+		//get mode
+		mode = -1;
+		fscanf(save, "%d", &mode);
+		if(mode < 0 or mode > 3){
+			printf("\n\n%s is corrupted!\n\n", filename);
+			fclose(save);
+			return EXIT;
+		}
+		printf("\nvalue mode=%d", mode);
+		//get depth or times
+		depth = -1;
+		depthperfect = -1;
+		times = -1;
+		if(mode == 1 or mode == 2){
+			fscanf(save, "%d", &depth);
+			if(depth < 1){
+				printf("\n\n%s is corrupted!\n\n", filename);
+				fclose(save);
+				return EXIT;
+			}
+			printf("\nvalue depth=%d", depth);
+			fscanf(save, "%d", &depthperfect);
+			if(depthperfect < 1){
+				printf("\n\n%s is corrupted!\n\n", filename);
+				fclose(save);
+				return EXIT;
+			}
+			printf("\nvalue depthperfect=%d", depthperfect);
+		}else if(mode == 3){
+			fscanf(save, "%f", &times);
+			if(times < 0){
+				printf("\n\n%s is corrupted!\n\n", filename);
+				fclose(save);
+				return EXIT;
+			}
+			printf("\nvalue times=%f", times);
+		}
+		printf("\n\ngame successfully loaded!");
+		printf("\n\npress any key to continue");
+		getch();
+		if(loadmode == 2){
+			do{
+				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+				for(int i = 0; i < 2; i++) sentno[i] = no[i];
+			}while(comhuman(sentboard, sentno, player, 2, mode, depth, depthperfect, times) == EXIT);
+			return 0;
+		}else{
+			do{
+				for(int i = 0; i < 64; i++) sentboard[i]=board[i];
+				for(int i = 0; i < 2; i++) sentno[i]=no[i];
+			}while(comhuman(sentboard, sentno, player, 1, mode, depth, depthperfect, times) == EXIT);
+			return 0;
+		}
+	}else if(loadmode == 4){
+		//computer vs computer
+		printf("\nvalue loadmode=4");
+		for(int i = 0; i <= 1; i++){
+			//get doublemode
+			doublemode[i] = -1;
+			fscanf(save, "%d", &doublemode[i]);
+			if(doublemode[i] < 0 or doublemode[i] > 3){
+				printf("\n\n%s is corrupted!\n\n", filename);
+				fclose(save);
+				return EXIT;
+			}
+			printf("\nvalue doublemode[%d]=%d", i, doublemode[i]);
+			//get doubledepth or doubletimes
+			doubledepth[i] = -1;
+			doubledepthperfect[i] = -1;
+			doubletimes[i] = -1;
+			if(doublemode[i] == 1 or doublemode[i] == 2){
+				fscanf(save, "%d", &doubledepth[i]);
+				if(doubledepth[i] < 1){
+					printf("\n\n%s is corrupted!\n\n", filename);
+					fclose(save);
+					return EXIT;
+				}
+				printf("\nvalue doubledepth[%d]=%d", i, doubledepth[i]);
+				fscanf(save, "%d", &doubledepthperfect[i]);
+				if(doubledepthperfect[i] < 1){
+					printf("\n\n%s is corrupted!\n\n", filename);
+					fclose(save);
+					return EXIT;
+				}
+				printf("\nvalue doubledepthperfect[%d]=%d", i, doubledepthperfect[i]);
+			}
+			if(doublemode[i] == 3){
+				fscanf(save, "%f", &doubletimes[i]);
+				if(doubletimes[i] < 0){
+					printf("\n\n%s is corrupted!\n\n", filename);
+					fclose(save);
+					return EXIT;
+				}
+				printf("\nvalue doubletimes[%d]=%f", i, doubletimes[i]);
+			}
+		}
+		printf("\n\ngame successfully loaded!");
+		printf("\n\npress any key to continue");
+		getch();
+		do{
+			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+			for(int i = 0; i < 2; i++) sentno[i] = no[i];
+			for(int i = 0; i < 2; i++) sentdoublemode[i] = doublemode[i];
+			for(int i = 0; i < 2; i++) sentdoubledepth[i] = doubledepth[i];
+			for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
+			for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
+		}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
+		return 0;
+	}else{
+		printf("\n\n%s is corrupted!\n\n", filename);
+		return EXIT;
+	}
 }
 
 //show syntax list
 void syntax(){
-printf("\n\
+	printf("\n\
 syntax list\n\
 -----------\n\
 \n\
@@ -866,23 +742,22 @@ syntax      m g  - view this text\n\
 fsearch       g  - fixed depth search ex. fsearch 6\n\
 tsearch       g  - time limit search ex. tsearch 1\n\
 hello       m    - say hello to the program\n\n");
-return;
 }
 
 //about program
 void about(){
-system("cls");
-printf("\n\
+	clrscr();
+	printf("\n\
 about program\n\
 -------------\n\
 \n\
 project O'hello\n\
 \n\
 version  %s\n\
-author   Nat Sothanaphan\n\
+author   %s\n\
 date     %s\n\
-language C\n\
-compiler Dev-C++ 4.9.9.2\n\
+language %s\n\
+compiler %s\n\
 \n\
 O'hello is a command-line program that mainly features an AI that plays othello.\
 It is only an elementary level program with low search speed and weak evaluation\
@@ -893,11 +768,11 @@ Note: there are several commands available in O'hello. You can type 'syntax' to\
 view the list of all these commands.\n\
 \n\n\
 press 'h' to view information on how to play othello\n\
-press any other key to go back to the main menu",version,date);
+press any other key to go back to the main menu", version, author, date, language, compiler);
 
-if(getch()=='h'){
-system("cls");
-printf("\n\
+	if(getch() == 'h'){
+		clrscr();
+		printf("\n\
 how to play othello\n\
 -------------------\n\
 \n\
@@ -919,213 +794,201 @@ larger number of disks, with a draw possible if both numbers are the same. The\n
 remaining empty squares, if any, are usually awarded to the winner.\n\
 \n\n\
 press any key to go back to the main menu");
-getch();
-}
-
-return;
+		getch();
+	}
+	return;
 }
 
 //test the speed of this computer
 void speedtest(){
-     struct timeb time1,time2;
-     int i=0;
-     printf("\nrunning test for 1 second");
-     ftime(&time1);
-     do{
-        i++;
-        ftime(&time2);
-        }while(time2.time-time1.time+0.001*(time2.millitm-time1.millitm)<1);
-     printf("\n\n%d kiloloops were executed\n\n",i/1000);
-     return;
+	timeb time1, time2;
+	int i = 0;
+	printf("\nrunning test for 1 second");
+	ftime(&time1);
+	do{
+		i++;
+		ftime(&time2);
+	}while(time2.time - time1.time + 0.001 * (time2.millitm - time1.millitm) < 1);
+	printf("\n\n%d kiloloops were executed\n\n",i / 1000);
 }
 
 //say hello :)
 void sayhello(){
-     printf("\n");
-     switch(rand()%4){
-                      case 0: switch(rand()%3){
-                                               case 0: printf("hello, player"); break;
-                                               case 1: printf("hi, player"); break;
-                                               case 2: printf("greetings, player"); break;
-                                               }
-                              break;
-                      case 1: switch(rand()%2){
-                                               case 0: printf("hello there, player"); break;
-                                               case 1: printf("hi there, player"); break;
-                                               }
-                              break;
-                      case 2: switch(rand()%3){
-                                               case 0: printf("Oh, hello player"); break;
-                                               case 1: printf("Oh, hi player"); break;
-                                               case 2: printf("Oh, hello - that's my name!"); break;
-                                               }
-                              break;
-                      case 3: switch(rand()%2){
-                                               case 0: printf("hello player, nice to meet you"); break;
-                                               case 1: printf("hello player, pleased to meet you"); break;
-                                               }
-                              break;
-                      }
-     printf("\n\n");
-     return;
+	const char* greeting[] = {	"hello, player",
+								"hi, player",
+								"greetings, player",
+								"hello there, player",
+								"hi there, player",
+								"Oh, hello player",
+								"Oh, hi player",
+								"Oh, hello - that's my name!",
+								"hello player, nice to meet you",
+								"hello player, pleased to meet you"
+							};
+	printf("\n%s\n\n", greeting[rand(sizeof(greeting) / sizeof(greeting[0]))]);
 }
 
 //settings
 void settings(){
-     int input;
      printf("\nselect settings:\n\n");
-     printf("1.disk appearance\n");
-     printf("2.AI settings interface\n");
-     printf("3.evaluation function weights\n");
-     printf("4.rotation effect options\n");
-     printf("5.flip animation options\n");
-     printf("6.opening move options\n");
+     printf("1. disk appearance\n");
+     printf("2. AI settings interface\n");
+     printf("3. evaluation function weights\n");
+     printf("4. rotation effect options\n");
+     printf("5. flip animation options\n");
+     printf("6. opening move options\n");
      printf("\n");
-     loop1:
-     scanf("%d",&input);
-     if(input==1){appearance(); return;}
-     if(input==2){aisinterface(); return;}
-     if(input==3){customweight(); return;}
-     if(input==4){rotateoption(); return;}
-     if(input==5){flipoption(); return;}
-     if(input==6){openingoption(); return;}
-     printf("\ninvalid selection!\n\n");
-     goto loop1;
+	 bool invalid;
+	 do{
+		invalid = false;
+		switch(getInt()){
+			case 1: appearance(); break;
+			case 2: aisinterface(); break;
+			case 3: customweight(); break;
+			case 4: rotateoption(); break;
+			case 5: flipoption(); break;
+			case 6: openingoption(); break;
+
+			default:
+			alert("invalid selection!");
+			invalid = true;
+		}
+	}while(invalid);
 }
 
 //set disk apearance
 void appearance(){
-     int i;
-     int a;
-     
-     system("cls"); //clear screen
-     printf("\n");
-     printf("current disk appearance\n");
-     printf("-----------------------\n\n");
-     printf("       %s         %s\n",black[0],white[0]);
-     printf("black: %s  white: %s\n",black[1],white[1]);
-     printf("       %s         %s\n\n\n",black[2],white[2]);
-     
-     printf("list of all choices\n");
-     printf("-------------------\n\n");
-     for(i=0;i<=numchoice-3;i+=3){
-                                  printf("     %s         %s         %s\n",choice[i][0],choice[i+1][0],choice[i+2][0]);
-                                  printf("%2d:  %s    %2d:  %s    %2d:  %s\n",i,choice[i][1],i+1,choice[i+1][1],i+2,choice[i+2][1]);
-                                  printf("     %s         %s         %s\n\n\n",choice[i][2],choice[i+1][2],choice[i+2][2]);
-                                 }
-     switch(numchoice%3){
-                         case 0: break;
-                         case 1:
-                                printf("     %s\n",choice[i][0]);
-                                printf("%2d:  %s\n",i,choice[i][1]);
-                                printf("     %s\n\n\n",choice[i][2]);
-                                break;
-                         case 2:
-                                printf("     %s         %s\n",choice[i][0],choice[i+1][0]);
-                                printf("%2d:  %s    %2d:  %s\n",i,choice[i][1],i+1,choice[i+1][1]);
-                                printf("     %s         %s\n\n\n",choice[i][2],choice[i+1][2]);
-                                break;
-                         default: break;
-                         }
-     
-     black:
-     printf("select black disk appearance: ");
-     scanf("%d",&a);
-     if(a<0 || a>numchoice-1){printf("\ninvalid selection!\n\n"); goto black;}
-     for(i=0;i<3;i++) strcpy(black[i],choice[a][i]);
-     
-     printf("\n");
-     white:
-     printf("select white disk appearance: ");
-     scanf("%d",&a);
-     if(a<0 || a>numchoice-1){printf("\ninvalid selection!\n\n"); goto white;}
-     for(i=0;i<3;i++) strcpy(white[i],choice[a][i]);
-     
-     printf("\n\nsuccessfully set disk appearance\n");
-     printf("press any key to continue");
-     getch();
-     
-     return;
+	clrscr(); //clear screen
+	printf("\n");
+	printf("current disk appearance\n");
+	printf("-----------------------\n\n");
+	printf("       %s         %s\n", black[0], white[0]);
+	printf("black: %s  white: %s\n", black[1], white[1]);
+	printf("       %s         %s\n\n\n", black[2], white[2]);
+
+	printf("list of all choices\n");
+	printf("-------------------\n\n");
+	{
+		int i;
+		for(i = 0; i <= numchoice - 3; i += 3){
+			printf("     %s         %s         %s\n", choice[i][0], choice[i+1][0], choice[i+2][0]);
+			printf("%2d:  %s    %2d:  %s    %2d:  %s\n", i, choice[i][1], i+1, choice[i+1][1], i+2, choice[i+2][1]);
+			printf("     %s         %s         %s\n\n\n", choice[i][2], choice[i+1][2], choice[i+2][2]);
+		}
+		switch(numchoice % 3){
+			case 1:
+				printf("     %s\n", choice[i][0]);
+				printf("%2d:  %s\n", i, choice[i][1]);
+				printf("     %s\n\n\n", choice[i][2]);
+				break;
+			case 2:
+			    printf("     %s         %s\n", choice[i][0], choice[i+1][0]);
+			    printf("%2d:  %s    %2d:  %s\n", i, choice[i][1], i+1, choice[i+1][1]);
+			    printf("     %s         %s\n\n\n", choice[i][2], choice[i+1][2]);
+			    break;
+		}
+	}
+	bool invalid;
+	int a;
+	do{
+		invalid = false;
+		printf("select black disk appearance: ");
+		a = getInt();
+		if(a < 0 or a > numchoice - 1){
+			alert("invalid selection!");
+			invalid = true;
+		}
+	}while(invalid);
+	for(int i = 0; i < 3; i++) strcpy(black[i], choice[a][i]);
+	printf("\n");
+	do{
+		invalid = false;
+		printf("select white disk appearance: ");
+		a = getInt();
+		if(a < 0 or a > numchoice - 1){
+			alert("invalid selection!");
+			invalid = true;
+		}
+	}while(invalid);
+	for(int i = 0; i < 3; i++) strcpy(white[i], choice[a][i]);
+
+	printf("\n\nsuccessfully set disk appearance\n");
+	presstogo();
 }
 
 //set value of comsetchoice
 void aisinterface(){
-     int input;
-     printf("\n");
-     printf("select interface:\n");
-     printf("-----------------\n");
-     printf("1.new one (default)\n");
-     printf("2.old one\n");
-     printf("3.back\n\n");
-     select:
-     scanf("%d",&input);
-     if(input==1 || input==2){
-                 comsetchoice=input;
-                 printf("\nsuccessfully set interface\n");
-                 printf("press any key to continue");
-                 getch();
-                 return;
-                 }
-     else if(input==3) return;
-     else{
-          printf("\ninvalid selection!\n\n");
-          goto select;
-          }
+	printf("\n");
+	printf("select interface:\n");
+	printf("-----------------\n");
+	printf("1. new one (default)\n");
+	printf("2. old one\n");
+	printf("3. back\n\n");
+	bool invalid;
+	do{
+		invalid = false;
+		int input = getInt();
+		if(input == 1 or input == 2){
+			comsetchoice = input;
+			printf("\nsuccessfully set interface\n");
+			presstogo();
+		}else if(input == 3);
+		else{
+		  	alert("invalid selection!");
+		  	invalid = true;
+		}
+	}while(invalid);
 }
 
 //customize weights
 void customweight(){
-     int i,j;
-     int input;
-     
-     system("cls"); //clear screen
-     printf("\n");
-     printf("current weights:\n\n");
-     for(i=0;i<weightnum;i++) printf(" %d",dweight[i]);
-     printf("\n\n\n");
-     printf("choose evaluation function weights:\n");
-     printf("-----------------------------------\n\n");
-     printf("0. customize weights\n\n");
-     for(i=0;i<weightchoicenum;i++){
-                                    printf("%d. %s\n\n",i+1,weightchoicename[i]);
-                                    printf("  ");
-                                    for(j=0;j<weightnum;j++) printf(" %d",weightchoice[i][j]);
-                                    printf("\n\n");
-                                    }
-     printf("%d. back\n\n",weightchoicenum+1);
-     select:
-     scanf("%d",&input);
-     if(input<0 || input>weightchoicenum+1){
-                printf("\ninvalid selection!\n\n");
-                goto select;
-                }
-     else if(input==weightchoicenum+1) return;
-     else if(input!=0){
-          for(i=0;i<weightnum;i++) dweight[i]=weightchoice[input-1][i];
-          printf("\nsuccessfully set weights\n");
-          printf("press any key to continue");
-          getch();
-          return;
-          }
-     else{
-          printf("\nenter evaluation function weights:\n\n");
-          for(i=0;i<weightnum;i++) scanf("%d",&dweight[i]);
-          printf("\n\nsuccessfully set weights\n");
-          printf("press any key to continue");
-          getch();
-          return;
-          }
+	clrscr(); //clear screen
+	printf("\n");
+	printf("current weights:\n\n");
+	for(int i = 0; i < weightnum; i++) printf(" %d", dweight[i]);
+	printf("\n\n\n");
+	printf("choose evaluation function weights:\n");
+	printf("-----------------------------------\n\n");
+	printf("0. customize weights\n\n");
+	for(int i = 0; i < weightchoicenum; i++){
+		printf("%d. %s\n\n", i + 1, weightchoicename[i]);
+		printf("  ");
+		for(int j = 0; j < weightnum; j++) printf(" %d", weightchoice[i][j]);
+		printf("\n\n");
+	}
+	printf("%d. back\n\n", weightchoicenum + 1);
+	bool invalid;
+	int input;
+	do{
+		invalid = false;
+		input = getInt();
+		if(input < 0 or input > weightchoicenum + 1){
+			alert("invalid selection!");
+			invalid = true;
+		}
+	}while(invalid);
+	if(input == weightchoicenum + 1);
+	else if(input != 0){
+		for(int i = 0; i < weightnum; i++) dweight[i] = weightchoice[input-1][i];
+		printf("\nsuccessfully set weights\n");
+		presstogo();
+	}else{
+		printf("\nenter evaluation function weights:\n\n");
+		for(int i = 0; i < weightnum; i++) scanf("%d", &dweight[i]);
+		printf("\n\nsuccessfully set weights\n");
+		presstogo();
+	}
 }
 
 //rotation effect options
 void rotateoption(){
      int input;
      
-     system("cls"); //clear screen
+     clrscr(); //clear screen
      printf("\n");
      printf("current rotation settings:\n");
      printf("--------------------------\n\n");
-     if(rotateon==1) printf("rotation effect is enabled\n\n");
+     if(rotateon) printf("rotation effect is enabled\n\n");
      else printf("rotation effect is disabled\n\n");
      printf("display effect every %d node(s)",rotatetime);
      printf("\n\n\n");
@@ -1137,17 +1000,17 @@ void rotateoption(){
      printf("4.back\n\n");
      select:
      scanf("%d",&input);
-     if(input<1 || input>4){printf("\ninvalid selection!\n\n"); goto select;}
+     if(input<1 or input>4){printf("\ninvalid selection!\n\n"); goto select;}
      else if(input==4) return;
      else if(input==1){
-                       rotateon=1;
+                       rotateon = true;
                        printf("\nsuccessfully enabled effect\n");
                        printf("press any key to continue");
                        getch();
                        return;
                        }
      else if(input==2){
-                       rotateon=0;
+                       rotateon = false;
                        printf("\nsuccessfully disabled effect\n");
                        printf("press any key to continue");
                        getch();
@@ -1170,11 +1033,11 @@ void rotateoption(){
 void flipoption(){
      int input;
      
-     system("cls"); //clear screen
+     clrscr(); //clear screen
      printf("\n");
      printf("current flip settings:\n");
      printf("----------------------\n\n");
-     if(flipon==1) printf("flip animation is enabled\n\n");
+     if(flipon) printf("flip animation is enabled\n\n");
      else printf("flip animation is disabled\n\n");
      printf("time between each frame: %.2f second(s)",fliptime);
      printf("\n\n\n");
@@ -1186,17 +1049,17 @@ void flipoption(){
      printf("4.back\n\n");
      select:
      scanf("%d",&input);
-     if(input<1 || input>4){printf("\ninvalid selection!\n\n"); goto select;}
+     if(input<1 or input>4){printf("\ninvalid selection!\n\n"); goto select;}
      else if(input==4) return;
      else if(input==1){
-                       flipon=1;
+                       flipon = true;
                        printf("\nsuccessfully enabled effect\n");
                        printf("press any key to continue");
                        getch();
                        return;
                        }
      else if(input==2){
-                       flipon=0;
+                       flipon = false;
                        printf("\nsuccessfully disabled effect\n");
                        printf("press any key to continue");
                        getch();
@@ -1219,10 +1082,10 @@ void flipoption(){
 void openingoption(){
      int input;
      
-     system("cls"); //clear screen
+     clrscr(); //clear screen
      printf("\n");
      printf("current setting:\n\n");
-     if(ParallelAllow==0) printf("allow diagonal and perpendicular opening");
+     if(not ParallelAllow) printf("allow diagonal and perpendicular opening");
      else printf("allow diagonal, perpendicular and parallel opening");
      printf("\n\n\n");
      printf("select options:\n");
@@ -1232,17 +1095,17 @@ void openingoption(){
      printf("3.back\n\n");
      select:
      scanf("%d",&input);
-     if(input<1 || input>3){printf("\ninvalid selection!\n\n"); goto select;}
+     if(input<1 or input>3){printf("\ninvalid selection!\n\n"); goto select;}
      else if(input==3) return;
      else if(input==1){
-                       ParallelAllow=0;
+                       ParallelAllow = false;
                        printf("\nsuccessfully set opening moves\n");
                        printf("press any key to continue");
                        getch();
                        return;
                        }
      else if(input==2){
-                       ParallelAllow=1;
+                       ParallelAllow = true;
                        printf("\nsuccessfully set opening moves\n");
                        printf("press any key to continue");
                        getch();
@@ -1268,7 +1131,7 @@ int human(int board[64],int no[2],int player){
     int oldlastmove=-1;
 
     loop2: //start here!
-    system("cls"); //clear screen
+    clrscr(); //clear screen
     //display board
     display(board,player,no,lastmove);
     printf("\n\n");
@@ -1321,7 +1184,7 @@ int human(int board[64],int no[2],int player){
                                        if(lastmove!=-1) lastmove+=7-2*(lastmove%8);
                                        goto loop2;
                                        }
-                      if(position==-3) return 555; //-3 means new
+                      if(position==-3) return EXIT; //-3 means new
                       if(position==-4) return 0; //-4 means menu
                       if(position==-5) goto loop2; //-5 means move on-off
                       flips=flip(board,position,player); //flip!
@@ -1331,7 +1194,7 @@ int human(int board[64],int no[2],int player){
                                        goto loop1;
                                        }
                       //show flip animation
-                      if(flipon==1) flipanimation(board,player,position,flips.board);
+                      if(flipon) flipanimation(board,player,position,flips.board);
                       currmove=position;
                       //update old values
                       for(i=0;i<64;i++) oldboard[i]=board[i];
@@ -1372,9 +1235,9 @@ int human(int board[64],int no[2],int player){
          do{
             letter=getch();
             if(letter=='s'){printf("\n"); humansave(board,player); goto loop2;}
-            if(letter=='n') return 555;
+            if(letter=='n') return EXIT;
             if(letter=='m') return 0;
-            if(letter=='q') exit(0);
+            if(letter=='q') finish(0);
             }while(1);
          }
     else{ //pass turn :)
@@ -1412,7 +1275,6 @@ void humansave(int board[64],int player){
 //human vs computer,computer vs human
 //complayer=player that computer plays as
 int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,float times){
-    printf(""); //prevent bug
     int i,j,k; //for reflect
     int position;
     int mobilities; //value from function 'mobility'
@@ -1428,7 +1290,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
     int oldlastmove=-1;
      
     loop2: //start here!
-    system("cls"); //clear screen
+    clrscr(); //clear screen
     //display board
     display(board,player,no,lastmove);
     printf("\n\n");
@@ -1477,14 +1339,14 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             printf("\n\npress any other key to continue");
                                             letter=getch();
                                             if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
-                                            if(letter=='n') return 555;
+                                            if(letter=='n') return EXIT;
                                             if(letter=='m') return 0;
-                                            if(letter=='q') exit(0);
+                                            if(letter=='q') finish(0);
                                             currmove=position;
                                             lastmove=currmove;
                                             flips=flip(board,position,player); //flip!
                                             //show flip animation
-                                            if(flipon==1) flipanimation(board,player,position,flips.board);
+                                            if(flipon) flipanimation(board,player,position,flips.board);
                                             //get board from function 'flip'
                                             for(i=0;i<64;i++) board[i]=flips.board[i];
                                             //update no[2]
@@ -1526,7 +1388,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             if(lastmove!=-1) lastmove+=7-2*(lastmove%8);
                                             goto loop2;
                                             }
-                           if(position==-3) return 555; //-3 means new
+                           if(position==-3) return EXIT; //-3 means new
                            if(position==-4) return 0; //-4 means menu
                            if(position==-5) goto loop2; //-5 means move on-off
                            flips=flip(board,position,player); //flip!
@@ -1536,7 +1398,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             goto loop1;
                                             }
                            //show flip animation
-                           if(flipon==1) flipanimation(board,player,position,flips.board);
+                           if(flipon) flipanimation(board,player,position,flips.board);
                            currmove=position;
                            //update old values
                            for(i=0;i<64;i++) oldboard[i]=board[i];
@@ -1578,9 +1440,9 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
          do{
             letter=getch();
             if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
-            if(letter=='n') return 555;
+            if(letter=='n') return EXIT;
             if(letter=='m') return 0;
-            if(letter=='q') exit(0);
+            if(letter=='q') finish(0);
             }while(1);
          }
     else{ //pass turn :)
@@ -1617,7 +1479,7 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
      //print mode
      fprintf(save," %d",mode);
      //print depth or times
-     if(mode==1 || mode==2) fprintf(save," %d %d",depth,depthperfect);
+     if(mode==1 or mode==2) fprintf(save," %d %d",depth,depthperfect);
      if(mode==3) fprintf(save," %f",times);
      fclose(save);
      printf("\ngame saved in %s successfully!",filename);
@@ -1629,7 +1491,7 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
 //computer vs computer
 int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]){
     printf(""); //prevent bug
-    int i,j,k;
+    int i;
     int position;
     int mobilities; //value from function 'mobility'
     struct kirby flips; //value from function 'flip'
@@ -1638,7 +1500,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
     int lastmove=-1;
     
     loop2: //start here!
-    system("cls"); //clear screen
+    clrscr(); //clear screen
     //display board
     display(board,player,no,lastmove);
     printf("\n\n");
@@ -1670,14 +1532,14 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
                       printf("\n\npress any other key to continue");
                       letter=getch();
                       if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubletimes); goto loop2;}
-                      if(letter=='n') return 555;
+                      if(letter=='n') return EXIT;
                       if(letter=='m') return 0;
-                      if(letter=='q') exit(0);
+                      if(letter=='q') finish(0);
                       currmove=position;
                       lastmove=currmove;
                       flips=flip(board,position,player); //flip!
                       //show flip animation
-                      if(flipon==1) flipanimation(board,player,position,flips.board);
+                      if(flipon) flipanimation(board,player,position,flips.board);
                       //get board from function 'flip'
                       for(i=0;i<64;i++) board[i]=flips.board[i];
                       //update no[2]
@@ -1709,9 +1571,9 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
          do{
             letter=getch();
             if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubletimes); goto loop2;}
-            if(letter=='n') return 555;;
+            if(letter=='n') return EXIT;;
             if(letter=='m') return 0;
-            if(letter=='q') exit(0);
+            if(letter=='q') finish(0);
             }while(1);
          }
     else{ //pass turn :)
@@ -1743,7 +1605,7 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
                        //print doublemode
                        fprintf(save," %d",doublemode[i]);
                        //print doubledepth or doubletimes
-                       if(doublemode[i]==1 || doublemode[i]==2) fprintf(save," %d %d",doubledepth[i],doubledepthperfect[i]);
+                       if(doublemode[i]==1 or doublemode[i]==2) fprintf(save," %d %d",doubledepth[i],doubledepthperfect[i]);
                        if(doublemode[i]==3) fprintf(save," %f",doubletimes[i]);
                        }
      fclose(save);
@@ -1788,7 +1650,7 @@ void weighttest(){
                        printf("\nenter computer %d parameters:\n\n",i+1);
                        //parameters = mode depth/time [weights]
                        scanf("%d",&doublemode[i]);
-                       if(doublemode[i]<0 || doublemode[i]>3){printf("\nvalue 1 error!\n"); goto set;}
+                       if(doublemode[i]<0 or doublemode[i]>3){printf("\nvalue 1 error!\n"); goto set;}
                        if(doublemode[i]!=0){
                                             if(doublemode[i]!=3){
                                                                  scanf("%d",&doubledepth[i]);
@@ -1809,9 +1671,9 @@ void weighttest(){
      scanf("%d",&numgame);
      if(numgame<1){printf("\nvalue 1 error!\n"); goto settwo;}
      scanf("%d",&numrand);
-     if(numrand<0 || numrand>60){printf("\n value 2 error!\n"); goto settwo;}
+     if(numrand<0 or numrand>60){printf("\n value 2 error!\n"); goto settwo;}
      scanf("%d",&twoway);
-     if(twoway!=0 && twoway!=1){printf("\nvalue 3 error!\n"); goto settwo;}
+     if(twoway!=0 and twoway!=1){printf("\nvalue 3 error!\n"); goto settwo;}
      
      //computer 1 vs computer 2
      
@@ -1902,7 +1764,7 @@ struct triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthper
            //if player is movable
            if(mobilities!=0){
                              //if random
-                             if(doublemode[player-1]==0 || no[0]+no[1]<numrand+4) position=random(board,player,no,0);
+                             if(doublemode[player-1]==0 or no[0]+no[1]<numrand+4) position=random(board,player,no,0);
                              else{
                                   //not random
                                   weightfortest(doubleweight,player); //set weight
@@ -1954,39 +1816,39 @@ int input(int board[64],int player,int no[2]){
     if(strcmp(string,"menu")==0) return -4; //-4 means menu
     if(strcmp(string,"save")==0) return -999; //-999 means save
     if(strcmp(string,"randon")==0){
-                                   rands=1;
+                                   rands = true;
                                    printf("\nrandom feature on!\n\n");
                                    goto loop1;
                                    }
     if(strcmp(string,"randoff")==0){
-                                    rands=0;
+                                    rands = false;
                                     printf("\nrandom feature off!\n\n");
                                     goto loop1;
                                     }
     //-5 means move on-off
-    if(strcmp(string,"moveon")==0){smove=1; return -5;}
-    if(strcmp(string,"moveoff")==0){smove=0; return -5;}
+    if(strcmp(string,"moveon")==0){smove = true; return -5;}
+    if(strcmp(string,"moveoff")==0){smove = false; return -5;}
     if(strcmp(string,"spinon")==0){
-                                   rotateon=1;
+                                   rotateon = true;
                                    printf("\nrotation effect on!\n\n");
                                    goto loop1;
                                    }
     if(strcmp(string,"spinoff")==0){
-                                    rotateon=0;
+                                    rotateon = false;
                                     printf("\nrotation effect off!\n\n");
                                     goto loop1;
                                     }
     if(strcmp(string,"flipon")==0){
-                                   flipon=1;
+                                   flipon=true;
                                    printf("\nflip animation on!\n\n");
                                    goto loop1;
                                    }
     if(strcmp(string,"flipoff")==0){
-                                    flipon=0;
+                                    flipon=true;
                                     printf("\nflip animation off!\n\n");
                                     goto loop1;
                                     }
-    if(strcmp(string,"quit")==0) exit(0);
+    if(strcmp(string,"quit")==0) finish(0);
     if(strcmp(string,"fsearch")==0){
                                     scanf("%d",&depth);
                                     if(depth<1){
@@ -2073,7 +1935,7 @@ int random(int board[64],int player,int no[2],int display){
     //opening move
     if(no[0]+no[1]==5){
                        //if no parallel opening
-                       if(ParallelAllow==0){
+                       if(not ParallelAllow){
                                             //recompute moves.board
                                             if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
                                             if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
@@ -2084,16 +1946,16 @@ int random(int board[64],int player,int no[2],int display){
                                             if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
                                             if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
                                             
-                                            if(rands==1) position=moves.board[rand()%2];
+                                            if(rands) position = moves.board[rand(2)];
                                             else position=moves.board[0];
                                             }
                        //if allow parallel opening
                        else{
-                            if(rands==1) position=moves.board[rand()%3];
+                            if(rands) position = moves.board[rand(3)];
                             else position=moves.board[0];
                             }
                        }
-    else position=moves.board[rand()%moves.num]; //random move
+    else position=moves.board[rand(moves.num)]; //random move
     
     if(display!=0){
                    printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
@@ -2143,7 +2005,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
     //for starting position -- no need to search
     if(no[0]+no[1]==4){
                        //if random feature is on
-                       if(rands==1) position=moves.board[rand()%4];
+                       if(rands) position = moves.board[rand(4)];
                        else position=moves.board[0];
                        depthwant=0;
                        enginestate=2;
@@ -2151,7 +2013,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                        }
     if(no[0]+no[1]==5){
                        //if no parallel opening
-                       if(ParallelAllow==0){
+                       if(not ParallelAllow){
                                             //recompute moves.board
                                             if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
                                             if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
@@ -2162,12 +2024,12 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                                             if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
                                             if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
                                             
-                                            if(rands==1) position=moves.board[rand()%2];
+                                            if(rands) position = moves.board[rand(2)];
                                             else position=moves.board[0];
                                             }
                        //if allow parallel opening
                        else{
-                            if(rands==1) position=moves.board[rand()%3];
+                            if(rands) position = moves.board[rand(3)];
                             else position=moves.board[0];
                             }
                        
@@ -2214,7 +2076,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                        //rearrange moves by scores from shallow search
                        order:
                        for(k=0;k<moves.num-1;k++){
-                                                  if((player==1 && scores[k]<scores[k+1]) || (player==2 && scores[k]>scores[k+1])){
+                                                  if((player==1 and scores[k]<scores[k+1]) or (player==2 and scores[k]>scores[k+1])){
                                                                 a=scores[k]; //switch score
                                                                 scores[k]=scores[k+1];
                                                                 scores[k+1]=a;
@@ -2289,58 +2151,55 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                                                             }
                             }
     //if random feature is on
-    if(rands==1) position=candidate[rand()%numcan]; //random from candidates 
+    if(rands) position = candidate[rand(numcan)]; //random from candidates 
     else position=candidate[0];
 
     finish:
     ftime(&time2); //get current time
-    if(display!=0){
-                   if(display==1){
-                                  printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
-                                  printf("O'hello decided to place a disk at ");
-                                  }
-                   else{
-                        printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
-                        printf("search result: ");
-                        }
-                   switch(position%8){
-                                      case 0:printf("a"); break;
-                                      case 1:printf("b"); break;
-                                      case 2:printf("c"); break;
-                                      case 3:printf("d"); break;
-                                      case 4:printf("e"); break;
-                                      case 5:printf("f"); break;
-                                      case 6:printf("g"); break;
-                                      case 7:printf("h"); break;
-                                      default:;
-                                      }
-                   printf("%d ",position/8+1);
-                   //.time = seconds, .millitm = milliseconds
-                   printf("\n\n%.2f sec  ",time2.time-time1.time+0.001*(time2.millitm-time1.millitm));
-                   shownode(node); //display node
-                   printf("depth %d  ",depthwant);
-                   //display score
-                   switch(enginestate){
-                                       case 0: if(player==1){
-                                                             if(bestscore>=wf) printf(": win +%d",bestscore/wf);
-                                                             else if(bestscore<=-wf) printf(": lose %d",bestscore/wf);
-                                                             else if(bestscore==0 && perfect==1) printf(": draw");
-                                                             else if(bestscore>=0) printf(": score +%d",bestscore);
-                                                             else printf(": score %d",bestscore);
-                                                             }
-                                               else{
-                                                    if(bestscore<=-wf) printf(": win +%d",-bestscore/wf);
-                                                    else if(bestscore>=wf) printf(": lose %d",-bestscore/wf);
-                                                    else if(bestscore==0 && perfect==1) printf(": draw");
-                                                    else if(bestscore<=0) printf(": score +%d",-bestscore);
-                                                    else printf(": score %d",-bestscore);
-                                                    }
-                                               break;
-                                       case 1: printf(": only move"); break;
-                                       case 2: printf(": opening"); break;
-                                       default:;
-                                       }
-                   }
+    if(display != 0){
+		if(display == 1){
+			printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
+			printf("O'hello decided to place a disk at ");
+		}else{
+			printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
+			printf("search result: ");
+		}
+		switch(position % 8){
+			case 0: printf("a"); break;
+			case 1: printf("b"); break;
+			case 2: printf("c"); break;
+			case 3: printf("d"); break;
+			case 4: printf("e"); break;
+			case 5: printf("f"); break;
+			case 6: printf("g"); break;
+			case 7: printf("h"); break;
+		}
+		printf("%d ", position / 8 + 1);
+		//.time = seconds, .millitm = milliseconds
+		printf("\n\n%.2f sec  ", time2.time - time1.time + 0.001 * (time2.millitm - time1.millitm));
+		shownode(node); //display node
+		printf("depth %d  ", depthwant);
+		//display score
+		switch(enginestate){
+			case 0:
+				if(player == 1){
+					 if(bestscore >= wf) printf(": win +%d", bestscore / wf);
+					 else if(bestscore <= -wf) printf(": lose %d", bestscore / wf);
+					 else if(bestscore == 0 and perfect == 1) printf(": draw");
+					 else if(bestscore >= 0) printf(": score +%d", bestscore);
+					 else printf(": score %d", bestscore);
+				}else{
+					if(bestscore <= -wf) printf(": win +%d", -bestscore / wf);
+					else if(bestscore >= wf) printf(": lose %d", -bestscore / wf);
+					else if(bestscore == 0 and perfect == 1) printf(": draw");
+					else if(bestscore <= 0) printf(": score +%d", -bestscore);
+					else printf(": score %d", -bestscore);
+				}
+				break;
+			case 1: printf(": only move"); break;
+			case 2: printf(": opening"); break;
+		}
+	}
     return position;
 }
 
@@ -2384,7 +2243,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
     //for starting position -- no need to search
     if(no[0]+no[1]==4){
                        //if random feature is on
-                       if(rands==1) position=moves.board[rand()%4];
+                       if(rands) position = moves.board[rand(4)];
                        else position=moves.board[0];
                        depth=1;
                        posreach=0;
@@ -2393,7 +2252,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                        }
     if(no[0]+no[1]==5){
                        //if no parallel opening
-                       if(ParallelAllow==0){
+                       if(not ParallelAllow){
                                             //recompute moves.board
                                             if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
                                             if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
@@ -2404,12 +2263,12 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                                             if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
                                             if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
                                             
-                                            if(rands==1) position=moves.board[rand()%2];
+                                            if(rands) position = moves.board[rand(2)];
                                             else position=moves.board[0];
                                             }
                        //if allow parallel opening
                        else{
-                            if(rands==1) position=moves.board[rand()%3];
+                            if(rands) position = moves.board[rand(3)];
                             else position=moves.board[0];
                             }
                        
@@ -2463,7 +2322,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                                                //rearrange moves by scores from previous depth
                                                order:
                                                for(k=0;k<moves.num-1;k++){
-                                                                          if((player==1 && scores[k]<scores[k+1]) || (player==2 && scores[k]>scores[k+1])){
+                                                                          if((player==1 and scores[k]<scores[k+1]) or (player==2 and scores[k]>scores[k+1])){
                                                                                         a=scores[k]; //switch score
                                                                                         scores[k]=scores[k+1];
                                                                                         scores[k+1]=a;
@@ -2519,8 +2378,8 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                                                             }
                             }
     //if random feature is on
-    if(rands==1) position=candidate[rand()%numcan]; //random from candidates
-    else position=candidate[0];
+    if(rands) position = candidate[rand(numcan)]; //random from candidates
+    else position = candidate[0];
 
     finish:
     ftime(&time2); //get current time
@@ -2554,14 +2413,14 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                                        case 0: if(player==1){
                                                              if(bestscore>=wf) printf(": win +%d",bestscore/wf);
                                                              else if(bestscore<=-wf) printf(": lose %d",bestscore/wf);
-                                                             else if(bestscore==0 && perfect==1) printf(": draw");
+                                                             else if(bestscore==0 and perfect==1) printf(": draw");
                                                              else if(bestscore>=0) printf(": score +%d",bestscore);
                                                              else printf(": score %d",bestscore);
                                                              }
                                                else{
                                                     if(bestscore<=-wf) printf(": win +%d",-bestscore/wf);
                                                     else if(bestscore>=wf) printf(": lose %d",-bestscore/wf);
-                                                    else if(bestscore==0 && perfect==1) printf(": draw");
+                                                    else if(bestscore==0 and perfect==1) printf(": draw");
                                                     else if(bestscore<=0) printf(": score +%d",-bestscore);
                                                     else printf(": score %d",-bestscore);
                                                     }
@@ -2590,7 +2449,6 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
      int position;
      int nonew[2]; //no[2] after a flip
      int mo[2]; //mobility of each player (in evaluation part)
-     int i;
      int index; //index of move order
      int depthshallow; //for shallow search
      int scorearray[64]; //score array (for shallow search)
@@ -2878,7 +2736,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
      
      order:
      for(k=0;k<movenum-1;k++){
-                              if((player==1 && scorearray[k]<scorearray[k+1]) || (player==2 && scorearray[k]>scorearray[k+1])){
+                              if((player==1 and scorearray[k]<scorearray[k+1]) or (player==2 and scorearray[k]>scorearray[k+1])){
                                             a=scorearray[k]; //switch score
                                             scorearray[k]=scorearray[k+1];
                                             scorearray[k+1]=a;
@@ -2970,7 +2828,7 @@ int score63(int board[64],int player,int no[2],int display){
 
 //display rotation effect
 void nodedisplay(int display){
-     if(display!=0 && rotateon==1){
+     if(display!=0 and rotateon){
                    switch((node/rotatetime)%4){
                                                case 1: printf("%c ",196); break; // horizontal 
                                                case 2: printf("%c ",92); break;  // backslash
@@ -3051,7 +2909,7 @@ void boarddisplay(int board[64],int playertoshowmove){
                                                    //if move is to be shown (not in flipping process)
                                                    if(playertoshowmove!=0){
                                                                            //if move is legal and show move is on
-                                                                           if(smove==1 && flip(board,j,playertoshowmove).num!=0) strcat(string,"  .  ");
+                                                                           if(smove and flip(board,j,playertoshowmove).num!=0) strcat(string,"  .  ");
                                                                            else strcat(string,"     ");
                                                                            }
                                                    else strcat(string,"     ");
@@ -3150,7 +3008,7 @@ void flipanimation(int board[64],int player,int position,int flipboard[64]){
      
      //display board+newly placed disk
      dboard[position]=player;
-     system("cls");
+     clrscr();
      boarddisplay(dboard,0);
      
      ftime(&time1);
@@ -3162,7 +3020,7 @@ void flipanimation(int board[64],int player,int position,int flipboard[64]){
      for(i=0;i<64;i++){
                        if(dboard[i]!=flipboard[i]) dboard[i]=3; //determine position being flipped
                        }
-     system("cls");
+     clrscr();
      boarddisplay(dboard,0);
      
      ftime(&time1);
@@ -3217,361 +3075,361 @@ void indexformob(int board[64]){
 
 //compute mobility: number of legal moves
 int mobility(int player){
-    int mobboard[64]={};
+    bool mobboard[64]={};
     int i;
     int index;
     
-    player=player-1;
+    player--;
     
     //horizontal ---------------------------------------------------------------
     
     index=mobindex[0];
-    if(mobtable[index][player][0]) mobboard[0]=1;
-    if(mobtable[index][player][1]) mobboard[1]=1;
-    if(mobtable[index][player][2]) mobboard[2]=1;
-    if(mobtable[index][player][3]) mobboard[3]=1;
-    if(mobtable[index][player][4]) mobboard[4]=1;
-    if(mobtable[index][player][5]) mobboard[5]=1;
-    if(mobtable[index][player][6]) mobboard[6]=1;
-    if(mobtable[index][player][7]) mobboard[7]=1;
+    if(mobtable[index][player][0]) mobboard[0] = true;
+    if(mobtable[index][player][1]) mobboard[1] = true;
+    if(mobtable[index][player][2]) mobboard[2] = true;
+    if(mobtable[index][player][3]) mobboard[3] = true;
+    if(mobtable[index][player][4]) mobboard[4] = true;
+    if(mobtable[index][player][5]) mobboard[5] = true;
+    if(mobtable[index][player][6]) mobboard[6] = true;
+    if(mobtable[index][player][7]) mobboard[7] = true;
     
     index=mobindex[1];
-    if(mobtable[index][player][0]) mobboard[8]=1;
-    if(mobtable[index][player][1]) mobboard[9]=1;
-    if(mobtable[index][player][2]) mobboard[10]=1;
-    if(mobtable[index][player][3]) mobboard[11]=1;
-    if(mobtable[index][player][4]) mobboard[12]=1;
-    if(mobtable[index][player][5]) mobboard[13]=1;
-    if(mobtable[index][player][6]) mobboard[14]=1;
-    if(mobtable[index][player][7]) mobboard[15]=1;
+    if(mobtable[index][player][0]) mobboard[8] = true;
+    if(mobtable[index][player][1]) mobboard[9] = true;
+    if(mobtable[index][player][2]) mobboard[10] = true;
+    if(mobtable[index][player][3]) mobboard[11] = true;
+    if(mobtable[index][player][4]) mobboard[12] = true;
+    if(mobtable[index][player][5]) mobboard[13] = true;
+    if(mobtable[index][player][6]) mobboard[14] = true;
+    if(mobtable[index][player][7]) mobboard[15] = true;
     
     index=mobindex[2];
-    if(mobtable[index][player][0]) mobboard[16]=1;
-    if(mobtable[index][player][1]) mobboard[17]=1;
-    if(mobtable[index][player][2]) mobboard[18]=1;
-    if(mobtable[index][player][3]) mobboard[19]=1;
-    if(mobtable[index][player][4]) mobboard[20]=1;
-    if(mobtable[index][player][5]) mobboard[21]=1;
-    if(mobtable[index][player][6]) mobboard[22]=1;
-    if(mobtable[index][player][7]) mobboard[23]=1;
+    if(mobtable[index][player][0]) mobboard[16] = true;
+    if(mobtable[index][player][1]) mobboard[17] = true;
+    if(mobtable[index][player][2]) mobboard[18] = true;
+    if(mobtable[index][player][3]) mobboard[19] = true;
+    if(mobtable[index][player][4]) mobboard[20] = true;
+    if(mobtable[index][player][5]) mobboard[21] = true;
+    if(mobtable[index][player][6]) mobboard[22] = true;
+    if(mobtable[index][player][7]) mobboard[23] = true;
     
     index=mobindex[3];
-    if(mobtable[index][player][0]) mobboard[24]=1;
-    if(mobtable[index][player][1]) mobboard[25]=1;
-    if(mobtable[index][player][2]) mobboard[26]=1;
-    if(mobtable[index][player][3]) mobboard[27]=1;
-    if(mobtable[index][player][4]) mobboard[28]=1;
-    if(mobtable[index][player][5]) mobboard[29]=1;
-    if(mobtable[index][player][6]) mobboard[30]=1;
-    if(mobtable[index][player][7]) mobboard[31]=1;
+    if(mobtable[index][player][0]) mobboard[24] = true;
+    if(mobtable[index][player][1]) mobboard[25] = true;
+    if(mobtable[index][player][2]) mobboard[26] = true;
+    if(mobtable[index][player][3]) mobboard[27] = true;
+    if(mobtable[index][player][4]) mobboard[28] = true;
+    if(mobtable[index][player][5]) mobboard[29] = true;
+    if(mobtable[index][player][6]) mobboard[30] = true;
+    if(mobtable[index][player][7]) mobboard[31] = true;
     
     index=mobindex[4];
-    if(mobtable[index][player][0]) mobboard[32]=1;
-    if(mobtable[index][player][1]) mobboard[33]=1;
-    if(mobtable[index][player][2]) mobboard[34]=1;
-    if(mobtable[index][player][3]) mobboard[35]=1;
-    if(mobtable[index][player][4]) mobboard[36]=1;
-    if(mobtable[index][player][5]) mobboard[37]=1;
-    if(mobtable[index][player][6]) mobboard[38]=1;
-    if(mobtable[index][player][7]) mobboard[39]=1;
+    if(mobtable[index][player][0]) mobboard[32] = true;
+    if(mobtable[index][player][1]) mobboard[33] = true;
+    if(mobtable[index][player][2]) mobboard[34] = true;
+    if(mobtable[index][player][3]) mobboard[35] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[37] = true;
+    if(mobtable[index][player][6]) mobboard[38] = true;
+    if(mobtable[index][player][7]) mobboard[39] = true;
     
     index=mobindex[5];
-    if(mobtable[index][player][0]) mobboard[40]=1;
-    if(mobtable[index][player][1]) mobboard[41]=1;
-    if(mobtable[index][player][2]) mobboard[42]=1;
-    if(mobtable[index][player][3]) mobboard[43]=1;
-    if(mobtable[index][player][4]) mobboard[44]=1;
-    if(mobtable[index][player][5]) mobboard[45]=1;
-    if(mobtable[index][player][6]) mobboard[46]=1;
-    if(mobtable[index][player][7]) mobboard[47]=1;
+    if(mobtable[index][player][0]) mobboard[40] = true;
+    if(mobtable[index][player][1]) mobboard[41] = true;
+    if(mobtable[index][player][2]) mobboard[42] = true;
+    if(mobtable[index][player][3]) mobboard[43] = true;
+    if(mobtable[index][player][4]) mobboard[44] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[46] = true;
+    if(mobtable[index][player][7]) mobboard[47] = true;
     
     index=mobindex[6];
-    if(mobtable[index][player][0]) mobboard[48]=1;
-    if(mobtable[index][player][1]) mobboard[49]=1;
-    if(mobtable[index][player][2]) mobboard[50]=1;
-    if(mobtable[index][player][3]) mobboard[51]=1;
-    if(mobtable[index][player][4]) mobboard[52]=1;
-    if(mobtable[index][player][5]) mobboard[53]=1;
-    if(mobtable[index][player][6]) mobboard[54]=1;
-    if(mobtable[index][player][7]) mobboard[55]=1;
+    if(mobtable[index][player][0]) mobboard[48] = true;
+    if(mobtable[index][player][1]) mobboard[49] = true;
+    if(mobtable[index][player][2]) mobboard[50] = true;
+    if(mobtable[index][player][3]) mobboard[51] = true;
+    if(mobtable[index][player][4]) mobboard[52] = true;
+    if(mobtable[index][player][5]) mobboard[53] = true;
+    if(mobtable[index][player][6]) mobboard[54] = true;
+    if(mobtable[index][player][7]) mobboard[55] = true;
     
     index=mobindex[7];
-    if(mobtable[index][player][0]) mobboard[56]=1;
-    if(mobtable[index][player][1]) mobboard[57]=1;
-    if(mobtable[index][player][2]) mobboard[58]=1;
-    if(mobtable[index][player][3]) mobboard[59]=1;
-    if(mobtable[index][player][4]) mobboard[60]=1;
-    if(mobtable[index][player][5]) mobboard[61]=1;
-    if(mobtable[index][player][6]) mobboard[62]=1;
-    if(mobtable[index][player][7]) mobboard[63]=1;
+    if(mobtable[index][player][0]) mobboard[56] = true;
+    if(mobtable[index][player][1]) mobboard[57] = true;
+    if(mobtable[index][player][2]) mobboard[58] = true;
+    if(mobtable[index][player][3]) mobboard[59] = true;
+    if(mobtable[index][player][4]) mobboard[60] = true;
+    if(mobtable[index][player][5]) mobboard[61] = true;
+    if(mobtable[index][player][6]) mobboard[62] = true;
+    if(mobtable[index][player][7]) mobboard[63] = true;
     
     //vertical -----------------------------------------------------------------
     
     index=mobindex[8];
-    if(mobtable[index][player][0]) mobboard[0]=1;
-    if(mobtable[index][player][1]) mobboard[8]=1;
-    if(mobtable[index][player][2]) mobboard[16]=1;
-    if(mobtable[index][player][3]) mobboard[24]=1;
-    if(mobtable[index][player][4]) mobboard[32]=1;
-    if(mobtable[index][player][5]) mobboard[40]=1;
-    if(mobtable[index][player][6]) mobboard[48]=1;
-    if(mobtable[index][player][7]) mobboard[56]=1;
+    if(mobtable[index][player][0]) mobboard[0] = true;
+    if(mobtable[index][player][1]) mobboard[8] = true;
+    if(mobtable[index][player][2]) mobboard[16] = true;
+    if(mobtable[index][player][3]) mobboard[24] = true;
+    if(mobtable[index][player][4]) mobboard[32] = true;
+    if(mobtable[index][player][5]) mobboard[40] = true;
+    if(mobtable[index][player][6]) mobboard[48] = true;
+    if(mobtable[index][player][7]) mobboard[56] = true;
     
     index=mobindex[9];
-    if(mobtable[index][player][0]) mobboard[1]=1;
-    if(mobtable[index][player][1]) mobboard[9]=1;
-    if(mobtable[index][player][2]) mobboard[17]=1;
-    if(mobtable[index][player][3]) mobboard[25]=1;
-    if(mobtable[index][player][4]) mobboard[33]=1;
-    if(mobtable[index][player][5]) mobboard[41]=1;
-    if(mobtable[index][player][6]) mobboard[49]=1;
-    if(mobtable[index][player][7]) mobboard[57]=1;
+    if(mobtable[index][player][0]) mobboard[1] = true;
+    if(mobtable[index][player][1]) mobboard[9] = true;
+    if(mobtable[index][player][2]) mobboard[17] = true;
+    if(mobtable[index][player][3]) mobboard[25] = true;
+    if(mobtable[index][player][4]) mobboard[33] = true;
+    if(mobtable[index][player][5]) mobboard[41] = true;
+    if(mobtable[index][player][6]) mobboard[49] = true;
+    if(mobtable[index][player][7]) mobboard[57] = true;
     
     index=mobindex[10];
-    if(mobtable[index][player][0]) mobboard[2]=1;
-    if(mobtable[index][player][1]) mobboard[10]=1;
-    if(mobtable[index][player][2]) mobboard[18]=1;
-    if(mobtable[index][player][3]) mobboard[26]=1;
-    if(mobtable[index][player][4]) mobboard[34]=1;
-    if(mobtable[index][player][5]) mobboard[42]=1;
-    if(mobtable[index][player][6]) mobboard[50]=1;
-    if(mobtable[index][player][7]) mobboard[58]=1;
+    if(mobtable[index][player][0]) mobboard[2] = true;
+    if(mobtable[index][player][1]) mobboard[10] = true;
+    if(mobtable[index][player][2]) mobboard[18] = true;
+    if(mobtable[index][player][3]) mobboard[26] = true;
+    if(mobtable[index][player][4]) mobboard[34] = true;
+    if(mobtable[index][player][5]) mobboard[42] = true;
+    if(mobtable[index][player][6]) mobboard[50] = true;
+    if(mobtable[index][player][7]) mobboard[58] = true;
     
     index=mobindex[11];
-    if(mobtable[index][player][0]) mobboard[3]=1;
-    if(mobtable[index][player][1]) mobboard[11]=1;
-    if(mobtable[index][player][2]) mobboard[19]=1;
-    if(mobtable[index][player][3]) mobboard[27]=1;
-    if(mobtable[index][player][4]) mobboard[35]=1;
-    if(mobtable[index][player][5]) mobboard[43]=1;
-    if(mobtable[index][player][6]) mobboard[51]=1;
-    if(mobtable[index][player][7]) mobboard[59]=1;
+    if(mobtable[index][player][0]) mobboard[3] = true;
+    if(mobtable[index][player][1]) mobboard[11] = true;
+    if(mobtable[index][player][2]) mobboard[19] = true;
+    if(mobtable[index][player][3]) mobboard[27] = true;
+    if(mobtable[index][player][4]) mobboard[35] = true;
+    if(mobtable[index][player][5]) mobboard[43] = true;
+    if(mobtable[index][player][6]) mobboard[51] = true;
+    if(mobtable[index][player][7]) mobboard[59] = true;
     
     index=mobindex[12];
-    if(mobtable[index][player][0]) mobboard[4]=1;
-    if(mobtable[index][player][1]) mobboard[12]=1;
-    if(mobtable[index][player][2]) mobboard[20]=1;
-    if(mobtable[index][player][3]) mobboard[28]=1;
-    if(mobtable[index][player][4]) mobboard[36]=1;
-    if(mobtable[index][player][5]) mobboard[44]=1;
-    if(mobtable[index][player][6]) mobboard[52]=1;
-    if(mobtable[index][player][7]) mobboard[60]=1;
+    if(mobtable[index][player][0]) mobboard[4] = true;
+    if(mobtable[index][player][1]) mobboard[12] = true;
+    if(mobtable[index][player][2]) mobboard[20] = true;
+    if(mobtable[index][player][3]) mobboard[28] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[44] = true;
+    if(mobtable[index][player][6]) mobboard[52] = true;
+    if(mobtable[index][player][7]) mobboard[60] = true;
     
     index=mobindex[13];
-    if(mobtable[index][player][0]) mobboard[5]=1;
-    if(mobtable[index][player][1]) mobboard[13]=1;
-    if(mobtable[index][player][2]) mobboard[21]=1;
-    if(mobtable[index][player][3]) mobboard[29]=1;
-    if(mobtable[index][player][4]) mobboard[37]=1;
-    if(mobtable[index][player][5]) mobboard[45]=1;
-    if(mobtable[index][player][6]) mobboard[53]=1;
-    if(mobtable[index][player][7]) mobboard[61]=1;
+    if(mobtable[index][player][0]) mobboard[5] = true;
+    if(mobtable[index][player][1]) mobboard[13] = true;
+    if(mobtable[index][player][2]) mobboard[21] = true;
+    if(mobtable[index][player][3]) mobboard[29] = true;
+    if(mobtable[index][player][4]) mobboard[37] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[53] = true;
+    if(mobtable[index][player][7]) mobboard[61] = true;
     
     index=mobindex[14];
-    if(mobtable[index][player][0]) mobboard[6]=1;
-    if(mobtable[index][player][1]) mobboard[14]=1;
-    if(mobtable[index][player][2]) mobboard[22]=1;
-    if(mobtable[index][player][3]) mobboard[30]=1;
-    if(mobtable[index][player][4]) mobboard[38]=1;
-    if(mobtable[index][player][5]) mobboard[46]=1;
-    if(mobtable[index][player][6]) mobboard[54]=1;
-    if(mobtable[index][player][7]) mobboard[62]=1;
+    if(mobtable[index][player][0]) mobboard[6] = true;
+    if(mobtable[index][player][1]) mobboard[14] = true;
+    if(mobtable[index][player][2]) mobboard[22] = true;
+    if(mobtable[index][player][3]) mobboard[30] = true;
+    if(mobtable[index][player][4]) mobboard[38] = true;
+    if(mobtable[index][player][5]) mobboard[46] = true;
+    if(mobtable[index][player][6]) mobboard[54] = true;
+    if(mobtable[index][player][7]) mobboard[62] = true;
     
     index=mobindex[15];
-    if(mobtable[index][player][0]) mobboard[7]=1;
-    if(mobtable[index][player][1]) mobboard[15]=1;
-    if(mobtable[index][player][2]) mobboard[23]=1;
-    if(mobtable[index][player][3]) mobboard[31]=1;
-    if(mobtable[index][player][4]) mobboard[39]=1;
-    if(mobtable[index][player][5]) mobboard[47]=1;
-    if(mobtable[index][player][6]) mobboard[55]=1;
-    if(mobtable[index][player][7]) mobboard[63]=1;
+    if(mobtable[index][player][0]) mobboard[7] = true;
+    if(mobtable[index][player][1]) mobboard[15] = true;
+    if(mobtable[index][player][2]) mobboard[23] = true;
+    if(mobtable[index][player][3]) mobboard[31] = true;
+    if(mobtable[index][player][4]) mobboard[39] = true;
+    if(mobtable[index][player][5]) mobboard[47] = true;
+    if(mobtable[index][player][6]) mobboard[55] = true;
+    if(mobtable[index][player][7]) mobboard[63] = true;
     
     //diagonal \ ---------------------------------------------------------------
     
     //one
     index=mobindex[16];
-    if(mobtable[index][player][5]) mobboard[40]=1;
+    if(mobtable[index][player][5]) mobboard[40] = true;
     //49 cannot flip
-    if(mobtable[index][player][7]) mobboard[58]=1;
+    if(mobtable[index][player][7]) mobboard[58] = true;
     
     //two
     index=mobindex[17];
-    if(mobtable[index][player][4]) mobboard[32]=1;
-    if(mobtable[index][player][5]) mobboard[41]=1;
-    if(mobtable[index][player][6]) mobboard[50]=1;
-    if(mobtable[index][player][7]) mobboard[59]=1;
+    if(mobtable[index][player][4]) mobboard[32] = true;
+    if(mobtable[index][player][5]) mobboard[41] = true;
+    if(mobtable[index][player][6]) mobboard[50] = true;
+    if(mobtable[index][player][7]) mobboard[59] = true;
     
     //three
     index=mobindex[18];
-    if(mobtable[index][player][3]) mobboard[24]=1;
-    if(mobtable[index][player][4]) mobboard[33]=1;
-    if(mobtable[index][player][5]) mobboard[42]=1;
-    if(mobtable[index][player][6]) mobboard[51]=1;
-    if(mobtable[index][player][7]) mobboard[60]=1;
+    if(mobtable[index][player][3]) mobboard[24] = true;
+    if(mobtable[index][player][4]) mobboard[33] = true;
+    if(mobtable[index][player][5]) mobboard[42] = true;
+    if(mobtable[index][player][6]) mobboard[51] = true;
+    if(mobtable[index][player][7]) mobboard[60] = true;
     
     //four
     index=mobindex[19];
-    if(mobtable[index][player][2]) mobboard[16]=1;
-    if(mobtable[index][player][3]) mobboard[25]=1;
-    if(mobtable[index][player][4]) mobboard[34]=1;
-    if(mobtable[index][player][5]) mobboard[43]=1;
-    if(mobtable[index][player][6]) mobboard[52]=1;
-    if(mobtable[index][player][7]) mobboard[61]=1;
+    if(mobtable[index][player][2]) mobboard[16] = true;
+    if(mobtable[index][player][3]) mobboard[25] = true;
+    if(mobtable[index][player][4]) mobboard[34] = true;
+    if(mobtable[index][player][5]) mobboard[43] = true;
+    if(mobtable[index][player][6]) mobboard[52] = true;
+    if(mobtable[index][player][7]) mobboard[61] = true;
     
     //five
     index=mobindex[20];
-    if(mobtable[index][player][1]) mobboard[8]=1;
-    if(mobtable[index][player][2]) mobboard[17]=1;
-    if(mobtable[index][player][3]) mobboard[26]=1;
-    if(mobtable[index][player][4]) mobboard[35]=1;
-    if(mobtable[index][player][5]) mobboard[44]=1;
-    if(mobtable[index][player][6]) mobboard[53]=1;
-    if(mobtable[index][player][7]) mobboard[62]=1;
+    if(mobtable[index][player][1]) mobboard[8] = true;
+    if(mobtable[index][player][2]) mobboard[17] = true;
+    if(mobtable[index][player][3]) mobboard[26] = true;
+    if(mobtable[index][player][4]) mobboard[35] = true;
+    if(mobtable[index][player][5]) mobboard[44] = true;
+    if(mobtable[index][player][6]) mobboard[53] = true;
+    if(mobtable[index][player][7]) mobboard[62] = true;
     
     //six
     index=mobindex[21];
-    if(mobtable[index][player][0]) mobboard[0]=1;
-    if(mobtable[index][player][1]) mobboard[9]=1;
-    if(mobtable[index][player][2]) mobboard[18]=1;
-    if(mobtable[index][player][3]) mobboard[27]=1;
-    if(mobtable[index][player][4]) mobboard[36]=1;
-    if(mobtable[index][player][5]) mobboard[45]=1;
-    if(mobtable[index][player][6]) mobboard[54]=1;
-    if(mobtable[index][player][7]) mobboard[63]=1;
+    if(mobtable[index][player][0]) mobboard[0] = true;
+    if(mobtable[index][player][1]) mobboard[9] = true;
+    if(mobtable[index][player][2]) mobboard[18] = true;
+    if(mobtable[index][player][3]) mobboard[27] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[54] = true;
+    if(mobtable[index][player][7]) mobboard[63] = true;
     
     //seven
     index=mobindex[22];
-    if(mobtable[index][player][1]) mobboard[1]=1;
-    if(mobtable[index][player][2]) mobboard[10]=1;
-    if(mobtable[index][player][3]) mobboard[19]=1;
-    if(mobtable[index][player][4]) mobboard[28]=1;
-    if(mobtable[index][player][5]) mobboard[37]=1;
-    if(mobtable[index][player][6]) mobboard[46]=1;
-    if(mobtable[index][player][7]) mobboard[55]=1;
+    if(mobtable[index][player][1]) mobboard[1] = true;
+    if(mobtable[index][player][2]) mobboard[10] = true;
+    if(mobtable[index][player][3]) mobboard[19] = true;
+    if(mobtable[index][player][4]) mobboard[28] = true;
+    if(mobtable[index][player][5]) mobboard[37] = true;
+    if(mobtable[index][player][6]) mobboard[46] = true;
+    if(mobtable[index][player][7]) mobboard[55] = true;
     
     //eight
     index=mobindex[23];
-    if(mobtable[index][player][2]) mobboard[2]=1;
-    if(mobtable[index][player][3]) mobboard[11]=1;
-    if(mobtable[index][player][4]) mobboard[20]=1;
-    if(mobtable[index][player][5]) mobboard[29]=1;
-    if(mobtable[index][player][6]) mobboard[38]=1;
-    if(mobtable[index][player][7]) mobboard[47]=1;
+    if(mobtable[index][player][2]) mobboard[2] = true;
+    if(mobtable[index][player][3]) mobboard[11] = true;
+    if(mobtable[index][player][4]) mobboard[20] = true;
+    if(mobtable[index][player][5]) mobboard[29] = true;
+    if(mobtable[index][player][6]) mobboard[38] = true;
+    if(mobtable[index][player][7]) mobboard[47] = true;
     
     //nine
     index=mobindex[24];
-    if(mobtable[index][player][3]) mobboard[3]=1;
-    if(mobtable[index][player][4]) mobboard[12]=1;
-    if(mobtable[index][player][5]) mobboard[21]=1;
-    if(mobtable[index][player][6]) mobboard[30]=1;
-    if(mobtable[index][player][7]) mobboard[39]=1;
+    if(mobtable[index][player][3]) mobboard[3] = true;
+    if(mobtable[index][player][4]) mobboard[12] = true;
+    if(mobtable[index][player][5]) mobboard[21] = true;
+    if(mobtable[index][player][6]) mobboard[30] = true;
+    if(mobtable[index][player][7]) mobboard[39] = true;
     
     //ten
     index=mobindex[25];
-    if(mobtable[index][player][4]) mobboard[4]=1;
-    if(mobtable[index][player][5]) mobboard[13]=1;
-    if(mobtable[index][player][6]) mobboard[22]=1;
-    if(mobtable[index][player][7]) mobboard[31]=1;
+    if(mobtable[index][player][4]) mobboard[4] = true;
+    if(mobtable[index][player][5]) mobboard[13] = true;
+    if(mobtable[index][player][6]) mobboard[22] = true;
+    if(mobtable[index][player][7]) mobboard[31] = true;
     
     //eleven
     index=mobindex[26];
-    if(mobtable[index][player][5]) mobboard[5]=1;
+    if(mobtable[index][player][5]) mobboard[5] = true;
     //14 cannot flip
-    if(mobtable[index][player][7]) mobboard[23]=1;
+    if(mobtable[index][player][7]) mobboard[23] = true;
 
     //diagonal / ---------------------------------------------------------------
     
     //one
     index=mobindex[27];
-    if(mobtable[index][player][5]) mobboard[16]=1;
+    if(mobtable[index][player][5]) mobboard[16] = true;
     //9 cannot flip
-    if(mobtable[index][player][7]) mobboard[2]=1;
+    if(mobtable[index][player][7]) mobboard[2] = true;
     
     //two
     index=mobindex[28];
-    if(mobtable[index][player][4]) mobboard[24]=1;
-    if(mobtable[index][player][5]) mobboard[17]=1;
-    if(mobtable[index][player][6]) mobboard[10]=1;
-    if(mobtable[index][player][7]) mobboard[3]=1;
+    if(mobtable[index][player][4]) mobboard[24] = true;
+    if(mobtable[index][player][5]) mobboard[17] = true;
+    if(mobtable[index][player][6]) mobboard[10] = true;
+    if(mobtable[index][player][7]) mobboard[3] = true;
     
     //three
     index=mobindex[29];
-    if(mobtable[index][player][3]) mobboard[32]=1;
-    if(mobtable[index][player][4]) mobboard[25]=1;
-    if(mobtable[index][player][5]) mobboard[18]=1;
-    if(mobtable[index][player][6]) mobboard[11]=1;
-    if(mobtable[index][player][7]) mobboard[4]=1;
+    if(mobtable[index][player][3]) mobboard[32] = true;
+    if(mobtable[index][player][4]) mobboard[25] = true;
+    if(mobtable[index][player][5]) mobboard[18] = true;
+    if(mobtable[index][player][6]) mobboard[11] = true;
+    if(mobtable[index][player][7]) mobboard[4] = true;
     
     //four
     index=mobindex[30];
-    if(mobtable[index][player][2]) mobboard[40]=1;
-    if(mobtable[index][player][3]) mobboard[33]=1;
-    if(mobtable[index][player][4]) mobboard[26]=1;
-    if(mobtable[index][player][5]) mobboard[19]=1;
-    if(mobtable[index][player][6]) mobboard[12]=1;
-    if(mobtable[index][player][7]) mobboard[5]=1;
+    if(mobtable[index][player][2]) mobboard[40] = true;
+    if(mobtable[index][player][3]) mobboard[33] = true;
+    if(mobtable[index][player][4]) mobboard[26] = true;
+    if(mobtable[index][player][5]) mobboard[19] = true;
+    if(mobtable[index][player][6]) mobboard[12] = true;
+    if(mobtable[index][player][7]) mobboard[5] = true;
     
     //five
     index=mobindex[31];
-    if(mobtable[index][player][1]) mobboard[48]=1;
-    if(mobtable[index][player][2]) mobboard[41]=1;
-    if(mobtable[index][player][3]) mobboard[34]=1;
-    if(mobtable[index][player][4]) mobboard[27]=1;
-    if(mobtable[index][player][5]) mobboard[20]=1;
-    if(mobtable[index][player][6]) mobboard[13]=1;
-    if(mobtable[index][player][7]) mobboard[6]=1;
+    if(mobtable[index][player][1]) mobboard[48] = true;
+    if(mobtable[index][player][2]) mobboard[41] = true;
+    if(mobtable[index][player][3]) mobboard[34] = true;
+    if(mobtable[index][player][4]) mobboard[27] = true;
+    if(mobtable[index][player][5]) mobboard[20] = true;
+    if(mobtable[index][player][6]) mobboard[13] = true;
+    if(mobtable[index][player][7]) mobboard[6] = true;
     
     //six
     index=mobindex[32];
-    if(mobtable[index][player][0]) mobboard[56]=1;
-    if(mobtable[index][player][1]) mobboard[49]=1;
-    if(mobtable[index][player][2]) mobboard[42]=1;
-    if(mobtable[index][player][3]) mobboard[35]=1;
-    if(mobtable[index][player][4]) mobboard[28]=1;
-    if(mobtable[index][player][5]) mobboard[21]=1;
-    if(mobtable[index][player][6]) mobboard[14]=1;
-    if(mobtable[index][player][7]) mobboard[7]=1;
+    if(mobtable[index][player][0]) mobboard[56] = true;
+    if(mobtable[index][player][1]) mobboard[49] = true;
+    if(mobtable[index][player][2]) mobboard[42] = true;
+    if(mobtable[index][player][3]) mobboard[35] = true;
+    if(mobtable[index][player][4]) mobboard[28] = true;
+    if(mobtable[index][player][5]) mobboard[21] = true;
+    if(mobtable[index][player][6]) mobboard[14] = true;
+    if(mobtable[index][player][7]) mobboard[7] = true;
     
     //seven
     index=mobindex[33];
-    if(mobtable[index][player][1]) mobboard[57]=1;
-    if(mobtable[index][player][2]) mobboard[50]=1;
-    if(mobtable[index][player][3]) mobboard[43]=1;
-    if(mobtable[index][player][4]) mobboard[36]=1;
-    if(mobtable[index][player][5]) mobboard[29]=1;
-    if(mobtable[index][player][6]) mobboard[22]=1;
-    if(mobtable[index][player][7]) mobboard[15]=1;
+    if(mobtable[index][player][1]) mobboard[57] = true;
+    if(mobtable[index][player][2]) mobboard[50] = true;
+    if(mobtable[index][player][3]) mobboard[43] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[29] = true;
+    if(mobtable[index][player][6]) mobboard[22] = true;
+    if(mobtable[index][player][7]) mobboard[15] = true;
     
     //eight
     index=mobindex[34];
-    if(mobtable[index][player][2]) mobboard[58]=1;
-    if(mobtable[index][player][3]) mobboard[51]=1;
-    if(mobtable[index][player][4]) mobboard[44]=1;
-    if(mobtable[index][player][5]) mobboard[37]=1;
-    if(mobtable[index][player][6]) mobboard[30]=1;
-    if(mobtable[index][player][7]) mobboard[23]=1;
+    if(mobtable[index][player][2]) mobboard[58] = true;
+    if(mobtable[index][player][3]) mobboard[51] = true;
+    if(mobtable[index][player][4]) mobboard[44] = true;
+    if(mobtable[index][player][5]) mobboard[37] = true;
+    if(mobtable[index][player][6]) mobboard[30] = true;
+    if(mobtable[index][player][7]) mobboard[23] = true;
     
     //nine
     index=mobindex[35];
-    if(mobtable[index][player][3]) mobboard[59]=1;
-    if(mobtable[index][player][4]) mobboard[52]=1;
-    if(mobtable[index][player][5]) mobboard[45]=1;
-    if(mobtable[index][player][6]) mobboard[38]=1;
-    if(mobtable[index][player][7]) mobboard[31]=1;
+    if(mobtable[index][player][3]) mobboard[59] = true;
+    if(mobtable[index][player][4]) mobboard[52] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[38] = true;
+    if(mobtable[index][player][7]) mobboard[31] = true;
     
     //ten
     index=mobindex[36];
-    if(mobtable[index][player][4]) mobboard[60]=1;
-    if(mobtable[index][player][5]) mobboard[53]=1;
-    if(mobtable[index][player][6]) mobboard[46]=1;
-    if(mobtable[index][player][7]) mobboard[39]=1;
+    if(mobtable[index][player][4]) mobboard[60] = true;
+    if(mobtable[index][player][5]) mobboard[53] = true;
+    if(mobtable[index][player][6]) mobboard[46] = true;
+    if(mobtable[index][player][7]) mobboard[39] = true;
     
     //eleven
     index=mobindex[37];
-    if(mobtable[index][player][5]) mobboard[61]=1;
+    if(mobtable[index][player][5]) mobboard[61] = true;
     //54 cannot flip
-    if(mobtable[index][player][7]) mobboard[47]=1;    
+    if(mobtable[index][player][7]) mobboard[47] = true;    
     
     //summation --------------------------------------------
     
@@ -3680,7 +3538,7 @@ int triplesq(int board[64],int corner,int xsquare,int csquare){
                 if(mobindex[7]==2184) value-=csquare;
                 if(mobindex[8]==1092) value+=csquare;
                 if(mobindex[8]==2184) value-=csquare;
-                if(mobindex[15]==1092) value+csquare;
+                if(mobindex[15]==1092) value+=csquare;
                 if(mobindex[15]==2184) value-=csquare;
                 }
     
@@ -3711,22 +3569,22 @@ int stabledisk(int board[64]){
     if(board[0]!=0){
                     colour=board[0];
                     a=0;
-                    if(board[1]==colour && board[2]==colour && board[8]==colour && board[9]==colour){
+                    if(board[1]==colour and board[2]==colour and board[8]==colour and board[9]==colour){
                                         stable[9]=colour;
                                         a++;
-                                        if(board[3]==colour && board[10]==colour){
+                                        if(board[3]==colour and board[10]==colour){
                                                             stable[10]=colour;
                                                             a++;
-                                                            if(board[4]==colour && board[11]==colour){
+                                                            if(board[4]==colour and board[11]==colour){
                                                                                 stable[11]=colour;
                                                                                 a++;
-                                                                                if(board[5]==colour && board[12]==colour){
+                                                                                if(board[5]==colour and board[12]==colour){
                                                                                                     stable[12]=colour;
                                                                                                     a++;
-                                                                                                    if(board[6]==colour && board[13]==colour){
+                                                                                                    if(board[6]==colour and board[13]==colour){
                                                                                                                         stable[13]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[7]==colour && board[14]==colour){
+                                                                                                                        if(board[7]==colour and board[14]==colour){
                                                                                                                                             stable[14]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3742,22 +3600,22 @@ int stabledisk(int board[64]){
     if(board[7]!=0){
                     colour=board[7];
                     a=0;
-                    if(board[5]==colour && board[6]==colour && board[14]==colour && board[15]==colour && stable[14]==0){
+                    if(board[5]==colour and board[6]==colour and board[14]==colour and board[15]==colour and stable[14]==0){
                                         stable[14]=colour;
                                         a++;
-                                        if(board[4]==colour && board[13]==colour && stable[13]==0){
+                                        if(board[4]==colour and board[13]==colour and stable[13]==0){
                                                             stable[13]=colour;
                                                             a++;
-                                                            if(board[3]==colour && board[12]==colour && stable[12]==0){
+                                                            if(board[3]==colour and board[12]==colour and stable[12]==0){
                                                                                 stable[12]=colour;
                                                                                 a++;
-                                                                                if(board[2]==colour && board[11]==colour && stable[11]==0){
+                                                                                if(board[2]==colour and board[11]==colour and stable[11]==0){
                                                                                                     stable[11]=colour;
                                                                                                     a++;
-                                                                                                    if(board[1]==colour && board[10]==colour && stable[10]==0){
+                                                                                                    if(board[1]==colour and board[10]==colour and stable[10]==0){
                                                                                                                         stable[10]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[0]==colour && board[9]==colour && stable[9]==0){
+                                                                                                                        if(board[0]==colour and board[9]==colour and stable[9]==0){
                                                                                                                                             stable[9]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3775,24 +3633,24 @@ int stabledisk(int board[64]){
     if(board[0]!=0){
                     colour=board[0];
                     a=0;
-                    if(board[1]==colour && board[8]==colour && board[9]==colour && board[16]==colour){
+                    if(board[1]==colour and board[8]==colour and board[9]==colour and board[16]==colour){
                                         if(stable[9]==0){
                                                          stable[9]=colour;
                                                          a++;
                                                          }
-                                        if(board[17]==colour && board[24]==colour){
+                                        if(board[17]==colour and board[24]==colour){
                                                             stable[17]=colour;
                                                             a++;
-                                                            if(board[25]==colour && board[32]==colour){
+                                                            if(board[25]==colour and board[32]==colour){
                                                                                 stable[25]=colour;
                                                                                 a++;
-                                                                                if(board[33]==colour && board[40]==colour){
+                                                                                if(board[33]==colour and board[40]==colour){
                                                                                                     stable[33]=colour;
                                                                                                     a++;
-                                                                                                    if(board[41]==colour && board[48]==colour){
+                                                                                                    if(board[41]==colour and board[48]==colour){
                                                                                                                         stable[41]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[49]==colour && board[56]==colour){
+                                                                                                                        if(board[49]==colour and board[56]==colour){
                                                                                                                                             stable[49]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3808,22 +3666,22 @@ int stabledisk(int board[64]){
     if(board[56]!=0){
                     colour=board[56];
                     a=0;
-                    if(board[40]==colour && board[48]==colour && board[49]==colour && board[57]==colour && stable[49]==0){
+                    if(board[40]==colour and board[48]==colour and board[49]==colour and board[57]==colour and stable[49]==0){
                                         stable[49]=colour;
                                         a++;
-                                        if(board[32]==colour && board[41]==colour && stable[41]==0){
+                                        if(board[32]==colour and board[41]==colour and stable[41]==0){
                                                             stable[41]=colour;
                                                             a++;
-                                                            if(board[24]==colour && board[33]==colour && stable[33]==0){
+                                                            if(board[24]==colour and board[33]==colour and stable[33]==0){
                                                                                 stable[33]=colour;
                                                                                 a++;
-                                                                                if(board[16]==colour && board[25]==colour && stable[25]==0){
+                                                                                if(board[16]==colour and board[25]==colour and stable[25]==0){
                                                                                                     stable[25]=colour;
                                                                                                     a++;
-                                                                                                    if(board[8]==colour && board[17]==colour && stable[17]==0){
+                                                                                                    if(board[8]==colour and board[17]==colour and stable[17]==0){
                                                                                                                         stable[17]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[0]==colour && board[9]==colour && stable[9]==0){
+                                                                                                                        if(board[0]==colour and board[9]==colour and stable[9]==0){
                                                                                                                                             stable[9]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3841,24 +3699,24 @@ int stabledisk(int board[64]){
     if(board[7]!=0){
                     colour=board[7];
                     a=0;
-                    if(board[6]==colour && board[14]==colour && board[15]==colour && board[23]==colour){
+                    if(board[6]==colour and board[14]==colour and board[15]==colour and board[23]==colour){
                                         if(stable[14]==0){
                                                          stable[14]=colour;
                                                          a++;
                                                          }
-                                        if(board[22]==colour && board[31]==colour){
+                                        if(board[22]==colour and board[31]==colour){
                                                             stable[22]=colour;
                                                             a++;
-                                                            if(board[30]==colour && board[39]==colour){
+                                                            if(board[30]==colour and board[39]==colour){
                                                                                 stable[30]=colour;
                                                                                 a++;
-                                                                                if(board[38]==colour && board[47]==colour){
+                                                                                if(board[38]==colour and board[47]==colour){
                                                                                                     stable[38]=colour;
                                                                                                     a++;
-                                                                                                    if(board[46]==colour && board[55]==colour){
+                                                                                                    if(board[46]==colour and board[55]==colour){
                                                                                                                         stable[46]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[54]==colour && board[63]==colour){
+                                                                                                                        if(board[54]==colour and board[63]==colour){
                                                                                                                                             stable[54]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3874,22 +3732,22 @@ int stabledisk(int board[64]){
     if(board[63]!=0){
                     colour=board[63];
                     a=0;
-                    if(board[47]==colour && board[54]==colour && board[55]==colour && board[62]==colour && stable[54]==0){
+                    if(board[47]==colour and board[54]==colour and board[55]==colour and board[62]==colour and stable[54]==0){
                                         stable[54]=colour;
                                         a++;
-                                        if(board[39]==colour && board[46]==colour && stable[46]==0){
+                                        if(board[39]==colour and board[46]==colour and stable[46]==0){
                                                             stable[46]=colour;
                                                             a++;
-                                                            if(board[31]==colour && board[38]==colour && stable[38]==0){
+                                                            if(board[31]==colour and board[38]==colour and stable[38]==0){
                                                                                 stable[38]=colour;
                                                                                 a++;
-                                                                                if(board[23]==colour && board[30]==colour && stable[30]==0){
+                                                                                if(board[23]==colour and board[30]==colour and stable[30]==0){
                                                                                                     stable[30]=colour;
                                                                                                     a++;
-                                                                                                    if(board[15]==colour && board[22]==colour && stable[22]==0){
+                                                                                                    if(board[15]==colour and board[22]==colour and stable[22]==0){
                                                                                                                         stable[22]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[7]==colour && board[14]==colour && stable[14]==0){
+                                                                                                                        if(board[7]==colour and board[14]==colour and stable[14]==0){
                                                                                                                                             stable[14]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3908,24 +3766,24 @@ int stabledisk(int board[64]){
     if(board[56]!=0){
                     colour=board[56];
                     a=0;
-                    if(board[48]==colour && board[49]==colour && board[57]==colour && board[58]==colour){
+                    if(board[48]==colour and board[49]==colour and board[57]==colour and board[58]==colour){
                                         if(stable[49]==0){
                                                          stable[49]=colour;
                                                          a++;
                                                          }
-                                        if(board[50]==colour && board[59]==colour){
+                                        if(board[50]==colour and board[59]==colour){
                                                             stable[50]=colour;
                                                             a++;
-                                                            if(board[51]==colour && board[60]==colour){
+                                                            if(board[51]==colour and board[60]==colour){
                                                                                 stable[51]=colour;
                                                                                 a++;
-                                                                                if(board[52]==colour && board[61]==colour){
+                                                                                if(board[52]==colour and board[61]==colour){
                                                                                                     stable[52]=colour;
                                                                                                     a++;
-                                                                                                    if(board[53]==colour && board[62]==colour){
+                                                                                                    if(board[53]==colour and board[62]==colour){
                                                                                                                         stable[53]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[54]==colour && board[63]==colour && stable[54]==0){
+                                                                                                                        if(board[54]==colour and board[63]==colour and stable[54]==0){
                                                                                                                                             stable[54]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3941,24 +3799,24 @@ int stabledisk(int board[64]){
     if(board[63]!=0){
                     colour=board[63];
                     a=0;
-                    if(board[54]==colour && board[55]==colour && board[61]==colour && board[62]==colour){
+                    if(board[54]==colour and board[55]==colour and board[61]==colour and board[62]==colour){
                                         if(stable[54]==0){
                                                           stable[54]=colour;
                                                           a++;
                                                           }
-                                        if(board[53]==colour && board[60]==colour && stable[53]==0){
+                                        if(board[53]==colour and board[60]==colour and stable[53]==0){
                                                             stable[53]=colour;
                                                             a++;
-                                                            if(board[52]==colour && board[59]==colour && stable[52]==0){
+                                                            if(board[52]==colour and board[59]==colour and stable[52]==0){
                                                                                 stable[52]=colour;
                                                                                 a++;
-                                                                                if(board[51]==colour && board[58]==colour && stable[51]==0){
+                                                                                if(board[51]==colour and board[58]==colour and stable[51]==0){
                                                                                                     stable[51]=colour;
                                                                                                     a++;
-                                                                                                    if(board[50]==colour && board[57]==colour && stable[50]==0){
+                                                                                                    if(board[50]==colour and board[57]==colour and stable[50]==0){
                                                                                                                         stable[50]=colour;
                                                                                                                         a++;
-                                                                                                                        if(board[49]==colour && board[56]==colour && stable[49]==0){
+                                                                                                                        if(board[49]==colour and board[56]==colour and stable[49]==0){
                                                                                                                                             stable[49]=colour;
                                                                                                                                             a++;
                                                                                                                                             }
@@ -3978,16 +3836,16 @@ int stabledisk(int board[64]){
     if(stable[9]!=0){
                     colour=stable[9];
                     a=0;
-                    if(stable[10]==colour && stable[11]==colour && stable[17]==colour && board[18]==colour){
+                    if(stable[10]==colour and stable[11]==colour and stable[17]==colour and board[18]==colour){
                                         stable[18]=colour;
                                         a++;
-                                        if(stable[12]==colour && board[19]==colour){
+                                        if(stable[12]==colour and board[19]==colour){
                                                             stable[19]=colour;
                                                             a++;
-                                                            if(stable[13]==colour && board[20]==colour){
+                                                            if(stable[13]==colour and board[20]==colour){
                                                                                 stable[20]=colour;
                                                                                 a++;
-                                                                                if(stable[14]==colour && board[21]==colour){
+                                                                                if(stable[14]==colour and board[21]==colour){
                                                                                                     stable[21]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4001,16 +3859,16 @@ int stabledisk(int board[64]){
     if(stable[14]!=0){
                     colour=stable[14];
                     a=0;
-                    if(stable[12]==colour && stable[13]==colour && stable[22]==colour && board[21]==colour && stable[21]==0){
+                    if(stable[12]==colour and stable[13]==colour and stable[22]==colour and board[21]==colour and stable[21]==0){
                                         stable[21]=colour;
                                         a++;
-                                        if(stable[11]==colour && board[20]==colour && stable[20]==0){
+                                        if(stable[11]==colour and board[20]==colour and stable[20]==0){
                                                             stable[20]=colour;
                                                             a++;
-                                                            if(stable[10]==colour && board[19]==colour && stable[19]==0){
+                                                            if(stable[10]==colour and board[19]==colour and stable[19]==0){
                                                                                 stable[19]=colour;
                                                                                 a++;
-                                                                                if(stable[9]==colour && board[18]==colour && stable[18]==0){
+                                                                                if(stable[9]==colour and board[18]==colour and stable[18]==0){
                                                                                                     stable[18]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4026,18 +3884,18 @@ int stabledisk(int board[64]){
     if(stable[9]!=0){
                     colour=stable[9];
                     a=0;
-                    if(stable[10]==colour && stable[17]==colour && stable[25]==colour && board[18]==colour){
+                    if(stable[10]==colour and stable[17]==colour and stable[25]==colour and board[18]==colour){
                                         if(stable[18]==0){
                                                           stable[18]=colour;
                                                           a++;
                                                           }
-                                        if(stable[33]==colour && board[26]==colour){
+                                        if(stable[33]==colour and board[26]==colour){
                                                             stable[26]=colour;
                                                             a++;
-                                                            if(stable[41]==colour && board[34]==colour){
+                                                            if(stable[41]==colour and board[34]==colour){
                                                                                 stable[34]=colour;
                                                                                 a++;
-                                                                                if(stable[49]==colour && board[42]==colour){
+                                                                                if(stable[49]==colour and board[42]==colour){
                                                                                                     stable[42]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4051,16 +3909,16 @@ int stabledisk(int board[64]){
     if(stable[49]!=0){
                     colour=stable[49];
                     a=0;
-                    if(stable[33]==colour && stable[41]==colour && stable[50]==colour && board[42]==colour && stable[42]==0){
+                    if(stable[33]==colour and stable[41]==colour and stable[50]==colour and board[42]==colour and stable[42]==0){
                                         stable[42]=colour;
                                         a++;
-                                        if(stable[25]==colour && board[34]==colour && stable[34]==0){
+                                        if(stable[25]==colour and board[34]==colour and stable[34]==0){
                                                             stable[34]=colour;
                                                             a++;
-                                                            if(stable[17]==colour && board[26]==colour && stable[26]==0){
+                                                            if(stable[17]==colour and board[26]==colour and stable[26]==0){
                                                                                 stable[26]=colour;
                                                                                 a++;
-                                                                                if(stable[9]==colour && board[18]==colour && stable[18]==0){
+                                                                                if(stable[9]==colour and board[18]==colour and stable[18]==0){
                                                                                                     stable[18]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4076,18 +3934,18 @@ int stabledisk(int board[64]){
     if(stable[14]!=0){
                     colour=stable[14];
                     a=0;
-                    if(stable[13]==colour && stable[22]==colour && stable[30]==colour && board[21]==colour){
+                    if(stable[13]==colour and stable[22]==colour and stable[30]==colour and board[21]==colour){
                                         if(stable[21]==0){
                                                           stable[21]=colour;
                                                           a++;
                                                           }
-                                        if(stable[38]==colour && board[29]==colour){
+                                        if(stable[38]==colour and board[29]==colour){
                                                             stable[29]=colour;
                                                             a++;
-                                                            if(stable[46]==colour && board[37]==colour){
+                                                            if(stable[46]==colour and board[37]==colour){
                                                                                 stable[37]=colour;
                                                                                 a++;
-                                                                                if(stable[54]==colour && board[45]==colour){
+                                                                                if(stable[54]==colour and board[45]==colour){
                                                                                                     stable[45]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4101,16 +3959,16 @@ int stabledisk(int board[64]){
     if(stable[54]!=0){
                     colour=stable[54];
                     a=0;
-                    if(stable[38]==colour && stable[46]==colour && stable[53]==colour && board[45]==colour && stable[45]==0){
+                    if(stable[38]==colour and stable[46]==colour and stable[53]==colour and board[45]==colour and stable[45]==0){
                                         stable[45]=colour;
                                         a++;
-                                        if(stable[30]==colour && board[37]==colour && stable[37]==0){
+                                        if(stable[30]==colour and board[37]==colour and stable[37]==0){
                                                             stable[37]=colour;
                                                             a++;
-                                                            if(stable[22]==colour && board[29]==colour && stable[29]==0){
+                                                            if(stable[22]==colour and board[29]==colour and stable[29]==0){
                                                                                 stable[29]=colour;
                                                                                 a++;
-                                                                                if(stable[14]==colour && board[21]==colour && stable[21]==0){
+                                                                                if(stable[14]==colour and board[21]==colour and stable[21]==0){
                                                                                                     stable[21]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4126,18 +3984,18 @@ int stabledisk(int board[64]){
     if(stable[49]!=0){
                     colour=stable[49];
                     a=0;
-                    if(stable[41]==colour && stable[50]==colour && stable[51]==colour && board[42]==colour){
+                    if(stable[41]==colour and stable[50]==colour and stable[51]==colour and board[42]==colour){
                                         if(stable[42]==0){
                                                           stable[42]=colour;
                                                           a++;
                                                           }
-                                        if(stable[52]==colour && board[43]==colour){
+                                        if(stable[52]==colour and board[43]==colour){
                                                             stable[43]=colour;
                                                             a++;
-                                                            if(stable[53]==colour && board[44]==colour){
+                                                            if(stable[53]==colour and board[44]==colour){
                                                                                 stable[44]=colour;
                                                                                 a++;
-                                                                                if(stable[54]==colour && board[45]==colour && stable[45]==0){
+                                                                                if(stable[54]==colour and board[45]==colour and stable[45]==0){
                                                                                                     stable[45]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4151,18 +4009,18 @@ int stabledisk(int board[64]){
     if(stable[54]!=0){
                     colour=stable[54];
                     a=0;
-                    if(stable[46]==colour && stable[52]==colour && stable[53]==colour && board[45]==colour){
+                    if(stable[46]==colour and stable[52]==colour and stable[53]==colour and board[45]==colour){
                                         if(stable[45]==0){
                                                           stable[45]=colour;
                                                           a++;
                                                           }
-                                        if(stable[51]==colour && board[44]==colour && stable[44]==0){
+                                        if(stable[51]==colour and board[44]==colour and stable[44]==0){
                                                             stable[44]=colour;
                                                             a++;
-                                                            if(stable[50]==colour && board[43]==colour && stable[43]==0){
+                                                            if(stable[50]==colour and board[43]==colour and stable[43]==0){
                                                                                 stable[43]=colour;
                                                                                 a++;
-                                                                                if(stable[49]==colour && board[42]==colour && stable[42]==0){
+                                                                                if(stable[49]==colour and board[42]==colour and stable[42]==0){
                                                                                                     stable[42]=colour;
                                                                                                     a++;
                                                                                                     }
@@ -4180,10 +4038,10 @@ int stabledisk(int board[64]){
     if(stable[18]!=0){
                     colour=stable[18];
                     a=0;
-                    if(stable[19]==colour && stable[20]==colour && stable[26]==colour && board[27]==colour){
+                    if(stable[19]==colour and stable[20]==colour and stable[26]==colour and board[27]==colour){
                                         stable[27]=colour;
                                         a++;
-                                        if(stable[21]==colour && board[28]==colour){
+                                        if(stable[21]==colour and board[28]==colour){
                                                             stable[28]=colour;
                                                             a++;
                                                             }
@@ -4195,10 +4053,10 @@ int stabledisk(int board[64]){
     if(stable[21]!=0){
                     colour=stable[21];
                     a=0;
-                    if(stable[19]==colour && stable[20]==colour && stable[29]==colour && board[28]==colour && stable[28]==0){
+                    if(stable[19]==colour and stable[20]==colour and stable[29]==colour and board[28]==colour and stable[28]==0){
                                         stable[28]=colour;
                                         a++;
-                                        if(stable[18]==colour && board[27]==colour && stable[27]==0){
+                                        if(stable[18]==colour and board[27]==colour and stable[27]==0){
                                                             stable[27]=colour;
                                                             a++;
                                                             }
@@ -4212,12 +4070,12 @@ int stabledisk(int board[64]){
     if(stable[18]!=0){
                     colour=stable[18];
                     a=0;
-                    if(stable[19]==colour && stable[26]==colour && stable[34]==colour && board[27]==colour){
+                    if(stable[19]==colour and stable[26]==colour and stable[34]==colour and board[27]==colour){
                                         if(stable[27]==0){
                                                           stable[27]=colour;
                                                           a++;
                                                           }
-                                        if(stable[42]==colour && board[35]==colour){
+                                        if(stable[42]==colour and board[35]==colour){
                                                             stable[35]=colour;
                                                             a++;
                                                             }
@@ -4229,10 +4087,10 @@ int stabledisk(int board[64]){
     if(stable[42]!=0){
                     colour=stable[42];
                     a=0;
-                    if(stable[26]==colour && stable[34]==colour && stable[43]==colour && board[35]==colour && stable[35]==0){
+                    if(stable[26]==colour and stable[34]==colour and stable[43]==colour and board[35]==colour and stable[35]==0){
                                         stable[35]=colour;
                                         a++;
-                                        if(stable[18]==colour && board[27]==colour && stable[27]==0){
+                                        if(stable[18]==colour and board[27]==colour and stable[27]==0){
                                                             stable[27]=colour;
                                                             a++;
                                                             }
@@ -4246,12 +4104,12 @@ int stabledisk(int board[64]){
     if(stable[21]!=0){
                     colour=stable[21];
                     a=0;
-                    if(stable[20]==colour && stable[29]==colour && stable[37]==colour && board[28]==colour){
+                    if(stable[20]==colour and stable[29]==colour and stable[37]==colour and board[28]==colour){
                                         if(stable[28]==0){
                                                           stable[28]=colour;
                                                           a++;
                                                           }
-                                        if(stable[45]==colour && board[36]==colour){
+                                        if(stable[45]==colour and board[36]==colour){
                                                             stable[36]=colour;
                                                             a++;
                                                             }
@@ -4263,10 +4121,10 @@ int stabledisk(int board[64]){
     if(stable[45]!=0){
                     colour=stable[45];
                     a=0;
-                    if(stable[29]==colour && stable[37]==colour && stable[44]==colour && board[36]==colour && stable[36]==0){
+                    if(stable[29]==colour and stable[37]==colour and stable[44]==colour and board[36]==colour and stable[36]==0){
                                         stable[36]=colour;
                                         a++;
-                                        if(stable[21]==colour && board[28]==colour && stable[28]==0){
+                                        if(stable[21]==colour and board[28]==colour and stable[28]==0){
                                                             stable[28]=colour;
                                                             a++;
                                                             }
@@ -4280,12 +4138,12 @@ int stabledisk(int board[64]){
     if(stable[42]!=0){
                     colour=stable[42];
                     a=0;
-                    if(stable[34]==colour && stable[43]==colour && stable[44]==colour && board[35]==colour){
+                    if(stable[34]==colour and stable[43]==colour and stable[44]==colour and board[35]==colour){
                                         if(stable[35]==0){
                                                           stable[35]=colour;
                                                           a++;
                                                           }
-                                        if(stable[45]==colour && board[36]==colour && stable[36]==0){
+                                        if(stable[45]==colour and board[36]==colour and stable[36]==0){
                                                             stable[36]=colour;
                                                             a++;
                                                             }
@@ -4297,12 +4155,12 @@ int stabledisk(int board[64]){
     if(stable[45]!=0){
                     colour=stable[45];
                     a=0;
-                    if(stable[37]==colour && stable[43]==colour && stable[44]==colour && board[36]==colour){
+                    if(stable[37]==colour and stable[43]==colour and stable[44]==colour and board[36]==colour){
                                         if(stable[36]==0){
                                                           stable[36]=colour;
                                                           a++;
                                                           }
-                                        if(stable[42]==colour && board[35]==colour && stable[35]==0){
+                                        if(stable[42]==colour and board[35]==colour and stable[35]==0){
                                                             stable[35]=colour;
                                                             a++;
                                                             }
@@ -4342,7 +4200,7 @@ struct kirby move(int board[64],int player){
     poscheck=position;
     loop1:
     poscheck-=9;
-    if(poscheck<0 || poscheck%8==7); //do nothing
+    if(poscheck<0 or poscheck%8==7); //do nothing
     else if(board[poscheck]==0); //do nothing
     else if(board[poscheck]==player){
                                      if(poscheck!=position-9){ //update and to next position!
@@ -4372,7 +4230,7 @@ struct kirby move(int board[64],int player){
     poscheck=position;
     loop3:
     poscheck-=7;
-    if(poscheck<0 || poscheck%8==0); //do nothing
+    if(poscheck<0 or poscheck%8==0); //do nothing
     else if(board[poscheck]==0); //do nothing
     else if(board[poscheck]==player){
                                      if(poscheck!=position-7){ //update and to next position!
@@ -4387,7 +4245,7 @@ struct kirby move(int board[64],int player){
     poscheck=position;
     loop4:
     poscheck-=1;
-    if(poscheck<0 || poscheck%8==7); //do nothing
+    if(poscheck<0 or poscheck%8==7); //do nothing
     else if(board[poscheck]==0); //do nothing
     else if(board[poscheck]==player){
                                      if(poscheck!=position-1){ //update and to next position!
@@ -4417,7 +4275,7 @@ struct kirby move(int board[64],int player){
     poscheck=position;
     loop6:
     poscheck+=7;
-    if(poscheck>63 || poscheck%8==7); //do nothing
+    if(poscheck>63 or poscheck%8==7); //do nothing
     else if(board[poscheck]==0); //do nothing
     else if(board[poscheck]==player){
                                      if(poscheck!=position+7){ //update and to next position!
@@ -4447,7 +4305,7 @@ struct kirby move(int board[64],int player){
     poscheck=position;
     loop8:
     poscheck+=9;
-    if(poscheck>63 || poscheck%8==0); //do nothing
+    if(poscheck>63 or poscheck%8==0); //do nothing
     else if(board[poscheck]==0); //do nothing
     else if(board[poscheck]==player){
                                      if(poscheck!=position+9){ //update and to next position!
@@ -4464,8 +4322,8 @@ struct kirby move(int board[64],int player){
 //flip board when player places a disk at a position
 //flip.board=flipped board, flip.num=number of flipped disks
 //if flip.num=0 return some random board (save time) 
-struct kirby flip(int board[64],int position,int player){
-       struct kirby flip;
+kirby flip(int board[64],int position,int player){
+       kirby flip;
        int i;
        int poscheck;
        

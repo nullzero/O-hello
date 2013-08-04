@@ -1,0 +1,560 @@
+test.c
+date: 2/9/2011 lines: 12 lines
+------------------------------
+- learned how to use functions with an array as an argument
+
+test2.c
+date: 2/9/2011 lines: 23 lines
+------------------------------
+- learned how to use struct
+
+test3.c
+date: 4/9/2011 lines: 163 lines
+------------------------------
+- wrote function 'flip'
+- made primitive display (to test flipping)
+
+test4.c
+date: 4/9/2011 lines: 178 lines
+------------------------------
+- improved board display
+
+test5.c
+date: 5/9/2011 lines: 328 lines
+------------------------------
+- improved input system
+- showed number of disks
+- wrote function 'mobility'
+- checked validity of moves
+- checked pass turn and ending (based on mobility)
+
+test6.c
+date: 5/9/2011 lines: 432 lines
+-------------------------------
+- made menu interface
+- seperated game engine from 'main' (to function 'human')
+- wrote comments
+- first playable 2 player game
+
+test7.c
+date: 7/9/2011 lines: 625 lines
+-------------------------------
+- designed primitive evaluation function
+- wrote function 'score' (performing minimax)
+- wrote function 'commove' (linked with score)
+- wrote function 'computer' (linked with commove)
+- first attempt for 1 player game but has CRITICAL BUGS
+
+test8.c
+date: 7/9/2011 lines: 645 lines
+-------------------------------
+- an attempt to debug test7.c (still bugs)
+
+test9.c
+date: 8/9/2011 lines: 660 lines
+-------------------------------
+- an attempt to debug test8.c (still bugs)
+
+test10.c
+date: 8/9/2011 lines: 662 lines
+-------------------------------
+- successfully debugged test9.c
+- first playable 1 player game
+
+test11.c
+date: 9/9/2011 lines: 669 lines
+-------------------------------
+- added timer
+
+test12.c
+date: 10/9/2011 lines: 724 lines
+--------------------------------
+- added alpha-beta pruning
+- wrote comments
+
+test13.c
+date: 15/9/2011 lines: 723 lines
+--------------------------------
+- improved near-end evaluation by adding corner consideration
+
+test14.c
+date: 15/9/2011 lines: 726 lines
+--------------------------------
+- improved near-end evaluation by increasing depth by 2
+- depth not decreased when passing turn
+
+test15.c
+date: 18/9/2011 lines: 805 lines
+--------------------------------
+- created syntax 'undo'
+- created syntax 'search'
+- created syntax 'reflect'
+
+test16.c
+date: 18/9/2011 lines: 819 lines
+--------------------------------
+- created syntax 'restart'
+- created syntax 'menu'
+
+test17.c
+date: 18/9/2011 lines: 969 lines
+--------------------------------
+- wrote function 'move' (to support iterative deepening)
+
+test18.c
+date: 19/9/2011 lines: 1080 lines
+---------------------------------
+- changed function name 'commove' to 'dsearch'
+- rewrote 'dsearch' to link with function 'move'
+- no search on forced move and starting position
+- changed syntax 'restart' to 'new'
+- can set clear screen and random feature
+- created syntax 'syntax'
+
+test19.c
+date: 19/9/2011 lines: 1098 lines
+---------------------------------
+- successfully developed fixed depth iterative deepening
+(still experimental; outcome not as good as expected...)
+
+test20.c
+date: 21/9/2011 lines: 1067 lines
+---------------------------------
+- got rid of "board bug" once and for all; remove messy code concerning this
+
+test21.c
+date: 21/9/2011 lines: 1269 lines
+---------------------------------
+- added 'dsearch' code from test19.c; name the original search 'fsearch'
+- corrected 'randoff effect' in test19.c code
+- changed function name 'computer' to 'comhuman'
+- adjusted system to support 3 searches; prepared for the upcoming 'tsearch'
+  -- updated interface; created a search menu
+  -- created syntax 'fsearch','dsearch' and 'tsearch'
+  -- updated and improved syntax list
+
+test22.c
+date: 23/9/2011 lines: 1293 lines
+---------------------------------
+- corrected dsearch: ended search when depth reached end-game
+- slightly improved logo
+- created show move feature, along with syntax 'moveon' and 'moveoff'
+(it's not very good, so the default value is 'off')
+
+test23.c
+date: 23/9/2011 lines: 1438 lines
+---------------------------------
+- successfully developed 'fsearch'
+- time limit no longer needs to be more than 0.01 second
+- had "depth comparison" bug!
+
+test24.c
+date: 25/9/2011 lines: 1454 lines
+---------------------------------
+- fixed "depth comparison" bug
+
+test25.c
+date: 27/9/2011 lines: 1568 lines
+---------------------------------
+- created computer vs computer mode (function 'comcom')
+- checked validity of mode in search selection
+
+test26.c
+date: 29/9/2011 lines: 1624 lines
+---------------------------------
+- debugged the depth increase in dsearch
+  -- moved "depth+2" feature from the searches to comhuman,comcom
+- debugged the erroneous end-game score computation (in function 'score')
+- changed show move default from off to on
+
+test27.c
+date: 1/10/2011 lines: 1624 lines
+---------------------------------
+- debugged "depth confusion" bug
+
+test28.c
+date: 22/10/2011 lines: 1706 lines
+----------------------------------
+- improved evaluation function
+  -- wrote function 'pmobility','corner','adjacent' to compute these features
+  -- manually set each feature's weight; made these global variables
+     (prepared for mode 'weight test')
+  -- edited the evaluation part of function 'score' accordingly
+- increased the extreme value from 1234567 to 123456789
+- changed variable type 'long' to 'int',since they're the same! (in Dev-C++)
+
+test29.c
+date: 25/10/2011 lines: 1965 lines
+----------------------------------
+- wrote function 'wtest' (weight test)
+  -- set default weights as seperated variables
+  -- added variable 'display' to the searches to turn display off
+     during weight tests
+- wrote function 'random' for random play
+  -- made this mode available
+- fixed the "random bug" (only one 'srand' is needed)
+- had "switch bug", pmobility bug
+
+test30.c
+date: 27/10/2011 lines: 1974 lines
+----------------------------------
+- fixed "switch bug"
+- fixed a critical bug in pmobility computation
+
+test31.c
+date: 28/10/2011 lines: 2069 lines
+----------------------------------
+- removed unnecessary code in function 'wtest','comcom'
+- changed "no more move" to "no more moves"
+- improved ending display
+- created syntax 'quit'
+- fixed a little "wf" bug
+- redesigned the weight system
+  -- edited evaluation system of function 'score' accordingly
+  -- edited function 'wtest' accordingly
+
+test32.c
+date: 28/10/2011 lines: 2069 lines
+----------------------------------
+- used new weights obtained from weight tests
+
+test33.c
+date: 30/10/2011 lines: 2101 lines
+----------------------------------
+- added static move ordering
+
+test34.c
+date: 31/10/2011 lines: 2135 lines
+----------------------------------
+- added last move display
+
+test35.c
+date: 2/11/2011 lines: 2178 lines
+---------------------------------
+- added node count and improved some display
+- corrected end game display
+- corrected reflected last move
+
+test36.c
+date: 11/11/2011 lines: 2404 lines
+----------------------------------
+- created save/load system
+  -- created 'load mode' in function 'main'
+  -- moved the board initialization and settings from function 'human',
+     'comhuman' and 'comcom' to 'main'; changed some variable names due to
+     compatibility problems
+  -- created syntax 'save'; edited function 'input','human','comhuman' and
+     'comcom' accordingly
+- made syntax display a seperate function 'syntax'
+- created a variable for version number
+
+test37.c
+date: 12/11/2011 lines: 2428 lines
+----------------------------------
+- corrected new game syntax
+- added more "single letter" options
+
+test38.c
+date: 15/11/2011 lines: 2615 lines
+----------------------------------
+- corrected options in the end-game screen
+- edited some code and comments
+- wrote function 'flipnum' and 'score63' to cut down unnecessary computations
+  at end-game positions
+- checked if square is occupied before calling function 'flip': time taken
+  at near-end positions is greatly (unexpectedly) reduced
+
+test39.c
+date: 16/11/2011 lines: 2629 lines
+----------------------------------
+- corrected some code in function 'score63'
+- wrote function 'speedtest' to test computer's speed
+- edited interface a little
+
+test40.c
+date: 18/11/2011 lines: 2598 lines
+----------------------------------
+*an attempt to clean up all the messy code!
+- cleaned up function 'main'; changed the label system a bit; changed
+  variable 'x' to 'i'
+  -- created variable 'loadvalue'
+  -- created function 'load'
+  -- fixed "load bug"
+  -- created function 'weightdefault'
+- reorganized syntax system
+  -- included 'load','speed' in syntax
+  -- rewrote function 'syntax'
+  -- edited interface
+  -- made syntax 'menu' available in main menu
+- changed function name from 'wtest' to 'weighttest'
+- created variable 'weightnum'
+- created function 'humansave','comhumansave','comcomsave' for a seperated
+  save engine
+
+test41.c
+date: 26/11/2011 lines: 2573 lines
+----------------------------------
+*further cleanup attempt
+- cleaned up function 'humansave','comhumansave','comcomsave'; changed to
+  label-based
+- reorganized weight system (to support new features in the future)
+  -- used arrays to replace "nicknames"
+  -- created function 'nickname' to map weights to their nicknames
+  -- rewrote 'weightdefault' accordingly
+- reoraganized function 'weighttest'
+  -- created function 'weightfortest' linked with function 'nickname'
+  -- seperated some parts of 'weighttest' as function 'gamefortest';
+     created struct triad to support its output
+
+test42.c
+date: 27/11/2011 lines: 2573 lines
+----------------------------------
+*further cleanup attempt
+- cleaned up function 'fsearch','dsearch','tsearch'
+  -- created function 'shownode'
+- changed time limit description a little
+- edited information display a little
+
+test43.c
+date: 29/11/2011 lines: 2621 lines
+----------------------------------
+*further cleanup attempt
+- cleaned up function 'score','score63','flip','flipnum'
+- slightly improved function 'flip' to get some 10% speedup
+
+test44.c
+date: 30/11/2011 lines: 2666 lines
+----------------------------------
+- cleaned up function 'mobility','move'
+- improved display system
+  -- cleaned up function 'display'
+  -- made edges continuous using ASCII characters
+  -- changed size from 3x4 to 3x5 (more "square")
+  -- created variable black,white for storing appearances
+     (although this slows down the display a lot...); modified function
+     'human','comhuman','comcom' accordingly
+
+test45.c
+date: 3/12/2011 lines: 2775 lines
+---------------------------------
+- succesfully fixed the slow display problem
+- created disk appearance setting mode
+  -- created mode "settings" in menu
+  -- created function 'settings','appearance'
+  -- created variable choice[][3][6] for all appearance choices,numchoice
+     for number of these choices
+  -- invented 14 appearances
+
+test46.c
+date: 3/12/2011 lines: 2771 lines
+---------------------------------
+- finished the cleanup attempt
+- skipped the before-last depth
+- rewrote function 'pmobility' (excluded edges)
+  -- tested new weights (strength increased a little)
+- corrected the wrong assignments in function 'nickname'
+
+test47.c
+date: 27/12/2011 lines: 2813 lines
+----------------------------------
+- implemented depthperfect system
+- corrected fclose when can't open file
+
+test48.c
+date: 27/12/2011 lines: 2882 lines
+----------------------------------
+- created struct comset
+- created function 'comsettings'
+- created variable 'comsetchoice'
+- created functon 'aisinterface'
+- created new interface with default depths
+
+test49.c
+date: 28/12/2011 lines: 2938 lines
+----------------------------------
+- created weight settings
+  -- updated function 'settings'
+  -- created function 'customweight'
+  -- created variable weightchoice,weightchoicename,weightchoicenum
+
+test50.c
+date: 28/12/2011 lines: 3043 lines
+----------------------------------
+- created rotation effect
+  -- created function 'nodedisplay' for this effect
+  -- added argument 'display' to function 'score','score63' to help function
+     'nodedisplay'
+  -- created variable rotatetime,rotateon for options of this effect
+- created settings of this effect
+  -- updated function 'settings'
+  -- created function 'rotateoption'
+- slightly corrected function 'shownode'
+
+test51.c
+date: 20/7/2012 lines: 3079 lines
+---------------------------------
+[finally some progress after more than half a year!]
+
+- developed 2.1th generation evaluation function
+  -- replaced function 'adjacent' with function 'xsquare' and 'csquare'
+  -- replaced variable wa with wxx,wcc
+  -- updated weight arrays and function 'score' accordingly
+- make '55 disks' adjustable
+  -- changed the ending of variable names from 55 to 1
+  -- created variable wcut and set default to 45 instead of 55
+- deleted greedy weights
+- shortened names in weight settings
+
+test52.c
+date: 20/7/2012 lines: 3125 lines
+---------------------------------
+- introduced new csquare system (pattern -xxxxxx- counts only once)
+  -- created variable wnew
+  -- updated function 'csquare' and weights array accordingly
+- finished adjusting 2.1th generation weights
+  (although it is not as strong as I expected...)
+
+test53.c
+date: 22/7/2012 lines: 3200 lines
+---------------------------------
+- implemented flip animation
+  -- wrote function 'flipanimation'
+  -- seperated some code from function 'display' into the new function
+     'boarddisplay' to be used in both function 'display' and 'flipanimation'
+  -- created variables fliptime,flipon,fliplook
+  -- updated function human,comhuman,comcom accordingly
+
+test54.c
+date: 22/7/2012 lines: 3248 lines
+---------------------------------
+- created options for flip animation
+  -- wrote function 'flipoption'
+  -- updated function 'settings' accordingly
+- added syntax spinon/off,flipon/off
+  -- updated function 'syntax','input','main' accordingly
+- removed syntax clearon/off and variable 'clear'
+- removed variable 'smove' from save file
+- slightly corrected function 'load' about the value of 'rands'
+
+test55.c
+date: 24/7/2012 lines: 3277 lines
+---------------------------------
+- implemented shallow search in function 'fsearch' and 'score';
+  time taken decreased significantly (>2 times at depth 8)
+- deleted dsearch; updated relevant functions
+- slightly corrected flip display bug
+
+test56.c
+date: 28/7/2012 lines: 3294 lines
+---------------------------------
+- precomputed all edge configurations!; added the list as a header file
+- updated relevant functions (function edgevalue not written yet...)
+- corrected a CRITICAL BUG in nickname assignment in test55!
+- slightly improved weighttest display
+
+test57.c
+date: 28/7/2012 lines: 3315 lines
+---------------------------------
+- wrote function 'edgevalue'
+- finished adjusting 2.5th generation evaluation function!
+
+test58.c
+date: 28/7/2012 lines: 3376 lines
+---------------------------------
+- added 'about' section with information on the program and othello rules
+
+test59.c
+date: 29/7/2012 lines: 3399 lines
+---------------------------------
+- implemented edge configurations version 2; seems to be better than
+  version 1 although it's still pretty inaccurate...
+- slightly changed 'about' description
+- set console window size and title
+
+test60.c
+date: 31/7/2012 lines: 3454 lines
+---------------------------------
+- added score display
+
+test61.c
+date: 5/8/2012 lines: 3713 lines
+--------------------------------
+- implemented mobility table! ; rewrote function 'mobility'
+  program became a lot larger (126KB->344KB) but somewhat faster :)
+
+test62.c
+date: 5/8/2012 lines: 3768 lines
+--------------------------------
+- restructured mobility computation; became a bit faster than test61
+  (now approx. 1.5 times faster than test60)
+
+test63.c
+date: 12/8/2012 lines: 3768 lines
+---------------------------------
+- optimized 2.5th generation evaluation function --> 2.9th generation
+  (at depth 1, beats 2.5th generation 50.90%  of the time)
+
+test64.c
+date: 24/8/2012 lines: 4394 lines
+---------------------------------
+- implemented stable disks! (only count some of the stable disks)
+  -- updated relevant functions and variables accordingly
+     (no weight test yet)
+
+test65.c
+date: 24/8/2012 lines: 4394 lines
+---------------------------------
+- test weights with stable disks --> 3rd generation evaluation function;
+  disappointingly, it is only slightly stronger than 2.9th generation
+
+test66.c
+date: 16/9/2012 lines: 4465 lines
+---------------------------------
+- improved some text display
+- corrected the end-game score count (empty squares awarded to the winner)
+- created 'hello' syntax and function 'sayhello' for fun :)
+
+test67.c
+date: 20/9/2012 lines: 4605 lines
+---------------------------------
+- rewrote function edgevalue, csquare, xsquare, corner, flip, flipnum
+  to gain approx. 10% speedup
+  -- created some 16 arrays for table-lookup system
+- slightly changed hello messages
+
+test68.c
+date: 9/10/2012 lines: 4728 lines
+---------------------------------
+- removed some difficulty levels (5,5a,7)
+- added "back" option for some settings
+- added percentage calculation in weight tests
+- removed decimal point in fsearch depth display
+- changed message "only reply" to "only move"
+- added opening for white
+  -- created variable ParallelAllow
+  -- created opening move options
+
+test69.c
+date: 10/10/2012 lines: 4753 lines
+----------------------------------
+- increased default rotatetime to 20000
+- enabled opening move in random search
+
+test70.cpp
+date: Aug 4, 2013 lines: 4611 lines
+-----------------------------------
+[project O'hello - 3rd phase!]
+* changed to new platform - Mac and use C++
+* P'Oak joined project
+- made it work in Mac (Oak)
+- reorganized some structure, make new headers, etc. (Oak)
+- compiled with -fast to optimize program (Oak)
+
+test71.cpp
+date: Aug 4, 2013 lines: 4513 lines
+-----------------------------------
+- changed graphic to lower ascii to make it work
+- corrected cursor blocking problem in nodedisplay
+- deleted code about appearance
+  -- changed default appearance
+- made depth 10/16 available
