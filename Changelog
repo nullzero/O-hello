@@ -551,6 +551,12 @@ date: Aug 4, 2013 lines: 4611 lines
 - compiled with -fast to optimize program (Oak)
 
 test71.cpp
+date: Aug 4, 2013 lines: 4611 lines
+-----------------------------------
+- correct LICENSE file
+- set width and height for terminal window
+
+test72.cpp
 date: Aug 4, 2013 lines: 4513 lines
 -----------------------------------
 - changed graphic to lower ascii to make it work
