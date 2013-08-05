@@ -5,7 +5,7 @@ set -e
 # width = 10 + 7x // height = 30 + 14x
 SIZE="set size of window 1 to {570,366}" 
 WD="${0%/*}"
-COMMAND="'$WD'/main"
+COMMAND="$WD/main"
 
 osascript <<EOF
 tell application "Terminal"

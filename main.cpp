@@ -1,5 +1,11 @@
-// O'hello
-// Authors: Nat Sothanaphan & Sorawee Porncharoenwase
+// project O'hello
+
+//general info
+const char version[] = "test72";
+const char author[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
+const char date[] = "August 4, 2013";
+const char language[] = "C++";
+const char compiler[] = "LLVM-G++";
 
 #include <cstdlib>
 #include <cstring>
@@ -68,12 +74,17 @@ int getInt(){
 
 //End of Oak's definitions
 
-//general info
-char version[] = "test70";
-char author[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-char date[] = "August 4, 2013";
-char language[] = "C++";
-char compiler[] = "LLVM-G++";
+void space(int n){
+	std::string a;
+	for(int i = 0; i < n; ++i) a += " ";
+	printf("%s", a.c_str());
+}
+
+void backspace(int n){
+	std::string a;
+	for(int i = 0; i < n; ++i) a += "\b";
+	printf("%s", a.c_str());
+}
 
 FILE *save; //save file
 
@@ -101,36 +112,8 @@ struct comset{
 int mobindex[38];
 
 int node; //count the number of nodes searched
-//weights
-int weight[100];
-//weight's 'nickname'
-int wd; //disk difference
-int wm; //mobility difference
-int wp; //potential mobility difference
-int wc; //corner difference
-int wxx; //x square difference
-int wcc; //c square difference
-int we; //edge configurations
-int ws; //stable disks difference
-//cutoff for using near end-game weights
-int wcut;
-//near end-game weights
-int wd1;
-int wm1;
-int wp1;
-int wc1;
-int wxx1;
-int wcc1;
-int we1;
-int ws1;
-//use new csquare? 1=yes,0=no
-int wnew;
-//final disk difference (end-game)
-int wf;
 
 //functions in this source code are arranged in this order
-void nickname();
-void weightdefault();
 int main();
 comset comsettings();
 int load();
@@ -139,7 +122,6 @@ void about();
 void speedtest();
 void sayhello();
 void settings();
-void appearance();
 void aisinterface();
 void customweight();
 void rotateoption();
@@ -175,35 +157,6 @@ struct kirby move(int board[64],int player);
 struct kirby flip(int board[64],int position,int player);
 int flipnum(int board[64],int position,int player);
 
-//map weights to their nicknames
-void nickname(){
-     wd=weight[0];
-     wm=weight[1];
-     wp=weight[2];
-     wc=weight[3];
-     wxx=weight[4];
-     wcc=weight[5];
-     we=weight[6];
-     ws=weight[7];
-     wcut=weight[8];
-     wd1=weight[9];
-     wm1=weight[10];
-     wp1=weight[11];
-     wc1=weight[12];
-     wxx1=weight[13];
-     wcc1=weight[14];
-     we1=weight[15];
-     ws1=weight[16];
-     wnew=weight[17];
-     wf=weight[18];
-}
-
-//set weights(and their nicknames) as defaults
-void weightdefault(){
-     for(int i = 0; i < weightnum; i++) weight[i] = dweight[i];
-     nickname();
-}
-
 //interface
 int main(){
 	system("stty erase ^?");
@@ -229,11 +182,12 @@ int main(){
     start:
 	
     clrscr(); //clear screen
-    printf("\n version %s                   /%c%c%c%c%c%c%c%c%c%c\n",version,196,196,196,196,196,196,196,196,196,92);
-    printf("                                  %c         %c\n",179,179);
-    printf("                                  %c O'hello %c\n",179,179);
-    printf("                                  %c         %c\n",179,179);
-    printf("                                  %c%c%c%c%c%c%c%c%c%c/\n\n\n",92,196,196,196,196,196,196,196,196,196);
+    printf("\n version %s\n",version);
+	printf("                                  ----------- \n");
+    printf("                                 |           |\n");
+    printf("                                 |  O'hello  |\n");
+	printf("                                 |           |\n");
+    printf("                                  -----------\n\n\n");
     printf("welcome! please select game mode or function below:\n\n");
     printf("0. program settings\n");
     printf("1. human   [black] vs human   [white]\n");
@@ -456,7 +410,8 @@ comset comsettings(){
 			printf(" 4a - depth 4 + last 10 perfect\n");
 			printf(" 6  - depth 6\n");
 			printf(" 6a - depth 6 + last 12 perfect\n");
-			printf(" 8  - depth 8 + last 14 perfect\n\n");
+			printf(" 8  - depth 8 + last 14 perfect\n");
+			printf(" 10 - depth 10 + last 16 perfect\n\n");
 			
 			newsetdepth:
 			
@@ -485,6 +440,9 @@ comset comsettings(){
 			}else if(option == "8"){
 				pack.depth = 8;
 				pack.depthperfect = 14;
+			}else if(option == "10"){
+				pack.depth = 10;
+				pack.depthperfect = 16;
 			}else{
 				alert("invalid selection!");
 				goto newsetdepth;
@@ -759,8 +717,8 @@ date     %s\n\
 language %s\n\
 compiler %s\n\
 \n\
-O'hello is a command-line program that mainly features an AI that plays othello.\
-It is only an elementary level program with low search speed and weak evaluation\
+O'hello is a command-line program that mainly features an AI that plays othello.\n\
+It is only an elementary level program with low search speed and weak evaluation\n\
 function. However we hope it would be a good practice for all players aiming to\n\
 improve their skills at othello.\n\
 \n\
@@ -785,7 +743,7 @@ A move consists of placing a new disk on an empty square, and flipping every\n\
 opponent's disk or row of opponent's disks that is between the new disk and one\n\
 of the player's disks in any direction: horizontal, vertical or diagonal.\n\
 \n\
-A move is legal if it flips at least one opponent's disk. A player with no legal\
+A move is legal if it flips at least one opponent's disk. A player with no legal\n\
 moves must pass his turn. On the contrary, a player with a legal move cannot\n\
 pass his turn.\n\
 \n\
@@ -831,89 +789,27 @@ void sayhello(){
 //settings
 void settings(){
      printf("\nselect settings:\n\n");
-     printf("1. disk appearance\n");
-     printf("2. AI settings interface\n");
-     printf("3. evaluation function weights\n");
-     printf("4. rotation effect options\n");
-     printf("5. flip animation options\n");
-     printf("6. opening move options\n");
+     printf("1. AI settings interface\n");
+     printf("2. evaluation function weights\n");
+     printf("3. rotation effect options\n");
+     printf("4. flip animation options\n");
+     printf("5. opening move options\n");
      printf("\n");
 	 bool invalid;
 	 do{
 		invalid = false;
 		switch(getInt()){
-			case 1: appearance(); break;
-			case 2: aisinterface(); break;
-			case 3: customweight(); break;
-			case 4: rotateoption(); break;
-			case 5: flipoption(); break;
-			case 6: openingoption(); break;
+			case 1: aisinterface(); break;
+			case 2: customweight(); break;
+			case 3: rotateoption(); break;
+			case 4: flipoption(); break;
+			case 5: openingoption(); break;
 
 			default:
 			alert("invalid selection!");
 			invalid = true;
 		}
 	}while(invalid);
-}
-
-//set disk apearance
-void appearance(){
-	clrscr(); //clear screen
-	printf("\n");
-	printf("current disk appearance\n");
-	printf("-----------------------\n\n");
-	printf("       %s         %s\n", black[0], white[0]);
-	printf("black: %s  white: %s\n", black[1], white[1]);
-	printf("       %s         %s\n\n\n", black[2], white[2]);
-
-	printf("list of all choices\n");
-	printf("-------------------\n\n");
-	{
-		int i;
-		for(i = 0; i <= numchoice - 3; i += 3){
-			printf("     %s         %s         %s\n", choice[i][0], choice[i+1][0], choice[i+2][0]);
-			printf("%2d:  %s    %2d:  %s    %2d:  %s\n", i, choice[i][1], i+1, choice[i+1][1], i+2, choice[i+2][1]);
-			printf("     %s         %s         %s\n\n\n", choice[i][2], choice[i+1][2], choice[i+2][2]);
-		}
-		switch(numchoice % 3){
-			case 1:
-				printf("     %s\n", choice[i][0]);
-				printf("%2d:  %s\n", i, choice[i][1]);
-				printf("     %s\n\n\n", choice[i][2]);
-				break;
-			case 2:
-			    printf("     %s         %s\n", choice[i][0], choice[i+1][0]);
-			    printf("%2d:  %s    %2d:  %s\n", i, choice[i][1], i+1, choice[i+1][1]);
-			    printf("     %s         %s\n\n\n", choice[i][2], choice[i+1][2]);
-			    break;
-		}
-	}
-	bool invalid;
-	int a;
-	do{
-		invalid = false;
-		printf("select black disk appearance: ");
-		a = getInt();
-		if(a < 0 or a > numchoice - 1){
-			alert("invalid selection!");
-			invalid = true;
-		}
-	}while(invalid);
-	for(int i = 0; i < 3; i++) strcpy(black[i], choice[a][i]);
-	printf("\n");
-	do{
-		invalid = false;
-		printf("select white disk appearance: ");
-		a = getInt();
-		if(a < 0 or a > numchoice - 1){
-			alert("invalid selection!");
-			invalid = true;
-		}
-	}while(invalid);
-	for(int i = 0; i < 3; i++) strcpy(white[i], choice[a][i]);
-
-	printf("\n\nsuccessfully set disk appearance\n");
-	presstogo();
 }
 
 //set value of comsetchoice
@@ -1326,7 +1222,8 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                       //if player is movable
                       if(player==complayer){
                                             //for computer's turn
-                                            printf("\n\nthinking ");
+                                            printf("\n\nthinking");
+											space(10);
                                             //get position
                                             if(mode==0) position=random(board,player,no,1);
                                             if(mode==1){
@@ -1335,8 +1232,8 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                                         else position=fsearch(board,depth,player,no,1);
                                                         }
                                             if(mode==3) position=tsearch(board,times,player,no,1);
-                                            printf("\n\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
-                                            printf("\n\npress any other key to continue");
+                                            printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
+                                            printf("\npress any other key to continue");
                                             letter=getch();
                                             if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
                                             if(letter=='n') return EXIT;
@@ -1519,7 +1416,8 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
     indexformob(board);
     mobilities=mobility(player);
     if(mobilities!=0){ //if player is movable
-                      printf("\n\nthinking ");
+                      printf("\n\nthinking");
+					  space(10);
                       //get position
                       if(doublemode[player-1]==0) position=random(board,player,no,1);
                       if(doublemode[player-1]==1){
@@ -1528,8 +1426,8 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
                                                   else position=fsearch(board,doubledepth[player-1],player,no,1);
                                                   }
                       if(doublemode[player-1]==3) position=tsearch(board,doubletimes[player-1],player,no,1);
-                      printf("\n\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
-                      printf("\n\npress any other key to continue");
+                      printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
+                      printf("\npress any other key to continue");
                       letter=getch();
                       if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubletimes); goto loop2;}
                       if(letter=='n') return EXIT;
@@ -1855,7 +1753,8 @@ int input(int board[64],int player,int no[2]){
                                                 printf("\ninvalid depth!\n\n");
                                                 goto loop1;
                                                 }
-                                    printf("\nthinking ");
+                                    printf("\nthinking");
+									space(10);
                                     fsearch(board,depth,player,no,2);
                                     printf("\n\n");
                                     goto loop1;
@@ -1867,6 +1766,7 @@ int input(int board[64],int player,int no[2]){
                                          goto loop1;
                                          }
                                     printf("\nthinking ");
+									space(10);
                                     tsearch(board,times,player,no,2);
                                     printf("\n\n");
                                     goto loop1;
@@ -1958,7 +1858,7 @@ int random(int board[64],int player,int no[2],int display){
     else position=moves.board[rand(moves.num)]; //random move
     
     if(display!=0){
-                   printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
+                   backspace(18); //clear "thinking "
                    printf("O'hello decided to place a disk at ");
                    switch(position%8){
                                       case 0:printf("a"); break;
@@ -2158,10 +2058,10 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
     ftime(&time2); //get current time
     if(display != 0){
 		if(display == 1){
-			printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
+			backspace(18); //clear "thinking "
 			printf("O'hello decided to place a disk at ");
 		}else{
-			printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
+			backspace(18); //clear "thinking "
 			printf("search result: ");
 		}
 		switch(position % 8){
@@ -2385,11 +2285,11 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
     ftime(&time2); //get current time
     if(display!=0){
                    if(display==1){
-                                  printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
+                                  backspace(18); //clear "thinking "
                                   printf("O'hello decided to place a disk at ");
                                   }
                    else{
-                        printf("\b\b\b\b\b\b\b\b\b"); //clear "thinking "
+                        backspace(18); //clear "thinking "
                         printf("search result: ");
                         }
                    switch(position%8){
@@ -2829,24 +2729,25 @@ int score63(int board[64],int player,int no[2],int display){
 //display rotation effect
 void nodedisplay(int display){
      if(display!=0 and rotateon){
+		 backspace(9);
                    switch((node/rotatetime)%4){
-                                               case 1: printf("%c ",196); break; // horizontal 
-                                               case 2: printf("%c ",92); break;  // backslash
-                                               case 3: printf("%c ",179); break; // vertical
-                                               case 0: printf("%c ",47); break;  // slash
+                                               case 1: printf("- "); break; // horizontal 
+                                               case 2: printf("\\ "); break;  // backslash
+                                               case 3: printf("| "); break; // vertical
+                                               case 0: printf("/ "); break;  // slash
                                                default:;
                                                }
                    //display exactly nine blocks
-                   if(node<10) printf("%d n    \b\b\b\b\b\b\b\b\b",node);
-                   else if(node<100) printf("%d n   \b\b\b\b\b\b\b\b\b",node);
-                   else if(node<1000) printf("%d n  \b\b\b\b\b\b\b\b\b",node);
-                   else if(node<10000) printf("%.2f kn\b\b\b\b\b\b\b\b\b",0.01*floor(0.1*node));
-                   else if(node<100000) printf("%.1f kn\b\b\b\b\b\b\b\b\b",0.1*floor(0.01*node));
-                   else if(node<1000000) printf("%.0f kn \b\b\b\b\b\b\b\b\b",floor(0.001*node));
-                   else if(node<10000000) printf("%.2f Mn\b\b\b\b\b\b\b\b\b",0.01*floor(0.0001*node));
-                   else if(node<100000000) printf("%.1f Mn\b\b\b\b\b\b\b\b\b",0.1*floor(0.00001*node));
-                   else if(node<1000000000) printf("%.0f Mn \b\b\b\b\b\b\b\b\b",floor(0.000001*node));
-                   else printf("%.2f Gn\b\b\b\b\b\b\b\b\b",0.01*floor(0.0000001*node));
+                   if(node<10) printf("%d n    ",node);
+                   else if(node<100) printf("%d n   ",node);
+                   else if(node<1000) printf("%d n  ",node);
+                   else if(node<10000) printf("%.2f kn",0.01*floor(0.1*node));
+                   else if(node<100000) printf("%.1f kn",0.1*floor(0.01*node));
+                   else if(node<1000000) printf("%.0f kn ",floor(0.001*node));
+                   else if(node<10000000) printf("%.2f Mn",0.01*floor(0.0001*node));
+                   else if(node<100000000) printf("%.1f Mn",0.1*floor(0.00001*node));
+                   else if(node<1000000000) printf("%.0f Mn ",floor(0.000001*node));
+                   else printf("%.2f Gn",0.01*floor(0.0000001*node));
                    }
      return;
 }
@@ -2859,24 +2760,24 @@ void boarddisplay(int board[64],int playertoshowmove){
      char string[2000]={}; //board string
      
      //ascii for components
-     char upleftcorner[2]={218};
-     char uprightcorner[2]={191};
-     char downleftcorner[2]={192};
-     char downrightcorner[2]={217};
-     char fivehorizontal[6]={196,196,196,196,196};
-     char horizontaldown[2]={194};
-     char horizontalup[2]={193};
-     char vertical[2]={179};
-     char verticalright[2]={195};
-     char verticalleft[2]={180};
-     char fourarm[2]={197};
-     char rownumber[8][2]={"1","2","3","4","5","6","7","8"};
+     char upleftcorner[2] = "+";
+     char uprightcorner[2]= "+";
+	 char downleftcorner[2] = "+";
+     char downrightcorner[2] = "+";
+     char fivehorizontal[6] = "-----";
+     char horizontaldown[2] = "+";
+     char horizontalup[2] = "+";
+     char vertical[2] = "|";
+     char verticalright[2] = "+";
+     char verticalleft[2] = "+";
+     char fourarm[2] = "+";
+     char rownumber[8][2] = {"1","2","3","4","5","6","7","8"};
      
      //construct board string
      
      //header
-     strcat(string,"\n     a     b     c     d     e     f     g     h");
-     strcat(string,"\n  ");
+     strcat(string,"      a     b     c     d     e     f     g     h");
+     strcat(string,"\n   ");
      strcat(string,upleftcorner);
      for(j=1;j<=7;j++){
                        strcat(string,fivehorizontal);
@@ -2888,7 +2789,7 @@ void boarddisplay(int board[64],int playertoshowmove){
      //8 groups of rows
      for(i=0;i<=7;i++){
                        //row 1
-                       strcat(string,"\n  ");
+                       strcat(string,"\n   ");
                        strcat(string,vertical);
                        for(j=8*i;j<8*i+8;j++){
                                               if(board[j]==1) strcat(string,black[0]);
@@ -2900,6 +2801,7 @@ void boarddisplay(int board[64],int playertoshowmove){
                        //row 2
                        strcat(string,"\n ");
                        strcat(string,rownumber[i]);
+					   strcat(string," ");
                        strcat(string,vertical);
                        for(j=8*i;j<8*i+8;j++){
                                               if(board[j]==1) strcat(string,black[1]);
@@ -2917,7 +2819,7 @@ void boarddisplay(int board[64],int playertoshowmove){
                                               strcat(string,vertical);
                                               }
                        //row 3
-                       strcat(string,"\n  ");
+                       strcat(string,"\n   ");
                        strcat(string,vertical);
                        for(j=8*i;j<8*i+8;j++){
                                               if(board[j]==1) strcat(string,black[2]);
@@ -2929,7 +2831,7 @@ void boarddisplay(int board[64],int playertoshowmove){
                        //row 4
                        if(i!=7){
                                 //not last row
-                                strcat(string,"\n  ");
+                                strcat(string,"\n   ");
                                 strcat(string,verticalright);
                                 for(j=1;j<=7;j++){
                                                   strcat(string,fivehorizontal);
@@ -2940,7 +2842,7 @@ void boarddisplay(int board[64],int playertoshowmove){
                                 }
                        else{
                             //last row
-                            strcat(string,"\n  ");
+                            strcat(string,"\n   ");
                             strcat(string,downleftcorner);
                             for(j=1;j<=7;j++){
                                               strcat(string,fivehorizontal);
