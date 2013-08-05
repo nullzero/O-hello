@@ -1,0 +1,11 @@
+* weight test
+  - "default weight" change to other names
+  - give description on how to use
+* invent command set, etc. and organize commands/settings
+  - make command, get rid of setting menu
+  - boarddisplay make into generalization
+* write timer (sleep then wake up)
+* solve graphic problem (off screen)
+** continue to optimize/organize
+** compatible with windows
+** change to bit system

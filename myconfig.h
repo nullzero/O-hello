@@ -16,7 +16,7 @@ struct Conf{
 	bool parallelAllow;
 	int rawSet;
 	
-	int weight[19];
+	int weight[100];
 	
 	int diskWidth; //future variable (wants 7)
 	int diskHeight; //future variable

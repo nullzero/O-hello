@@ -1,7 +1,7 @@
-// project O'hello
+// project O-hello
 
 //general info
-const char version[] = "test72";
+const char version[] = "test73";
 const char author[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
 const char date[] = "August 4, 2013";
 const char language[] = "C++";
@@ -161,6 +161,7 @@ int flipnum(int board[64],int position,int player);
 int main(){
 	system("stty erase ^?");
 	signal(SIGINT, finish);
+	myConf = DConf;
     int mode;
     int depth;
     int depthperfect;
@@ -179,28 +180,29 @@ int main(){
     comset pack;
     srand(time(NULL)); //set up the random number generator
 	
+	
     start:
 	
     clrscr(); //clear screen
     printf("\n version %s\n",version);
 	printf("                                  ----------- \n");
     printf("                                 |           |\n");
-    printf("                                 |  O'hello  |\n");
+    printf("                                 |  O-hello  |\n");
 	printf("                                 |           |\n");
     printf("                                  -----------\n\n\n");
     printf("welcome! please select game mode or function below:\n\n");
     printf("0. program settings\n");
     printf("1. human   [black] vs human   [white]\n");
-    printf("2. human   [black] vs O'hello [white]\n"); //human starts first
-    printf("3. O'hello [black] vs human   [white]\n"); //computer starts first
-    printf("4. O'hello [black] vs O'hello [white]\n");
+    printf("2. human   [black] vs O-hello [white]\n"); //human starts first
+    printf("3. O-hello [black] vs human   [white]\n"); //computer starts first
+    printf("4. O-hello [black] vs O-hello [white]\n");
     printf("5. weight test\n");
     printf("6. about program\n\n");
 	
     //set weight as defaults
-    weightdefault();
+    weightInitialize();
     //set board
-    //board: 0=space,1=player 1,2=player 2
+    //board: 0=space,1=player 1,2=player 2O-hello
     int board[64] = {};
     board[27] = 2;
     board[28] = 1;
@@ -213,42 +215,42 @@ int main(){
 	std::string option = getString();
 	
     if(option == "randon"){
-		rands = true;
+		myConf.randOn = true;
 		alert("random feature on!");
 		goto loop1;
 	}
     if(option == "randoff"){
-		rands = false;
+		myConf.randOn = false;
 		alert("random feature off!");
 		goto loop1;
 	}
     if(option == "moveon"){
-		smove = true;
+		myConf.moveOn = true;
 		alert("move display on!");
 		goto loop1;
 	}
     if(option == "moveoff"){
-		smove = false;
+		myConf.moveOn = false;
 		alert("move display off!");
 		goto loop1;
 	}
     if(option == "spinon"){
-		rotateon = true;
+		myConf.rotateOn = true;
 		alert("rotation effect on!");
 		goto loop1;
 	}
     if(option == "spinoff"){
-		rotateon = false;
+		myConf.rotateOn = false;
 		alert("rotation effect off!");
 		goto loop1;
 	}
-    if(option == "flipon"){
-		flipon = true;
+    if(option == "myConf.flipOn"){
+		myConf.flipOn = true;
 		alert("flip animation on!");
 		goto loop1;
 	}
     if(option == "flipoff"){
-		flipon = false;
+		myConf.flipOn = false;
 		alert("flip animation off!");
 		goto loop1;
 	}
@@ -289,7 +291,7 @@ int main(){
 	}else if(option == "2" or option == "3"){
 		 //human vs computer,computer vs human
 		clrscr();
-		printf("\nselect search mode for O'hello:\n");
+		printf("\nselect search mode for O-hello:\n");
 		printf("-------------------------------\n\n");
 		//get settings
 		pack = comsettings();
@@ -313,7 +315,7 @@ int main(){
     }else if(option[0] == '4'){
 		//computer vs computer
 		for(int i = 0; i < 2; i++){
-			printf("\nselect search mode for O'hello %d:\n", i + 1);
+			printf("\nselect search mode for O-hello %d:\n", i + 1);
 			printf("---------------------------------\n\n");
 			//get settings
             pack = comsettings();
@@ -348,7 +350,7 @@ int main(){
 //AI settings interface
 comset comsettings(){
 	comset pack;
-	if(comsetchoice == 2){
+	if(myConf.rawSet){
 		// old interface
 		printf("0. random: random play\n");
 		printf("1. fsearch: fixed depth search\n");
@@ -385,7 +387,7 @@ comset comsettings(){
 		}
 	}else{
 		// new interface
-		assert(comsetchoice == 1);
+		assert(not myConf.rawSet);
 		printf("1. search with fixed depth\n");
 		printf("2. search with time limit\n\n");
 		
@@ -495,7 +497,7 @@ int load(){
 		return EXIT;
 	}
     printf("\n\nopening %s\n",filename);
-    //get rands
+    //get myConf.randOn
     prerand = -1;
     fscanf(save, "%d", &prerand);
     if(prerand != 0 and prerand != 1){
@@ -503,8 +505,8 @@ int load(){
 		fclose(save);
 		return EXIT;
 	}
-    rands = prerand;
-    printf("\nvalue rands=%d", rands);
+    myConf.randOn = prerand;
+    printf("\nvalue myConf.randOn=%d", myConf.randOn);
     //get board[64] (along with no[2])
     printf("\nvalue board=");
     no[0] = 0;
@@ -514,7 +516,7 @@ int load(){
 		fscanf(save, "%d", &board[i]);
 		if(board[i] == 0){
 			//the 4 centers can't be empty -- this will affect the searches
-			//since they aren't included in moveorder[60]
+			//since they aren't included in moveOrder[60]
 			if(i == 27 or i == 28 or i == 35 or i == 36){
 				printf("\n\n%s is corrupted!\n\n", filename);
 				fclose(save);
@@ -695,7 +697,7 @@ reflect       g  - reflect the board horizontally\n\
 randon/off  m g  - enable/disable random feature\n\
 moveon/off  m g  - enable/disable move display\n\
 spinon/off  m g  - enable/disable rotation effect\n\
-flipon/off  m g  - enable/disable flip animation\n\
+myConf.flipOn/off  m g  - enable/disable flip animation\n\
 syntax      m g  - view this text\n\
 fsearch       g  - fixed depth search ex. fsearch 6\n\
 tsearch       g  - time limit search ex. tsearch 1\n\
@@ -709,7 +711,7 @@ void about(){
 about program\n\
 -------------\n\
 \n\
-project O'hello\n\
+project O-hello\n\
 \n\
 version  %s\n\
 author   %s\n\
@@ -717,12 +719,12 @@ date     %s\n\
 language %s\n\
 compiler %s\n\
 \n\
-O'hello is a command-line program that mainly features an AI that plays othello.\n\
+O-hello is a command-line program that mainly features an AI that plays othello.\n\
 It is only an elementary level program with low search speed and weak evaluation\n\
 function. However we hope it would be a good practice for all players aiming to\n\
 improve their skills at othello.\n\
 \n\
-Note: there are several commands available in O'hello. You can type 'syntax' to\n\
+Note: there are several commands available in O-hello. You can type 'syntax' to\n\
 view the list of all these commands.\n\
 \n\n\
 press 'h' to view information on how to play othello\n\
@@ -812,7 +814,7 @@ void settings(){
 	}while(invalid);
 }
 
-//set value of comsetchoice
+//set value of myConf.rawSet
 void aisinterface(){
 	printf("\n");
 	printf("select interface:\n");
@@ -825,7 +827,7 @@ void aisinterface(){
 		invalid = false;
 		int input = getInt();
 		if(input == 1 or input == 2){
-			comsetchoice = input;
+			myConf.rawSet = (input == 1) ? false : true;
 			printf("\nsuccessfully set interface\n");
 			presstogo();
 		}else if(input == 3);
@@ -841,36 +843,36 @@ void customweight(){
 	clrscr(); //clear screen
 	printf("\n");
 	printf("current weights:\n\n");
-	for(int i = 0; i < weightnum; i++) printf(" %d", dweight[i]);
+	for(int i = 0; i < weightNum; i++) printf(" %d", myConf.weight[i]);
 	printf("\n\n\n");
 	printf("choose evaluation function weights:\n");
 	printf("-----------------------------------\n\n");
 	printf("0. customize weights\n\n");
-	for(int i = 0; i < weightchoicenum; i++){
-		printf("%d. %s\n\n", i + 1, weightchoicename[i]);
+	for(int i = 0; i < weightChoiceNum; i++){
+		printf("%d. %s\n\n", i + 1, weightChoiceName[i]);
 		printf("  ");
-		for(int j = 0; j < weightnum; j++) printf(" %d", weightchoice[i][j]);
+		for(int j = 0; j < weightNum; j++) printf(" %d", weightChoice[i][j]);
 		printf("\n\n");
 	}
-	printf("%d. back\n\n", weightchoicenum + 1);
+	printf("%d. back\n\n", weightChoiceNum + 1);
 	bool invalid;
 	int input;
 	do{
 		invalid = false;
 		input = getInt();
-		if(input < 0 or input > weightchoicenum + 1){
+		if(input < 0 or input > weightChoiceNum + 1){
 			alert("invalid selection!");
 			invalid = true;
 		}
 	}while(invalid);
-	if(input == weightchoicenum + 1);
+	if(input == weightChoiceNum + 1);
 	else if(input != 0){
-		for(int i = 0; i < weightnum; i++) dweight[i] = weightchoice[input-1][i];
+		for(int i = 0; i < weightNum; i++) myConf.weight[i] = weightChoice[input-1][i];
 		printf("\nsuccessfully set weights\n");
 		presstogo();
 	}else{
 		printf("\nenter evaluation function weights:\n\n");
-		for(int i = 0; i < weightnum; i++) scanf("%d", &dweight[i]);
+		for(int i = 0; i < weightNum; i++) scanf("%d", &myConf.weight[i]);
 		printf("\n\nsuccessfully set weights\n");
 		presstogo();
 	}
@@ -884,9 +886,9 @@ void rotateoption(){
      printf("\n");
      printf("current rotation settings:\n");
      printf("--------------------------\n\n");
-     if(rotateon) printf("rotation effect is enabled\n\n");
+     if(myConf.rotateOn) printf("rotation effect is enabled\n\n");
      else printf("rotation effect is disabled\n\n");
-     printf("display effect every %d node(s)",rotatetime);
+     printf("display effect every %d node(s)",myConf.rotateTime);
      printf("\n\n\n");
      printf("select options:\n");
      printf("---------------\n");
@@ -899,14 +901,14 @@ void rotateoption(){
      if(input<1 or input>4){printf("\ninvalid selection!\n\n"); goto select;}
      else if(input==4) return;
      else if(input==1){
-                       rotateon = true;
+                       myConf.rotateOn = true;
                        printf("\nsuccessfully enabled effect\n");
                        printf("press any key to continue");
                        getch();
                        return;
                        }
      else if(input==2){
-                       rotateon = false;
+                       myConf.rotateOn = false;
                        printf("\nsuccessfully disabled effect\n");
                        printf("press any key to continue");
                        getch();
@@ -916,8 +918,8 @@ void rotateoption(){
           printf("\n");
           select2:
           printf("enter number of nodes between effects: ");
-          scanf("%d",&rotatetime);
-          if(rotatetime<1){printf("\ninvalid number!\n\n"); goto select2;}
+          scanf("%d",&myConf.rotateTime);
+          if(myConf.rotateTime<1){printf("\ninvalid number!\n\n"); goto select2;}
           printf("\nsuccessfully set effect frequency\n");
           printf("press any key to continue");
           getch();
@@ -933,9 +935,9 @@ void flipoption(){
      printf("\n");
      printf("current flip settings:\n");
      printf("----------------------\n\n");
-     if(flipon) printf("flip animation is enabled\n\n");
+     if(myConf.flipOn) printf("flip animation is enabled\n\n");
      else printf("flip animation is disabled\n\n");
-     printf("time between each frame: %.2f second(s)",fliptime);
+     printf("time between each frame: %.2f second(s)",myConf.flipTime);
      printf("\n\n\n");
      printf("select options:\n");
      printf("---------------\n");
@@ -948,14 +950,14 @@ void flipoption(){
      if(input<1 or input>4){printf("\ninvalid selection!\n\n"); goto select;}
      else if(input==4) return;
      else if(input==1){
-                       flipon = true;
+                       myConf.flipOn = true;
                        printf("\nsuccessfully enabled effect\n");
                        printf("press any key to continue");
                        getch();
                        return;
                        }
      else if(input==2){
-                       flipon = false;
+                       myConf.flipOn = false;
                        printf("\nsuccessfully disabled effect\n");
                        printf("press any key to continue");
                        getch();
@@ -965,8 +967,8 @@ void flipoption(){
           printf("\n");
           select2:
           printf("enter time between frames: ");
-          scanf("%f",&fliptime);
-          if(fliptime<0){printf("\ninvalid number!\n\n"); goto select2;}
+          scanf("%f",&myConf.flipTime);
+          if(myConf.flipTime<0){printf("\ninvalid number!\n\n"); goto select2;}
           printf("\nsuccessfully set flip speed\n");
           printf("press any key to continue");
           getch();
@@ -981,7 +983,7 @@ void openingoption(){
      clrscr(); //clear screen
      printf("\n");
      printf("current setting:\n\n");
-     if(not ParallelAllow) printf("allow diagonal and perpendicular opening");
+     if(not myConf.parallelAllow) printf("allow diagonal and perpendicular opening");
      else printf("allow diagonal, perpendicular and parallel opening");
      printf("\n\n\n");
      printf("select options:\n");
@@ -994,14 +996,14 @@ void openingoption(){
      if(input<1 or input>3){printf("\ninvalid selection!\n\n"); goto select;}
      else if(input==3) return;
      else if(input==1){
-                       ParallelAllow = false;
+                       myConf.parallelAllow = false;
                        printf("\nsuccessfully set opening moves\n");
                        printf("press any key to continue");
                        getch();
                        return;
                        }
      else if(input==2){
-                       ParallelAllow = true;
+                       myConf.parallelAllow = true;
                        printf("\nsuccessfully set opening moves\n");
                        printf("press any key to continue");
                        getch();
@@ -1033,14 +1035,14 @@ int human(int board[64],int no[2],int player){
     printf("\n\n");
     //diplay player
     if(player==1){
-                  printf("         %s\n",black[0]);
-                  printf("you are: %s [black]\n",black[1]);
-                  printf("         %s",black[2]);
+                  printf("         %s\n",myConf.black[0]);
+                  printf("you are: %s [black]\n",myConf.black[1]);
+                  printf("         %s",myConf.black[2]);
                   }
     else{
-         printf("         %s\n",white[0]);
-         printf("you are: %s [white]\n",white[1]);
-         printf("         %s",white[2]);
+         printf("         %s\n",myConf.white[0]);
+         printf("you are: %s [white]\n",myConf.white[1]);
+         printf("         %s",myConf.white[2]);
          }
     //compute mobility
     indexformob(board);
@@ -1090,7 +1092,7 @@ int human(int board[64],int no[2],int player){
                                        goto loop1;
                                        }
                       //show flip animation
-                      if(flipon) flipanimation(board,player,position,flips.board);
+                      if(myConf.flipOn) flipanimation(board,player,position,flips.board);
                       currmove=position;
                       //update old values
                       for(i=0;i<64;i++) oldboard[i]=board[i];
@@ -1153,8 +1155,8 @@ void humansave(int board[64],int player){
      printf("\nfile name (no extension): ");
      scanf("%s",filename);
      save=fopen(strcat(filename,".ohl"),"w");
-     //print rands
-     fprintf(save,"%d",rands);
+     //print myConf.randOn
+     fprintf(save,"%d",myConf.randOn);
      //print board
      for(i=0;i<64;i++) fprintf(save," %d",board[i]);
      //print player
@@ -1193,26 +1195,26 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
     //diplay player
     if(player==1){
                   if(player==complayer){
-                                        printf("            %s\n",black[0]);
-                                        printf("O'hello is: %s [black]\n",black[1]);
-                                        printf("            %s",black[2]);
+                                        printf("            %s\n",myConf.black[0]);
+                                        printf("O-hello is: %s [black]\n",myConf.black[1]);
+                                        printf("            %s",myConf.black[2]);
                                         }
                   else{
-                       printf("         %s\n",black[0]);
-                       printf("you are: %s [black]\n",black[1]);
-                       printf("         %s",black[2]);
+                       printf("         %s\n",myConf.black[0]);
+                       printf("you are: %s [black]\n",myConf.black[1]);
+                       printf("         %s",myConf.black[2]);
                        }
                   }
     else{
          if(player==complayer){
-                               printf("            %s\n",white[0]);
-                               printf("O'hello is: %s [white]\n",white[1]);
-                               printf("            %s",white[2]);
+                               printf("            %s\n",myConf.white[0]);
+                               printf("O-hello is: %s [white]\n",myConf.white[1]);
+                               printf("            %s",myConf.white[2]);
                                }
          else{
-              printf("         %s\n",white[0]);
-              printf("you are: %s [white]\n",white[1]);
-              printf("         %s",white[2]);
+              printf("         %s\n",myConf.white[0]);
+              printf("you are: %s [white]\n",myConf.white[1]);
+              printf("         %s",myConf.white[2]);
               }         
          }
     //compute mobility
@@ -1243,7 +1245,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             lastmove=currmove;
                                             flips=flip(board,position,player); //flip!
                                             //show flip animation
-                                            if(flipon) flipanimation(board,player,position,flips.board);
+                                            if(myConf.flipOn) flipanimation(board,player,position,flips.board);
                                             //get board from function 'flip'
                                             for(i=0;i<64;i++) board[i]=flips.board[i];
                                             //update no[2]
@@ -1295,7 +1297,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             goto loop1;
                                             }
                            //show flip animation
-                           if(flipon) flipanimation(board,player,position,flips.board);
+                           if(myConf.flipOn) flipanimation(board,player,position,flips.board);
                            currmove=position;
                            //update old values
                            for(i=0;i<64;i++) oldboard[i]=board[i];
@@ -1344,7 +1346,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
          }
     else{ //pass turn :)
          if(player==complayer){
-                               printf("\n\nO'hello passed its turn");
+                               printf("\n\nO-hello passed its turn");
                                printf("\n\npress any key to continue");
                                }
          else{
@@ -1365,8 +1367,8 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
      printf("\nfile name (no extension): ");
      scanf("%s",filename);
      save=fopen(strcat(filename,".ohl"),"w");
-     //print rands
-     fprintf(save,"%d",rands);
+     //print myConf.randOn
+     fprintf(save,"%d",myConf.randOn);
      //print board
      for(i=0;i<64;i++) fprintf(save," %d",board[i]);
      //print player
@@ -1403,14 +1405,14 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
     printf("\n\n");
     //diplay player
     if(player==1){
-                  printf("              %s\n",black[0]);
-                  printf("O'hello 1 is: %s [black]\n",black[1]);
-                  printf("              %s",black[2]);
+                  printf("              %s\n",myConf.black[0]);
+                  printf("O-hello 1 is: %s [black]\n",myConf.black[1]);
+                  printf("              %s",myConf.black[2]);
                   }
     else{
-         printf("              %s\n",white[0]);
-         printf("O'hello 2 is: %s [white]\n",white[1]);
-         printf("              %s",white[2]);
+         printf("              %s\n",myConf.white[0]);
+         printf("O-hello 2 is: %s [white]\n",myConf.white[1]);
+         printf("              %s",myConf.white[2]);
          }
     //compute mobility
     indexformob(board);
@@ -1437,7 +1439,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
                       lastmove=currmove;
                       flips=flip(board,position,player); //flip!
                       //show flip animation
-                      if(flipon) flipanimation(board,player,position,flips.board);
+                      if(myConf.flipOn) flipanimation(board,player,position,flips.board);
                       //get board from function 'flip'
                       for(i=0;i<64;i++) board[i]=flips.board[i];
                       //update no[2]
@@ -1475,7 +1477,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
             }while(1);
          }
     else{ //pass turn :)
-         printf("\n\nO'hello %d passed its turn",player);
+         printf("\n\nO-hello %d passed its turn",player);
          printf("\n\npress any key to continue");
          getch();
          printf("\n");
@@ -1491,8 +1493,8 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
      printf("\nfile name (no extension): ");
      scanf("%s",filename);
      save=fopen(strcat(filename,".ohl"),"w");
-     //print rands
-     fprintf(save,"%d",rands);
+     //print myConf.randOn
+     fprintf(save,"%d",myConf.randOn);
      //print board
      for(i=0;i<64;i++) fprintf(save," %d",board[i]);
      //print player
@@ -1516,7 +1518,7 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
 //set weight for weight test
 void weightfortest(int doubleweight[2][100],int player){
      int i;
-     for(i=0;i<weightnum;i++) weight[i]=doubleweight[player-1][i];
+     for(i=0;i<weightNum;i++) weightRaw[i]=doubleweight[player-1][i];
      nickname();
 }
 
@@ -1540,7 +1542,7 @@ void weighttest(){
                  //1 = computer 1,2 plays first
 
      printf("\ndefault weights are:\n\n");
-     for(i=0;i<weightnum;i++) printf("%d ",dweight[i]);
+     for(i=0;i<weightNum;i++) printf("%d ",myConf.weight[i]);
      printf("\n");
 
      for(i=0;i<=1;i++){
@@ -1560,7 +1562,7 @@ void weighttest(){
                                                  scanf("%f",&doubletimes[i]);
                                                  if(doubletimes[i]<0){printf("\nvalue 2 error!\n"); goto set;}
                                                  }
-                                            for(j=0;j<weightnum;j++) scanf("%d",&doubleweight[i][j]);
+                                            for(j=0;j<weightNum;j++) scanf("%d",&doubleweight[i][j]);
                                             }
                        }
      settwo:
@@ -1611,7 +1613,7 @@ void weighttest(){
      doubletimes[0]=doubletimes[1];
      doubletimes[1]=b;
      //weight
-     for(i=0;i<weightnum;i++){
+     for(i=0;i<weightNum;i++){
                               a=doubleweight[0][i];
                               doubleweight[0][i]=doubleweight[1][i];
                               doubleweight[1][i]=a;
@@ -1714,35 +1716,35 @@ int input(int board[64],int player,int no[2]){
     if(strcmp(string,"menu")==0) return -4; //-4 means menu
     if(strcmp(string,"save")==0) return -999; //-999 means save
     if(strcmp(string,"randon")==0){
-                                   rands = true;
+                                   myConf.randOn = true;
                                    printf("\nrandom feature on!\n\n");
                                    goto loop1;
                                    }
     if(strcmp(string,"randoff")==0){
-                                    rands = false;
+                                    myConf.randOn = false;
                                     printf("\nrandom feature off!\n\n");
                                     goto loop1;
                                     }
     //-5 means move on-off
-    if(strcmp(string,"moveon")==0){smove = true; return -5;}
-    if(strcmp(string,"moveoff")==0){smove = false; return -5;}
+    if(strcmp(string,"moveon")==0){myConf.moveOn = true; return -5;}
+    if(strcmp(string,"moveoff")==0){myConf.moveOn = false; return -5;}
     if(strcmp(string,"spinon")==0){
-                                   rotateon = true;
+                                   myConf.rotateOn = true;
                                    printf("\nrotation effect on!\n\n");
                                    goto loop1;
                                    }
     if(strcmp(string,"spinoff")==0){
-                                    rotateon = false;
+                                    myConf.rotateOn = false;
                                     printf("\nrotation effect off!\n\n");
                                     goto loop1;
                                     }
-    if(strcmp(string,"flipon")==0){
-                                   flipon=true;
+    if(strcmp(string,"myConf.flipOn")==0){
+                                   myConf.flipOn=true;
                                    printf("\nflip animation on!\n\n");
                                    goto loop1;
                                    }
     if(strcmp(string,"flipoff")==0){
-                                    flipon=true;
+                                    myConf.flipOn=true;
                                     printf("\nflip animation off!\n\n");
                                     goto loop1;
                                     }
@@ -1835,7 +1837,7 @@ int random(int board[64],int player,int no[2],int display){
     //opening move
     if(no[0]+no[1]==5){
                        //if no parallel opening
-                       if(not ParallelAllow){
+                       if(not myConf.parallelAllow){
                                             //recompute moves.board
                                             if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
                                             if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
@@ -1846,12 +1848,12 @@ int random(int board[64],int player,int no[2],int display){
                                             if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
                                             if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
                                             
-                                            if(rands) position = moves.board[rand(2)];
+                                            if(myConf.randOn) position = moves.board[rand(2)];
                                             else position=moves.board[0];
                                             }
                        //if allow parallel opening
                        else{
-                            if(rands) position = moves.board[rand(3)];
+                            if(myConf.randOn) position = moves.board[rand(3)];
                             else position=moves.board[0];
                             }
                        }
@@ -1859,7 +1861,7 @@ int random(int board[64],int player,int no[2],int display){
     
     if(display!=0){
                    backspace(18); //clear "thinking "
-                   printf("O'hello decided to place a disk at ");
+                   printf("O-hello decided to place a disk at ");
                    switch(position%8){
                                       case 0:printf("a"); break;
                                       case 1:printf("b"); break;
@@ -1905,7 +1907,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
     //for starting position -- no need to search
     if(no[0]+no[1]==4){
                        //if random feature is on
-                       if(rands) position = moves.board[rand(4)];
+                       if(myConf.randOn) position = moves.board[rand(4)];
                        else position=moves.board[0];
                        depthwant=0;
                        enginestate=2;
@@ -1913,7 +1915,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                        }
     if(no[0]+no[1]==5){
                        //if no parallel opening
-                       if(not ParallelAllow){
+                       if(not myConf.parallelAllow){
                                             //recompute moves.board
                                             if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
                                             if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
@@ -1924,12 +1926,12 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                                             if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
                                             if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
                                             
-                                            if(rands) position = moves.board[rand(2)];
+                                            if(myConf.randOn) position = moves.board[rand(2)];
                                             else position=moves.board[0];
                                             }
                        //if allow parallel opening
                        else{
-                            if(rands) position = moves.board[rand(3)];
+                            if(myConf.randOn) position = moves.board[rand(3)];
                             else position=moves.board[0];
                             }
                        
@@ -2051,7 +2053,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                                                             }
                             }
     //if random feature is on
-    if(rands) position = candidate[rand(numcan)]; //random from candidates 
+    if(myConf.randOn) position = candidate[rand(numcan)]; //random from candidates 
     else position=candidate[0];
 
     finish:
@@ -2059,7 +2061,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
     if(display != 0){
 		if(display == 1){
 			backspace(18); //clear "thinking "
-			printf("O'hello decided to place a disk at ");
+			printf("O-hello decided to place a disk at ");
 		}else{
 			backspace(18); //clear "thinking "
 			printf("search result: ");
@@ -2143,7 +2145,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
     //for starting position -- no need to search
     if(no[0]+no[1]==4){
                        //if random feature is on
-                       if(rands) position = moves.board[rand(4)];
+                       if(myConf.randOn) position = moves.board[rand(4)];
                        else position=moves.board[0];
                        depth=1;
                        posreach=0;
@@ -2152,7 +2154,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                        }
     if(no[0]+no[1]==5){
                        //if no parallel opening
-                       if(not ParallelAllow){
+                       if(not myConf.parallelAllow){
                                             //recompute moves.board
                                             if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
                                             if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
@@ -2163,12 +2165,12 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                                             if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
                                             if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
                                             
-                                            if(rands) position = moves.board[rand(2)];
+                                            if(myConf.randOn) position = moves.board[rand(2)];
                                             else position=moves.board[0];
                                             }
                        //if allow parallel opening
                        else{
-                            if(rands) position = moves.board[rand(3)];
+                            if(myConf.randOn) position = moves.board[rand(3)];
                             else position=moves.board[0];
                             }
                        
@@ -2278,7 +2280,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                                                             }
                             }
     //if random feature is on
-    if(rands) position = candidate[rand(numcan)]; //random from candidates
+    if(myConf.randOn) position = candidate[rand(numcan)]; //random from candidates
     else position = candidate[0];
 
     finish:
@@ -2286,7 +2288,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
     if(display!=0){
                    if(display==1){
                                   backspace(18); //clear "thinking "
-                                  printf("O'hello decided to place a disk at ");
+                                  printf("O-hello decided to place a disk at ");
                                   }
                    else{
                         backspace(18); //clear "thinking "
@@ -2360,7 +2362,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
      //if completely filled -- game ends
      if(no[0]+no[1]==64){
                          node++;
-                         if(node%rotatetime==0) nodedisplay(display);
+                         if(node%myConf.rotateTime==0) nodedisplay(display);
                          if(no[0]>no[1]) return wf*(64-2*no[1]);
                          else if(no[0]<no[1]) return wf*(2*no[0]-64);
                          else return 0;
@@ -2370,7 +2372,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
 
      if(depthleft==0){
                       node++;
-                      if(node%rotatetime==0) nodedisplay(display);
+                      if(node%myConf.rotateTime==0) nodedisplay(display);
                       indexformob(board);
                       
                       //if nearly filled
@@ -2462,7 +2464,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
                    //if player 1: max mode
                    scores=-123456789; //set extreme value
                    for(index=0;index<60;index++){
-                                                 position=moveorder[index];
+                                                 position=moveOrder[index];
                                                  //check before flip
                                                  if(board[position]==0){
                                                                         flips=flip(board,position,player); //flip!
@@ -2485,7 +2487,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
                                           indexformob(board);
                                           if(mobility(3-player)==0){
                                                                           node++;
-                                                                          if(node%rotatetime==0) nodedisplay(display);
+                                                                          if(node%myConf.rotateTime==0) nodedisplay(display);
                                                                           if(no[0]>no[1]) return wf*(64-2*no[1]);
                                                                           else if(no[0]<no[1]) return wf*(2*no[0]-64);
                                                                           else return 0;
@@ -2500,7 +2502,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
           //if player 2: min mode
           scores=123456789; //set extreme value
           for(index=0;index<60;index++){
-                                        position=moveorder[index];
+                                        position=moveOrder[index];
                                         if(board[position]==0){
                                                                flips=flip(board,position,player); //flip!
                                                                //if move is legal
@@ -2522,7 +2524,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
                                 indexformob(board);
                                 if(mobility(3-player)==0){
                                                                 node++;
-                                                                if(node%rotatetime==0) nodedisplay(display);
+                                                                if(node%myConf.rotateTime==0) nodedisplay(display);
                                                                 if(no[0]>no[1]) return wf*(64-2*no[1]);
                                                                 else if(no[0]<no[1]) return wf*(2*no[0]-64);
                                                                 else return 0;
@@ -2551,7 +2553,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
                    //if player 1: max mode
                    scores=-123456789; //set extreme value
                    for(index=0;index<60;index++){
-                                                 position=moveorder[index];
+                                                 position=moveOrder[index];
                                                  //check before flip
                                                  if(board[position]==0){
                                                                         flips=flip(board,position,player); //flip!
@@ -2578,7 +2580,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
                                           indexformob(board);
                                           if(mobility(3-player)==0){
                                                                           node++;
-                                                                          if(node%rotatetime==0) nodedisplay(display);
+                                                                          if(node%myConf.rotateTime==0) nodedisplay(display);
                                                                           if(no[0]>no[1]) return wf*(64-2*no[1]);
                                                                           else if(no[0]<no[1]) return wf*(2*no[0]-64);
                                                                           else return 0;
@@ -2593,7 +2595,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
           //if player 2: min mode
           scores=123456789; //set extreme value
           for(index=0;index<60;index++){
-                                        position=moveorder[index];
+                                        position=moveOrder[index];
                                         if(board[position]==0){
                                                                flips=flip(board,position,player); //flip!
                                                                //if move is legal
@@ -2619,7 +2621,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
                                 indexformob(board);
                                 if(mobility(3-player)==0){
                                                                 node++;
-                                                                if(node%rotatetime==0) nodedisplay(display);
+                                                                if(node%myConf.rotateTime==0) nodedisplay(display);
                                                                 if(no[0]>no[1]) return wf*(64-2*no[1]);
                                                                 else if(no[0]<no[1]) return wf*(2*no[0]-64);
                                                                 else return 0;
@@ -2681,7 +2683,7 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
 //all unnecessary computations are removed to save time
 int score63(int board[64],int player,int no[2],int display){
     node++; //this is one node exactly!
-    if(node%rotatetime==0) nodedisplay(display);
+    if(node%myConf.rotateTime==0) nodedisplay(display);
     
     int flipplayer;
     int flipnonplayer;
@@ -2728,9 +2730,9 @@ int score63(int board[64],int player,int no[2],int display){
 
 //display rotation effect
 void nodedisplay(int display){
-     if(display!=0 and rotateon){
+     if(display!=0 and myConf.rotateOn){
 		 backspace(9);
-                   switch((node/rotatetime)%4){
+                   switch((node/myConf.rotateTime)%4){
                                                case 1: printf("- "); break; // horizontal 
                                                case 2: printf("\\ "); break;  // backslash
                                                case 3: printf("| "); break; // vertical
@@ -2792,10 +2794,19 @@ void boarddisplay(int board[64],int playertoshowmove){
                        strcat(string,"\n   ");
                        strcat(string,vertical);
                        for(j=8*i;j<8*i+8;j++){
-                                              if(board[j]==1) strcat(string,black[0]);
-                                              else if(board[j]==2) strcat(string,white[0]);
-                                              else if(board[j]==3) strcat(string,fliplook[0]);
-                                              else strcat(string,"     ");
+                                              if(board[j]==1) strcat(string,myConf.black[0]);
+                                              else if(board[j]==2) strcat(string,myConf.white[0]);
+                                              else if(board[j]==3) strcat(string,myConf.flipLook[0]);
+                                              else{
+                                                   //if move is to be shown (not in flipping process)
+                                                   if(playertoshowmove!=0){
+                                                                           //if move is legal and show move is on
+                                                                           if(myConf.moveOn and flip(board,j,playertoshowmove).num!=0) strcat(string,myConf.moveLook[0]);
+                                                                           else strcat(string,"     ");
+                                                                           }
+                                                   else strcat(string,"     ");
+                                                   }
+
                                               strcat(string,vertical);
                                               }
                        //row 2
@@ -2804,14 +2815,14 @@ void boarddisplay(int board[64],int playertoshowmove){
 					   strcat(string," ");
                        strcat(string,vertical);
                        for(j=8*i;j<8*i+8;j++){
-                                              if(board[j]==1) strcat(string,black[1]);
-                                              else if(board[j]==2) strcat(string,white[1]);
-                                              else if(board[j]==3) strcat(string,fliplook[1]);
+                                              if(board[j]==1) strcat(string,myConf.black[1]);
+                                              else if(board[j]==2) strcat(string,myConf.white[1]);
+                                              else if(board[j]==3) strcat(string,myConf.flipLook[1]);
                                               else{
                                                    //if move is to be shown (not in flipping process)
                                                    if(playertoshowmove!=0){
                                                                            //if move is legal and show move is on
-                                                                           if(smove and flip(board,j,playertoshowmove).num!=0) strcat(string,"  .  ");
+                                                                           if(myConf.moveOn and flip(board,j,playertoshowmove).num!=0) strcat(string,myConf.moveLook[1]);
                                                                            else strcat(string,"     ");
                                                                            }
                                                    else strcat(string,"     ");
@@ -2822,10 +2833,19 @@ void boarddisplay(int board[64],int playertoshowmove){
                        strcat(string,"\n   ");
                        strcat(string,vertical);
                        for(j=8*i;j<8*i+8;j++){
-                                              if(board[j]==1) strcat(string,black[2]);
-                                              else if(board[j]==2) strcat(string,white[2]);
-                                              else if(board[j]==3) strcat(string,fliplook[2]);
-                                              else strcat(string,"     ");
+                                              if(board[j]==1) strcat(string,myConf.black[2]);
+                                              else if(board[j]==2) strcat(string,myConf.white[2]);
+                                              else if(board[j]==3) strcat(string,myConf.flipLook[2]);
+                                              else{
+                                                   //if move is to be shown (not in flipping process)
+                                                   if(playertoshowmove!=0){
+                                                                           //if move is legal and show move is on
+                                                                           if(myConf.moveOn and flip(board,j,playertoshowmove).num!=0) strcat(string,myConf.moveLook[2]);
+                                                                           else strcat(string,"     ");
+                                                                           }
+                                                   else strcat(string,"     ");
+                                                   }
+
                                               strcat(string,vertical);
                                               }
                        //row 4
@@ -2870,7 +2890,7 @@ void display(int board[64],int player,int no[2],int lastmove){
      //row 1
      printf("\n\n");
      for(k=1;k<=31;k++) printf(" ");
-     printf("%s      %s",black[0],white[0]);
+     printf("%s      %s",myConf.black[0],myConf.white[0]);
      //row 2
      printf("\nlast move: ");
      if(lastmove==-1) printf("- ");
@@ -2889,11 +2909,11 @@ void display(int board[64],int player,int no[2],int lastmove){
           printf("%d",lastmove/8+1);
           }
      for(k=1;k<=18;k++) printf(" ");
-     printf("%s x%2d  %s x%2d",black[1],no[0],white[1],no[1]);
+     printf("%s x%2d  %s x%2d",myConf.black[1],no[0],myConf.white[1],no[1]);
      //row 3
      printf("\n");
      for(k=1;k<=31;k++) printf(" ");
-     printf("%s      %s",black[2],white[2]);
+     printf("%s      %s",myConf.black[2],myConf.white[2]);
      return;
 }
 
@@ -2916,7 +2936,7 @@ void flipanimation(int board[64],int player,int position,int flipboard[64]){
      ftime(&time1);
      do{
         ftime(&time2);
-        }while(time2.time-time1.time+0.001*(time2.millitm-time1.millitm)<fliptime);
+        }while(time2.time-time1.time+0.001*(time2.millitm-time1.millitm)<myConf.flipTime);
      
      //display flipping in progress
      for(i=0;i<64;i++){
@@ -2928,7 +2948,7 @@ void flipanimation(int board[64],int player,int position,int flipboard[64]){
      ftime(&time1);
      do{
         ftime(&time2);
-        }while(time2.time-time1.time+0.001*(time2.millitm-time1.millitm)<fliptime);
+        }while(time2.time-time1.time+0.001*(time2.millitm-time1.millitm)<myConf.flipTime);
      
      return;
 }
@@ -4088,7 +4108,7 @@ struct kirby move(int board[64],int player){
     index++;
     if(index==60) return move;
     
-    position=moveorder[index];
+    position=moveOrder[index];
     if(board[position]!=0) goto prove; //deal with the occupied
     
     //search 8 directions away from position
