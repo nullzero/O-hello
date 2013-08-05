@@ -17,9 +17,6 @@ struct Conf{
 	int rawSet;
 	
 	int weight[19];
-	
-	int diskWidth; //future variable (wants 7)
-	int diskHeight; //future variable
 };
 
 Conf myConf;
@@ -47,8 +44,6 @@ const Conf DConf = {
 	false, // parallelAllow
 	false, // rawSet
 	{-1, 40, 100, 600, 800, 140, 250, 100, 45, 2, 60, 40, 200, 800, 100, 250, 100, 1, 1000000}, // weight
-	5, // diskWidth
-	3, // diskHeight
 };
 						   
 const int weightNum = sizeof(DConf.weight) / sizeof(DConf.weight[0]); //number of weights
@@ -110,6 +105,9 @@ int wnew;
 int wf;
 
 int weightRaw[100];
+
+int diskWidth = (sizeof(DConf.black[0]) / sizeof(DConf.black[0][0])) - 1;
+int diskHeight = sizeof(DConf.black) / sizeof(DConf.black[0]);
 
 //defaultation functions
 

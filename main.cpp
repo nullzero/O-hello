@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char version[] = "test73";
+const char version[] = "74";
 const char author[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char date[] = "August 4, 2013";
+const char date[] = "August 5, 2013";
 const char language[] = "C++";
 const char compiler[] = "LLVM-G++";
 
@@ -74,9 +74,15 @@ int getInt(){
 
 //End of Oak's definitions
 
+void appendSame(std::string &s, char c, int n){
+	for(int i = 0; i < n; ++i){
+		s += c;
+	}
+}
+
 void space(int n){
 	std::string a;
-	for(int i = 0; i < n; ++i) a += " ";
+	appendSame(a, ' ', n);
 	printf("%s", a.c_str());
 }
 
@@ -117,10 +123,11 @@ int node; //count the number of nodes searched
 int main();
 comset comsettings();
 int load();
-void syntax();
+void commandHelp();
 void about();
 void speedtest();
 void sayhello();
+bool settingCommand(std::string option);
 void settings();
 void aisinterface();
 void customweight();
@@ -185,7 +192,7 @@ int main(){
 	
     clrscr(); //clear screen
     printf("\n version %s\n",version);
-	printf("                                  ----------- \n");
+	printf("                                  -----------\n");
     printf("                                 |           |\n");
     printf("                                 |  O-hello  |\n");
 	printf("                                 |           |\n");
@@ -214,50 +221,16 @@ int main(){
     loop1:
 	std::string option = getString();
 	
-    if(option == "randon"){
-		myConf.randOn = true;
-		alert("random feature on!");
+	if(settingCommand(option)){
 		goto loop1;
 	}
-    if(option == "randoff"){
-		myConf.randOn = false;
-		alert("random feature off!");
+	
+    if(option == "hello"){
+		sayhello();
 		goto loop1;
 	}
-    if(option == "moveon"){
-		myConf.moveOn = true;
-		alert("move display on!");
-		goto loop1;
-	}
-    if(option == "moveoff"){
-		myConf.moveOn = false;
-		alert("move display off!");
-		goto loop1;
-	}
-    if(option == "spinon"){
-		myConf.rotateOn = true;
-		alert("rotation effect on!");
-		goto loop1;
-	}
-    if(option == "spinoff"){
-		myConf.rotateOn = false;
-		alert("rotation effect off!");
-		goto loop1;
-	}
-    if(option == "myConf.flipOn"){
-		myConf.flipOn = true;
-		alert("flip animation on!");
-		goto loop1;
-	}
-    if(option == "flipoff"){
-		myConf.flipOn = false;
-		alert("flip animation off!");
-		goto loop1;
-	}
-    if(option == "menu") goto start;
-    if(option == "quit") finish(0);
-    if(option == "syntax"){
-		syntax();
+    if(option == "speed"){
+		speedtest();
 		goto loop1;
 	}
     if(option == "load"){
@@ -265,14 +238,13 @@ int main(){
 		if(loadvalue == EXIT) goto loop1;
 		else goto start;
 	}
-    if(option == "speed"){
-		speedtest();
+    if(option == "help"){
+		commandHelp();
 		goto loop1;
 	}
-    if(option == "hello"){
-		sayhello();
-		goto loop1;
-	}
+    if(option == "menu") goto start;
+    if(option == "quit") finish(0);
+	
     if(option.size() != 1){
 		alert("incorrect syntax!");
 		goto loop1;
@@ -506,7 +478,7 @@ int load(){
 		return EXIT;
 	}
     myConf.randOn = prerand;
-    printf("\nvalue myConf.randOn=%d", myConf.randOn);
+    printf("\nvalue randon=%d", myConf.randOn);
     //get board[64] (along with no[2])
     printf("\nvalue board=");
     no[0] = 0;
@@ -676,39 +648,36 @@ int load(){
 	}
 }
 
-//show syntax list
-void syntax(){
+//show command list
+void commandHelp(){
 	printf("\n\
-syntax list\n\
------------\n\
+Command List\n\
+------------\n\
 \n\
-m = available in the main menu\n\
-g = available in-game\n\
-+ = available as one-letter syntaxes on computer's turns\n\
+M = available in main menu\n\
+G = available in-game\n\
+O = available as one-letter command on O-hello's turns\n\
 \n\
-load        m    - load game from a file\n\
-speed       m    - test the speed of your computer\n\
-quit        m g+ - exit program\n\
-menu        m g+ - go to the main menu\n\
-save          g+ - save game in a file\n\
-new           g+ - restart the game using current settings\n\
-undo          g  - undo a move (can only go back 1 move)\n\
-reflect       g  - reflect the board horizontally\n\
-randon/off  m g  - enable/disable random feature\n\
-moveon/off  m g  - enable/disable move display\n\
-spinon/off  m g  - enable/disable rotation effect\n\
-myConf.flipOn/off  m g  - enable/disable flip animation\n\
-syntax      m g  - view this text\n\
-fsearch       g  - fixed depth search ex. fsearch 6\n\
-tsearch       g  - time limit search ex. tsearch 1\n\
-hello       m    - say hello to the program\n\n");
+hello   M     - say hello to the program\n\
+speed   M     - test the speed of your computer\n\
+load    M     - load game from a file\n\
+help    M G   - view this text\n\
+menu    M G O - go to main menu\n\
+quit    M G O - exit program\n\
+new       G O - restart the game using current settings\n\
+save      G O - save game in a file\n\
+undo      G   - undo a move (can only go back 1 move)\n\
+reflect   G   - reflect the board horizontally\n\
+fsearch   G   - fixed depth search ex. fsearch 6\n\
+tsearch   G   - time limit search ex. tsearch 1\n\
+\n");
 }
 
 //about program
 void about(){
 	clrscr();
 	printf("\n\
-about program\n\
+About Program\n\
 -------------\n\
 \n\
 project O-hello\n\
@@ -724,8 +693,8 @@ It is only an elementary level program with low search speed and weak evaluation
 function. However we hope it would be a good practice for all players aiming to\n\
 improve their skills at othello.\n\
 \n\
-Note: there are several commands available in O-hello. You can type 'syntax' to\n\
-view the list of all these commands.\n\
+Note: there are several commands available in O-hello. You can type 'help' to\n\
+view the list of commands.\n\
 \n\n\
 press 'h' to view information on how to play othello\n\
 press any other key to go back to the main menu", version, author, date, language, compiler);
@@ -733,7 +702,7 @@ press any other key to go back to the main menu", version, author, date, languag
 	if(getch() == 'h'){
 		clrscr();
 		printf("\n\
-how to play othello\n\
+How to Play Othello\n\
 -------------------\n\
 \n\
 Othello is played on an 8x8 board using disks coloured black on one side and\n\
@@ -786,6 +755,38 @@ void sayhello(){
 								"hello player, pleased to meet you"
 							};
 	printf("\n%s\n\n", greeting[rand(sizeof(greeting) / sizeof(greeting[0]))]);
+}
+
+//commands for settings
+bool settingCommand(std::string option){
+    if(option == "randon"){
+		myConf.randOn = true;
+		alert("random feature on!");
+	}else if(option == "randoff"){
+		myConf.randOn = false;
+		alert("random feature off!");
+	}else if(option == "moveon"){
+		myConf.moveOn = true;
+		alert("move display on!");
+	}else if(option == "moveoff"){
+		myConf.moveOn = false;
+		alert("move display off!");
+	}else if(option == "spinon"){
+		myConf.rotateOn = true;
+		alert("rotation effect on!");
+	}else if(option == "spinoff"){
+		myConf.rotateOn = false;
+		alert("rotation effect off!");
+	}else if(option == "flipon"){
+		myConf.flipOn = true;
+		alert("flip animation on!");
+	}else if(option == "flipoff"){
+		myConf.flipOn = false;
+		alert("flip animation off!");
+	}else{
+		return false;
+	}
+	return true;
 }
 
 //settings
@@ -1018,7 +1019,7 @@ int human(int board[64],int no[2],int player){
     int position;
     int mobilities; //value from function 'mobility'
     struct kirby flips; //value from function 'flip'
-    char letter; //for one-letter syntax
+    char letter; //for one-letter command
     int currmove=-1;
     int lastmove=-1;
     //for undo
@@ -1177,7 +1178,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
     int position;
     int mobilities; //value from function 'mobility'
     struct kirby flips; //value from function 'flip'
-    char letter; //for one-letter syntax
+    char letter; //for one-letter command
     int currmove=-1;
     int lastmove=-1;
     //for undo
@@ -1704,107 +1705,91 @@ struct triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthper
 int input(int board[64],int player,int no[2]){
     char row;
     char column;
-    char string[10];
-    int i,j;
     int depth;
     float times;
+	
     loop1:
-    scanf("%s",string); //scan string
-    if(strcmp(string,"undo")==0) return -1; //-1 means undo
-    if(strcmp(string,"reflect")==0) return -2; //-2 means reflect
-    if(strcmp(string,"new")==0) return -3; //-3 means new
-    if(strcmp(string,"menu")==0) return -4; //-4 means menu
-    if(strcmp(string,"save")==0) return -999; //-999 means save
-    if(strcmp(string,"randon")==0){
-                                   myConf.randOn = true;
-                                   printf("\nrandom feature on!\n\n");
-                                   goto loop1;
-                                   }
-    if(strcmp(string,"randoff")==0){
-                                    myConf.randOn = false;
-                                    printf("\nrandom feature off!\n\n");
-                                    goto loop1;
-                                    }
-    //-5 means move on-off
-    if(strcmp(string,"moveon")==0){myConf.moveOn = true; return -5;}
-    if(strcmp(string,"moveoff")==0){myConf.moveOn = false; return -5;}
-    if(strcmp(string,"spinon")==0){
-                                   myConf.rotateOn = true;
-                                   printf("\nrotation effect on!\n\n");
-                                   goto loop1;
-                                   }
-    if(strcmp(string,"spinoff")==0){
-                                    myConf.rotateOn = false;
-                                    printf("\nrotation effect off!\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"myConf.flipOn")==0){
-                                   myConf.flipOn=true;
-                                   printf("\nflip animation on!\n\n");
-                                   goto loop1;
-                                   }
-    if(strcmp(string,"flipoff")==0){
-                                    myConf.flipOn=true;
-                                    printf("\nflip animation off!\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"quit")==0) finish(0);
-    if(strcmp(string,"fsearch")==0){
-                                    scanf("%d",&depth);
-                                    if(depth<1){
-                                                printf("\ninvalid depth!\n\n");
-                                                goto loop1;
-                                                }
-                                    printf("\nthinking");
-									space(10);
-                                    fsearch(board,depth,player,no,2);
-                                    printf("\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"tsearch")==0){
-                                    scanf("%f",&times);
-                                    if(times<0){
-                                         printf("\ninvalid time!\n\n");
-                                         goto loop1;
-                                         }
-                                    printf("\nthinking ");
-									space(10);
-                                    tsearch(board,times,player,no,2);
-                                    printf("\n\n");
-                                    goto loop1;
-                                    }
-    if(strcmp(string,"syntax")==0){syntax(); goto loop1;}
-    if(strlen(string)!=2){
+	std::string option = getString();
+	
+	if(option == "moveon"){
+		myConf.moveOn = true;
+		return -5;
+	}
+	if(option == "moveoff"){
+		myConf.moveOn = false;
+		return -5;
+	}
+
+	if(settingCommand(option)){
+		goto loop1;
+	}
+	
+    if(option == "help"){
+		commandHelp();
+		goto loop1;
+	}
+	if(option == "menu"){
+		return -4; //-4 means menu
+	}
+	if(option == "quit"){
+		finish(0);
+	}
+	if(option == "new"){
+		return -3; //-3 means new
+	}
+	if(option == "save"){
+		return -999; //-999 means save
+	}
+	if(option == "undo"){
+		return -1; //-1 means undo
+	}
+	if(option == "reflect"){
+		return -2; //-2 means reflect
+	}
+	if(option == "fsearch"){
+        scanf("%d",&depth);
+        if(depth<1){
+                    printf("\ninvalid depth!\n\n");
+                    goto loop1;
+                    }
+        printf("\nthinking");
+		space(10);
+        fsearch(board,depth,player,no,2);
+        printf("\n\n");
+        goto loop1;
+	}
+	if(option == "tsearch"){
+        scanf("%f",&times);
+        if(times<0){
+             printf("\ninvalid time!\n\n");
+             goto loop1;
+             }
+        printf("\nthinking ");
+		space(10);
+        tsearch(board,times,player,no,2);
+        printf("\n\n");
+        goto loop1;
+	}
+
+    if(option.size()!=2){
                           printf("\nincorrect syntax!\n\n");
                           goto loop1;
                           }
-    column=string[0];
-    row=string[1];
+    column=option[0];
+    row=option[1];
     //column to 0-7
-    switch(column){
-                   case 'a':i=0; break;
-                   case 'b':i=1; break;
-                   case 'c':i=2; break;
-                   case 'd':i=3; break;
-                   case 'e':i=4; break;
-                   case 'f':i=5; break;
-                   case 'g':i=6; break;
-                   case 'h':i=7; break;
-                   default:printf("\nincorrect syntax!\n\n"); goto loop1;
-                   }
+	column -= 'a';
+	if(column < 0 or column > 7){
+		alert("incorrect syntax!");
+		goto loop1;
+	}
+	row -= '1';
     //row to 0-7
-    switch(row){
-                case '1':j=0; break;
-                case '2':j=1; break;
-                case '3':j=2; break;
-                case '4':j=3; break;
-                case '5':j=4; break;
-                case '6':j=5; break;
-                case '7':j=6; break;
-                case '8':j=7; break;
-                default:printf("\nincorrect syntax!\n\n"); goto loop1;
-                }
-    return i+8*j;
+	if(row < 0 or row > 7){
+		alert("incorrect syntax!");
+		goto loop1;
+	}
+    return row * 8 + column;
 }
 
 //display node with prefixes :)
@@ -2758,125 +2743,99 @@ void nodedisplay(int display){
 //to be used in function 'display' and 'flipanimation'
 //interpretation of board input: 0=empty,1=black,2=white,3=flipping
 void boarddisplay(int board[64],int playertoshowmove){
-     int i,j;
-     char string[2000]={}; //board string
-     
-     //ascii for components
-     char upleftcorner[2] = "+";
-     char uprightcorner[2]= "+";
-	 char downleftcorner[2] = "+";
-     char downrightcorner[2] = "+";
-     char fivehorizontal[6] = "-----";
-     char horizontaldown[2] = "+";
-     char horizontalup[2] = "+";
-     char vertical[2] = "|";
-     char verticalright[2] = "+";
-     char verticalleft[2] = "+";
-     char fourarm[2] = "+";
-     char rownumber[8][2] = {"1","2","3","4","5","6","7","8"};
-     
-     //construct board string
-     
-     //header
-     strcat(string,"      a     b     c     d     e     f     g     h");
-     strcat(string,"\n   ");
-     strcat(string,upleftcorner);
-     for(j=1;j<=7;j++){
-                       strcat(string,fivehorizontal);
-                       strcat(string,horizontaldown);
-                       }
-     strcat(string,fivehorizontal);
-     strcat(string,uprightcorner);
-     
-     //8 groups of rows
-     for(i=0;i<=7;i++){
-                       //row 1
-                       strcat(string,"\n   ");
-                       strcat(string,vertical);
-                       for(j=8*i;j<8*i+8;j++){
-                                              if(board[j]==1) strcat(string,myConf.black[0]);
-                                              else if(board[j]==2) strcat(string,myConf.white[0]);
-                                              else if(board[j]==3) strcat(string,myConf.flipLook[0]);
-                                              else{
-                                                   //if move is to be shown (not in flipping process)
-                                                   if(playertoshowmove!=0){
-                                                                           //if move is legal and show move is on
-                                                                           if(myConf.moveOn and flip(board,j,playertoshowmove).num!=0) strcat(string,myConf.moveLook[0]);
-                                                                           else strcat(string,"     ");
-                                                                           }
-                                                   else strcat(string,"     ");
-                                                   }
+	std::string output;
 
-                                              strcat(string,vertical);
-                                              }
-                       //row 2
-                       strcat(string,"\n ");
-                       strcat(string,rownumber[i]);
-					   strcat(string," ");
-                       strcat(string,vertical);
-                       for(j=8*i;j<8*i+8;j++){
-                                              if(board[j]==1) strcat(string,myConf.black[1]);
-                                              else if(board[j]==2) strcat(string,myConf.white[1]);
-                                              else if(board[j]==3) strcat(string,myConf.flipLook[1]);
-                                              else{
-                                                   //if move is to be shown (not in flipping process)
-                                                   if(playertoshowmove!=0){
-                                                                           //if move is legal and show move is on
-                                                                           if(myConf.moveOn and flip(board,j,playertoshowmove).num!=0) strcat(string,myConf.moveLook[1]);
-                                                                           else strcat(string,"     ");
-                                                                           }
-                                                   else strcat(string,"     ");
-                                                   }
-                                              strcat(string,vertical);
-                                              }
-                       //row 3
-                       strcat(string,"\n   ");
-                       strcat(string,vertical);
-                       for(j=8*i;j<8*i+8;j++){
-                                              if(board[j]==1) strcat(string,myConf.black[2]);
-                                              else if(board[j]==2) strcat(string,myConf.white[2]);
-                                              else if(board[j]==3) strcat(string,myConf.flipLook[2]);
-                                              else{
-                                                   //if move is to be shown (not in flipping process)
-                                                   if(playertoshowmove!=0){
-                                                                           //if move is legal and show move is on
-                                                                           if(myConf.moveOn and flip(board,j,playertoshowmove).num!=0) strcat(string,myConf.moveLook[2]);
-                                                                           else strcat(string,"     ");
-                                                                           }
-                                                   else strcat(string,"     ");
-                                                   }
+	//ascii for components
+	char upLeftCorner = '+';
+	char upRightCorner= '+';
+	char downLeftCorner = '+';
+	char downRightCorner = '+';
+	char horizontal = '-';
+	char horizontalDown = '+';
+	char horizontalUp = '+';
+	char vertical = '|';
+	char verticalRight = '+';
+	char verticalLeft = '+';
+	char fourArm = '+';
 
-                                              strcat(string,vertical);
-                                              }
-                       //row 4
-                       if(i!=7){
-                                //not last row
-                                strcat(string,"\n   ");
-                                strcat(string,verticalright);
-                                for(j=1;j<=7;j++){
-                                                  strcat(string,fivehorizontal);
-                                                  strcat(string,fourarm);
-                                                  }
-                                strcat(string,fivehorizontal);
-                                strcat(string,verticalleft);
-                                }
-                       else{
-                            //last row
-                            strcat(string,"\n   ");
-                            strcat(string,downleftcorner);
-                            for(j=1;j<=7;j++){
-                                              strcat(string,fivehorizontal);
-                                              strcat(string,horizontalup);
-                                              }
-                            strcat(string,fivehorizontal);
-                            strcat(string,downrightcorner);
-                            }
-                       }
-     
-     //print string (for fast display)
-     printf("%s",string);
-     
-     return;
+	int heightPutChar = (diskHeight + 1) / 2;
+	int spaceBeforeChar = (diskWidth + 1) / 2;
+	int spaceAfterChar = diskWidth - spaceBeforeChar;
+
+	//construct board string
+
+	//header
+	appendSame(output, ' ', 3);
+	for(char i = 'a'; i <= 'h'; ++i){
+		appendSame(output, ' ', spaceBeforeChar);
+		output += i;
+		appendSame(output, ' ', spaceAfterChar);
+	}
+	output += "\n";
+
+	appendSame(output, ' ', 3);
+	output += upLeftCorner;
+
+	for(int i = 1; i <= 7; i++){
+		appendSame(output, horizontal, diskWidth);
+		output += horizontalDown;
+	}
+	appendSame(output, horizontal, diskWidth);
+	output += upRightCorner;
+	output += '\n';
+
+	// loop
+	for(int i = 0; i < 8; ++i){
+		for(int j = 0; j < diskHeight; ++j){
+			if(j == heightPutChar - 1){
+				output += ' ';
+				output += '1' + i;
+				output += ' ';
+			}else{
+			 	appendSame(output, ' ', 3);
+			}
+			output += vertical;
+			for(int k = 8 * i; k < 8 * i + 8; ++k){
+				if(board[k] == 1) output += myConf.black[j];
+				else if(board[k] == 2) output += myConf.white[j];
+				else if(board[k] == 3) output += myConf.flipLook[j];
+				else{
+					//if move is to be shown (not in flipping process)
+					if(playertoshowmove != 0){
+						//if move is legal and show move is on
+						if(myConf.moveOn and flip(board, k, playertoshowmove).num != 0) output += myConf.moveLook[j];
+						else appendSame(output, ' ', diskWidth);
+					}else{
+						appendSame(output, ' ', diskWidth);
+					}
+				}
+				output += vertical;
+			}
+			output += '\n';
+		}
+		if(i != 7){
+			//not last row
+			appendSame(output, ' ', 3);
+			output += verticalRight;
+			for(int j = 1; j <= 7; j++){
+				appendSame(output, horizontal, diskWidth);
+				output += fourArm;
+			}
+			appendSame(output, horizontal, diskWidth);
+			output += verticalLeft;
+			output += '\n';
+		}else{
+			appendSame(output, ' ', 3);
+			output += downLeftCorner;
+			for(int j = 1; j <= 7; j++){
+				appendSame(output, horizontal, diskWidth);
+				output += horizontalUp;
+			}
+			appendSame(output, horizontal, diskWidth);
+			output += downRightCorner;
+		}
+	}
+	printf("%s", output.c_str());
 }
 
 //display board and game information

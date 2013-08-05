@@ -571,3 +571,10 @@ date: Aug 4, 2013 lines: 4515 lines
 - rewrote config system (prepare for new command system & new save system)
 - used moveLook
 - change project name "O'hello" to "O-hello"
+
+version 74
+date: Aug 5, 2013 lines: 4492 lines
+-----------------------------------
+- wrote function settingCommand (prepare for new command system)
+- rewrote function boarddisplay to generalize disk size
+  -- wrote appendSame

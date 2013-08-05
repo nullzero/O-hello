@@ -1,11 +1,17 @@
+* invent command set, etc. and organize commands/settings
+  - make command, get rid of setting menu
+  - give command in help
+  - reinvent save system / save setting system
 * weight test
   - "default weight" change to other names
   - give description on how to use
-* invent command set, etc. and organize commands/settings
-  - make command, get rid of setting menu
-  - boarddisplay make into generalization
 * write timer (sleep then wake up)
+  - use rotate graphic accordingly
+  - rewrite tsearch accordingly
 * solve graphic problem (off screen)
+* make infinite undo
+* make >>> for input
 ** continue to optimize/organize
 ** compatible with windows
 ** change to bit system
+
