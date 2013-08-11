@@ -578,3 +578,15 @@ date: Aug 5, 2013 lines: 4492 lines
 - wrote function settingCommand (prepare for new command system)
 - rewrote function boarddisplay to generalize disk size
   -- wrote appendSame
+
+version 75
+date: Aug 9, 2013 lines: 4462 lines
+-----------------------------------
+- made variables BC,XC,OC
+- wrote new setting prototype
+- rewrote weight test interface
+- corrected some mode value assignments
+- improved some help descriptions
+- used opPlayer
+- generalized underboard display
+- changed disk size to 7x3 (experimental)

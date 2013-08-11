@@ -1,10 +1,8 @@
+* why clrscr() doesn't work at start??
 * invent command set, etc. and organize commands/settings
   - make command, get rid of setting menu
   - give command in help
   - reinvent save system / save setting system
-* weight test
-  - "default weight" change to other names
-  - give description on how to use
 * write timer (sleep then wake up)
   - use rotate graphic accordingly
   - rewrite tsearch accordingly

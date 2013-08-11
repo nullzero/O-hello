@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char version[] = "74";
+const char version[] = "75";
 const char author[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char date[] = "August 5, 2013";
+const char date[] = "August 9, 2013";
 const char language[] = "C++";
 const char compiler[] = "LLVM-G++";
 
@@ -18,14 +18,17 @@ const char compiler[] = "LLVM-G++";
 #include "mobtable.h" //precomputed mobility table
 
 //Oak's definitions
-
-#include <iostream>
 #include <string>
 #include <signal.h>
 #include <cassert>
+#include <map>
 
 //(own header)
-#include "mystdio.h"
+#ifndef _MYSTDIO_
+	#define _MYSTDIO_
+	#include "mystdio.h"
+#endif
+
 #include "precompute.h"
 #include "config.h"
 
@@ -33,6 +36,20 @@ const char compiler[] = "LLVM-G++";
 
 const int EXIT = 555;
 const int MAXN = 8;
+const int BC = 0;
+const int XC = 1;
+const int OC = 2;
+
+void finish(int sig){
+    exit(0);
+}
+
+void init(){
+	system("stty erase ^?");
+	signal(SIGINT, finish);
+	
+	initConfig();
+}
 
 int rand(int a){
 	return rand() % a;
@@ -40,45 +57,15 @@ int rand(int a){
 
 int rand(int a, int b){
 	return (rand() % (b - a + 1)) + a;
-	
 }
-
-void alert(std::string s){
-	printf("\n%s\n\n", s.c_str());
-}
-
-void clrscr(){
-	system("clear");
-}
-
-void finish(int sig){
-    exit(0);
-}
-
-void presstogo(){
-	printf("press any key to continue");
-	getch();
-}
-
-std::string getString(){
-	std::string x;
-	std::cin >> x;
-	return x;
-}
-
-int getInt(){
-	int a;
-	scanf("%d", &a);
-	return a;
-}
-
-//End of Oak's definitions
 
 void appendSame(std::string &s, char c, int n){
 	for(int i = 0; i < n; ++i){
 		s += c;
 	}
 }
+
+//End of Oak's definitions
 
 void space(int n){
 	std::string a;
@@ -88,7 +75,7 @@ void space(int n){
 
 void backspace(int n){
 	std::string a;
-	for(int i = 0; i < n; ++i) a += "\b";
+	appendSame(a, '\b', n);
 	printf("%s", a.c_str());
 }
 
@@ -122,7 +109,7 @@ int node; //count the number of nodes searched
 //functions in this source code are arranged in this order
 int main();
 comset comsettings();
-int load();
+bool load();
 void commandHelp();
 void about();
 void speedtest();
@@ -166,9 +153,10 @@ int flipnum(int board[64],int position,int player);
 
 //interface
 int main(){
-	system("stty erase ^?");
-	signal(SIGINT, finish);
-	myConf = DConf;
+	init();
+	
+	myConf = DConf; //set default
+	
     int mode;
     int depth;
     int depthperfect;
@@ -183,8 +171,8 @@ int main(){
     int sentdoubledepth[2];
     int sentdoubledepthperfect[2];
     float sentdoubletimes[2];
-    int loadvalue;
     comset pack;
+	
     srand(time(NULL)); //set up the random number generator
 	
 	
@@ -210,113 +198,86 @@ int main(){
     weightInitialize();
     //set board
     //board: 0=space,1=player 1,2=player 2O-hello
-    int board[64] = {};
-    board[27] = 2;
-    board[28] = 1;
-    board[35] = 1;
-    board[36] = 2;
+    int board[MAXN * MAXN] = {};
+    board[27] = OC;
+    board[28] = XC;
+    board[35] = XC;
+    board[36] = OC;
     int no[2] = {2, 2}; //set number of each player's disks
-    int player = 1; //set current player
-
-    loop1:
-	std::string option = getString();
+    int player = XC; //set current player
 	
-	if(settingCommand(option)){
-		goto loop1;
-	}
-	
-    if(option == "hello"){
-		sayhello();
-		goto loop1;
-	}
-    if(option == "speed"){
-		speedtest();
-		goto loop1;
-	}
-    if(option == "load"){
-		loadvalue = load();
-		if(loadvalue == EXIT) goto loop1;
-		else goto start;
-	}
-    if(option == "help"){
-		commandHelp();
-		goto loop1;
-	}
-    if(option == "menu") goto start;
-    if(option == "quit") finish(0);
-	
-    if(option.size() != 1){
-		alert("incorrect syntax!");
-		goto loop1;
-	}
-    if(option == "0"){
-		settings();
-		goto start;
-	}
-    if(option == "1"){
-		//human vs human
-		do{
-			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
-			for(int i = 0; i < 2; i++) sentno[i] = no[i];
-		}while(human(sentboard, sentno, player) == EXIT);
-		goto start;
-	}else if(option == "2" or option == "3"){
-		 //human vs computer,computer vs human
-		clrscr();
-		printf("\nselect search mode for O-hello:\n");
-		printf("-------------------------------\n\n");
-		//get settings
-		pack = comsettings();
-		mode = pack.mode;
-		depth = pack.depth;
-		depthperfect = pack.depthperfect;
-		times = pack.times;
-		if(option[0] == '2'){
-			 do{
-			 	for(int i = 0; i < 64; i++) sentboard[i] = board[i];
-			 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
-			 }while(comhuman(sentboard, sentno, player, 2, mode, depth, depthperfect, times) == EXIT);
-			 goto start;
-		}else{
-		 do{
-		 	for(int i = 0; i < 64; i++) sentboard[i] = board[i];
-		 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
-		 }while(comhuman(sentboard, sentno, player, 1, mode, depth, depthperfect, times) == EXIT);
-		 goto start;
-		}
-    }else if(option[0] == '4'){
-		//computer vs computer
-		for(int i = 0; i < 2; i++){
-			printf("\nselect search mode for O-hello %d:\n", i + 1);
-			printf("---------------------------------\n\n");
+	while(true){
+		std::string inp = getString();
+		if(settingCommand(inp)) continue;
+		if(inp == "hello") sayhello();
+		else if(inp == "speed") speedtest();
+		else if(inp == "load"){
+			if(load()) goto start;
+		}else if(inp == "help") commandHelp();
+		else if(inp == "menu") goto start;
+		else if(inp == "quit") finish(0);
+	    else if(inp.size() != 1) alert("incorrect syntax!");
+		else if(inp == "0"){
+			settings();
+			goto start;
+		}else if(inp == "1"){
+			//human vs human
+			do{
+				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+				for(int i = 0; i < 2; i++) sentno[i] = no[i];
+			}while(human(sentboard, sentno, player) == EXIT);
+			goto start;
+		}else if(inp == "2" or inp == "3"){
+			 //human vs computer,computer vs human
+			clrscr();
+			printf("\nselect search mode for O-hello:\n");
+			printf("-------------------------------\n\n");
 			//get settings
-            pack = comsettings();
-            doublemode[i] = pack.mode;
-            doubledepth[i] = pack.depth;
-            doubledepthperfect[i] = pack.depthperfect;
-            doubletimes[i] = pack.times;
-            printf("\n");
+			pack = comsettings();
+			mode = pack.mode;
+			depth = pack.depth;
+			depthperfect = pack.depthperfect;
+			times = pack.times;
+			int numvalue;
+			if(inp[0] == '2') numvalue = 2;
+			else numvalue = 3;
+			do{
+				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+			 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
+			}while(comhuman(sentboard, sentno, player, numvalue, mode, depth, depthperfect, times) == EXIT);
+			goto start;
+	    }else if(inp[0] == '4'){
+			//computer vs computer
+			for(int i = 0; i < 2; i++){
+				printf("\nselect search mode for O-hello %d:\n", i + 1);
+				printf("---------------------------------\n\n");
+				//get settings
+	            pack = comsettings();
+	            doublemode[i] = pack.mode;
+	            doubledepth[i] = pack.depth;
+	            doubledepthperfect[i] = pack.depthperfect;
+	            doubletimes[i] = pack.times;
+	            printf("\n");
+			}
+	        do{
+				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
+				for(int i = 0; i < 2; i++) sentno[i] = no[i];
+	            for(int i = 0; i < 2; i++) sentdoublemode[i] = doublemode[i];
+	            for(int i = 0; i < 2; i++) sentdoubledepth[i] = doubledepth[i];
+	            for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
+	            for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
+			}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
+	        goto start;
+		}else if(inp[0] == '5'){
+			weighttest();
+			goto start;
+		}else if(inp[0] == '6'){
+			about();
+			goto start;
+		}else{
+			alert("invalid mode!");
 		}
-        do{
-			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
-			for(int i = 0; i < 2; i++) sentno[i] = no[i];
-            for(int i = 0; i < 2; i++) sentdoublemode[i] = doublemode[i];
-            for(int i = 0; i < 2; i++) sentdoubledepth[i] = doubledepth[i];
-            for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
-            for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
-		}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
-        goto start;
-	}else if(option[0] == '5'){
-		weighttest();
-		goto start;
-	}else if(option[0] == '6'){
-		about();
-		goto start;
-	}else{
-		alert("invalid mode!");
-		goto loop1;
 	}
-	finish(0);
 }
 
 //AI settings interface
@@ -324,7 +285,7 @@ comset comsettings(){
 	comset pack;
 	if(myConf.rawSet){
 		// old interface
-		printf("0. random: random play\n");
+		printf("0. random : random play\n");
 		printf("1. fsearch: fixed depth search\n");
 		printf("2. tsearch: time limit search\n\n");
 		
@@ -334,22 +295,22 @@ comset comsettings(){
 			alert("invalid mode!");
 			goto setmode;
 		}
-		if(pack.mode == 2) pack.mode = 3; //make compatible with other functions
-		pack.depth = -1;
-		pack.depthperfect = 1;
-		pack.times = -1;
 		
 		setdetail:
 		if(pack.mode == 1){
 			printf("\ninput search depth and depthperfect: ");
 			scanf("%d", &pack.depth);
-			scanf("%d", &pack.depthperfect);
-			if(pack.depth < 1 or pack.depthperfect < 1){
+			if(pack.depth < 1){
 				printf("\ninvalid depth!\n");
 				goto setdetail;
 			}
-		}else if(pack.mode == 3){
-		    printf("\nNOTE: time taken will be about 0.5x-2x time limit");
+			scanf("%d", &pack.depthperfect);
+			if(pack.depthperfect < 1){
+				printf("\ninvalid depthperfect!\n");
+				goto setdetail;
+			}
+		}else if(pack.mode == 2){
+		    printf("\nTHIS MODE IS UNDER DEVELOPMENT - USE WITH CARE");
 		    printf("\n\ninput time limit (sec): ");
 		    scanf("%f", &pack.times);
 		    if(pack.times<0){
@@ -369,10 +330,7 @@ comset comsettings(){
 			alert("invalid mode!"); 
 			goto newsetmode;
 		}
-		if(pack.mode == 2) pack.mode = 3; //make compatible with other functions
-		pack.depth = -1;
-		pack.depthperfect = 1;
-		pack.times = -1;
+
 		if(pack.mode == 1){
 			printf("\n");
 			printf("select search depth:\n");
@@ -423,7 +381,7 @@ comset comsettings(){
 			}
 		}else{
 		    newsettimes:
-		    printf("\nNOTE: time taken will be about 0.5x-2x time limit");
+		    printf("\nTHIS MODE IS UNDER DEVELOPMENT - USE WITH CARE");
 		    printf("\n\ninput time limit (sec): ");
 		    scanf("%f", &pack.times);
 		    if(pack.times < 0){
@@ -436,9 +394,9 @@ comset comsettings(){
 }
 
 //load engine
-//return EXIT if file is corrupted
-//return 0 if load successfully
-int load(){
+//return false if file is corrupted
+//return true if load successfully
+bool load(){
     char filename[100];
     int prerand;
     int board[64];
@@ -466,7 +424,7 @@ int load(){
     save = fopen(strcat(filename, ".ohl"), "r");
     if(save == NULL){
 		printf("\n\ncan't open %s or file doesn't exist\n\n",filename); 
-		return EXIT;
+		return false;
 	}
     printf("\n\nopening %s\n",filename);
     //get myConf.randOn
@@ -475,7 +433,7 @@ int load(){
     if(prerand != 0 and prerand != 1){
 		printf("\n%s is corrupted!\n\n", filename);
 		fclose(save);
-		return EXIT;
+		return false;
 	}
     myConf.randOn = prerand;
     printf("\nvalue randon=%d", myConf.randOn);
@@ -492,7 +450,7 @@ int load(){
 			if(i == 27 or i == 28 or i == 35 or i == 36){
 				printf("\n\n%s is corrupted!\n\n", filename);
 				fclose(save);
-				return EXIT;
+				return false;
 			}else{
 				printf("0");
 			}
@@ -506,7 +464,7 @@ int load(){
 		else{
 			printf("\n\n%s is corrupted!\n\n", filename);
 			fclose(save);
-			return EXIT;
+			return false;
 		}
 	}
     //get player
@@ -515,7 +473,7 @@ int load(){
     if(player != 1 and player != 2){
 		printf("\n\n%s is corrupted!\n\n", filename);
 		fclose(save);
-		return EXIT;
+		return false;
 	}
     printf("\nvalue player=%d", player);
     //get loadmode
@@ -530,7 +488,7 @@ int load(){
 			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
 			for(int i = 0; i < 2; i++) sentno[i] = no[i];
 		}while(human(sentboard,sentno,player) == EXIT);
-		return 0;
+		return true;
 	}else if(loadmode == 2 or loadmode == 3){
 		//computer vs human, human vs computer
 		printf("\nvalue loadmode=%d", loadmode);
@@ -540,7 +498,7 @@ int load(){
 		if(mode < 0 or mode > 3){
 			printf("\n\n%s is corrupted!\n\n", filename);
 			fclose(save);
-			return EXIT;
+			return false;
 		}
 		printf("\nvalue mode=%d", mode);
 		//get depth or times
@@ -552,14 +510,14 @@ int load(){
 			if(depth < 1){
 				printf("\n\n%s is corrupted!\n\n", filename);
 				fclose(save);
-				return EXIT;
+				return false;
 			}
 			printf("\nvalue depth=%d", depth);
 			fscanf(save, "%d", &depthperfect);
 			if(depthperfect < 1){
 				printf("\n\n%s is corrupted!\n\n", filename);
 				fclose(save);
-				return EXIT;
+				return false;
 			}
 			printf("\nvalue depthperfect=%d", depthperfect);
 		}else if(mode == 3){
@@ -567,7 +525,7 @@ int load(){
 			if(times < 0){
 				printf("\n\n%s is corrupted!\n\n", filename);
 				fclose(save);
-				return EXIT;
+				return false;
 			}
 			printf("\nvalue times=%f", times);
 		}
@@ -579,13 +537,13 @@ int load(){
 				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
 				for(int i = 0; i < 2; i++) sentno[i] = no[i];
 			}while(comhuman(sentboard, sentno, player, 2, mode, depth, depthperfect, times) == EXIT);
-			return 0;
+			return true;
 		}else{
 			do{
 				for(int i = 0; i < 64; i++) sentboard[i]=board[i];
 				for(int i = 0; i < 2; i++) sentno[i]=no[i];
 			}while(comhuman(sentboard, sentno, player, 1, mode, depth, depthperfect, times) == EXIT);
-			return 0;
+			return true;
 		}
 	}else if(loadmode == 4){
 		//computer vs computer
@@ -597,7 +555,7 @@ int load(){
 			if(doublemode[i] < 0 or doublemode[i] > 3){
 				printf("\n\n%s is corrupted!\n\n", filename);
 				fclose(save);
-				return EXIT;
+				return false;
 			}
 			printf("\nvalue doublemode[%d]=%d", i, doublemode[i]);
 			//get doubledepth or doubletimes
@@ -609,14 +567,14 @@ int load(){
 				if(doubledepth[i] < 1){
 					printf("\n\n%s is corrupted!\n\n", filename);
 					fclose(save);
-					return EXIT;
+					return false;
 				}
 				printf("\nvalue doubledepth[%d]=%d", i, doubledepth[i]);
 				fscanf(save, "%d", &doubledepthperfect[i]);
 				if(doubledepthperfect[i] < 1){
 					printf("\n\n%s is corrupted!\n\n", filename);
 					fclose(save);
-					return EXIT;
+					return false;
 				}
 				printf("\nvalue doubledepthperfect[%d]=%d", i, doubledepthperfect[i]);
 			}
@@ -625,7 +583,7 @@ int load(){
 				if(doubletimes[i] < 0){
 					printf("\n\n%s is corrupted!\n\n", filename);
 					fclose(save);
-					return EXIT;
+					return false;
 				}
 				printf("\nvalue doubletimes[%d]=%f", i, doubletimes[i]);
 			}
@@ -641,35 +599,34 @@ int load(){
 			for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
 			for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
 		}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
-		return 0;
+		return true;
 	}else{
 		printf("\n\n%s is corrupted!\n\n", filename);
-		return EXIT;
+		return false;
 	}
 }
 
 //show command list
 void commandHelp(){
 	printf("\n\
-Command List\n\
-------------\n\
+COMMAND HELP\n\
 \n\
 M = available in main menu\n\
 G = available in-game\n\
 O = available as one-letter command on O-hello's turns\n\
 \n\
-hello   M     - say hello to the program\n\
-speed   M     - test the speed of your computer\n\
-load    M     - load game from a file\n\
+hello   M     - say hello to program\n\
+speed   M     - test speed of computer\n\
+load    M     - load game from file\n\
 help    M G   - view this text\n\
 menu    M G O - go to main menu\n\
 quit    M G O - exit program\n\
-new       G O - restart the game using current settings\n\
-save      G O - save game in a file\n\
-undo      G   - undo a move (can only go back 1 move)\n\
-reflect   G   - reflect the board horizontally\n\
-fsearch   G   - fixed depth search ex. fsearch 6\n\
-tsearch   G   - time limit search ex. tsearch 1\n\
+new       G O - restart game using current settings\n\
+save      G O - save game in file\n\
+undo      G   - undo move (can only go back 1 move)\n\
+reflect   G   - reflect board (horizontally)\n\
+fsearch   G   - fixed depth search, followed by depth\n\
+tsearch   G   - time limit search, followed by time (sec)\n\
 \n");
 }
 
@@ -1014,7 +971,6 @@ void openingoption(){
 
 //human vs human
 int human(int board[64],int no[2],int player){
-    printf(""); //prevent bug
     int i,j,k; //for reflect
     int position;
     int mobilities; //value from function 'mobility'
@@ -1033,7 +989,7 @@ int human(int board[64],int no[2],int player){
     clrscr(); //clear screen
     //display board
     display(board,player,no,lastmove);
-    printf("\n\n");
+    printf("\n");
     //diplay player
     if(player==1){
                   printf("         %s\n",myConf.black[0]);
@@ -1192,7 +1148,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
     clrscr(); //clear screen
     //display board
     display(board,player,no,lastmove);
-    printf("\n\n");
+    printf("\n");
     //diplay player
     if(player==1){
                   if(player==complayer){
@@ -1234,7 +1190,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                                         if(no[0]+no[1]>=64-depthperfect) position=fsearch(board,depthperfect,player,no,1);
                                                         else position=fsearch(board,depth,player,no,1);
                                                         }
-                                            if(mode==3) position=tsearch(board,times,player,no,1);
+                                            if(mode==2) position=tsearch(board,times,player,no,1);
                                             printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
                                             printf("\npress any other key to continue");
                                             letter=getch();
@@ -1403,7 +1359,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
     clrscr(); //clear screen
     //display board
     display(board,player,no,lastmove);
-    printf("\n\n");
+    printf("\n");
     //diplay player
     if(player==1){
                   printf("              %s\n",myConf.black[0]);
@@ -1428,7 +1384,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
                                                   if(no[0]+no[1]>=64-doubledepthperfect[player-1]) position=fsearch(board,doubledepthperfect[player-1],player,no,1);
                                                   else position=fsearch(board,doubledepth[player-1],player,no,1);
                                                   }
-                      if(doublemode[player-1]==3) position=tsearch(board,doubletimes[player-1],player,no,1);
+                      if(doublemode[player-1]==2) position=tsearch(board,doubletimes[player-1],player,no,1);
                       printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
                       printf("\npress any other key to continue");
                       letter=getch();
@@ -1541,40 +1497,49 @@ void weighttest(){
      int numrand; //number of random first moves
      int twoway; //0 = computer 1 plays first only
                  //1 = computer 1,2 plays first
-
-     printf("\ndefault weights are:\n\n");
-     for(i=0;i<weightNum;i++) printf("%d ",myConf.weight[i]);
+	 
      printf("\n");
+	 printf("WEIGHT TEST SYTEM (FOR TECHNICAL USE)\n\n");
+	 printf("current weights are:\n");
+     for(i=0;i<weightNum;i++) printf("%d ",myConf.weight[i]);
+     printf("\n\n");
+	 printf("parameters: mode, depth/time, [weights]\n");
+	 printf("mode      : 0 = random, 1 = fsearch, 2 = tsearch\n");
+	 printf("for mode 1: input depth, depthperfect\n");
+	 printf("for mode 2: input time\n");
 
      for(i=0;i<=1;i++){
                        set:
                        printf("\nenter computer %d parameters:\n\n",i+1);
                        //parameters = mode depth/time [weights]
                        scanf("%d",&doublemode[i]);
-                       if(doublemode[i]<0 or doublemode[i]>3){printf("\nvalue 1 error!\n"); goto set;}
-                       if(doublemode[i]!=0){
-                                            if(doublemode[i]!=3){
-                                                                 scanf("%d",&doubledepth[i]);
-                                                                 if(doubledepth[i]<1){printf("\nvalue 2a error!\n"); goto set;}
-                                                                 scanf("%d",&doubledepthperfect[i]);
-                                                                 if(doubledepthperfect[i]<1){printf("\nvalue 2b error!\n"); goto set;}
-                                                                 }
-                                            else{
+                       if(doublemode[i]<0 or doublemode[i]>2){printf("\ninvalid mode!\n"); goto set;}
+                       if(doublemode[i] == 1){
+                             		scanf("%d",&doubledepth[i]);
+                                  	if(doubledepth[i]<1){printf("\ninvalid depth!\n"); goto set;}
+                                    scanf("%d",&doubledepthperfect[i]);
+                                    if(doubledepthperfect[i]<1){printf("\ninvalid depthperfect!\n"); goto set;}
+                                    }
+                       else if(doublemode[i] == 2){
                                                  scanf("%f",&doubletimes[i]);
-                                                 if(doubletimes[i]<0){printf("\nvalue 2 error!\n"); goto set;}
+                                                 if(doubletimes[i]<0){printf("\ninvalid time!\n"); goto set;}
                                                  }
-                                            for(j=0;j<weightNum;j++) scanf("%d",&doubleweight[i][j]);
-                                            }
+                       if(doublemode[i]!= 0) for(j=0;j<weightNum;j++) scanf("%d",&doubleweight[i][j]);
                        }
      settwo:
-     printf("\nenter test parameters:\n\n");
+     printf("\n");
+	 printf("parameters: numgame, numrand, twoway\n");
+	 printf("numgame   : no. of test games\n");
+	 printf("numrand   : no. of random moves at beginning of game\n");
+	 printf("twoway    : 0 = com 1 as black, 1 = com 1 as black and white\n\n");
+	 printf("enter test parameters:\n\n");
      //parameters = numgame numrand twoway
      scanf("%d",&numgame);
-     if(numgame<1){printf("\nvalue 1 error!\n"); goto settwo;}
+     if(numgame<1){printf("\ninvalid numgame!\n"); goto settwo;}
      scanf("%d",&numrand);
-     if(numrand<0 or numrand>60){printf("\n value 2 error!\n"); goto settwo;}
+     if(numrand<0 or numrand>60){printf("\ninvalid numrand!\n"); goto settwo;}
      scanf("%d",&twoway);
-     if(twoway!=0 and twoway!=1){printf("\nvalue 3 error!\n"); goto settwo;}
+     if(twoway!=0 and twoway!=1){printf("\ninvalid twoway!\n"); goto settwo;}
      
      //computer 1 vs computer 2
      
@@ -1631,7 +1596,8 @@ void weighttest(){
      printf("\ncom 2 won %.1f/%d games = %.2f%c",score2,2*numgame,50*score2/numgame,37);
      }
      
-     getch();
+	 printf("\n\n");
+     presstogo();
      return;
 }
 
@@ -1675,7 +1641,7 @@ struct triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthper
                                                               if(no[0]+no[1]>=64-doubledepthperfect[player-1]) position=fsearch(board,doubledepthperfect[player-1],player,no,0);
                                                               else position=fsearch(board,doubledepth[player-1],player,no,0);
                                                               }
-                                  if(doublemode[player-1]==3) position=tsearch(board,doubletimes[player-1],player,no,0);
+                                  if(doublemode[player-1]==2) position=tsearch(board,doubletimes[player-1],player,no,0);
                                   }
                              flips=flip(board,position,player); //flip!
                              //get board from function 'flip'
@@ -2835,20 +2801,22 @@ void boarddisplay(int board[64],int playertoshowmove){
 			output += downRightCorner;
 		}
 	}
+	output += "\n\n";
 	printf("%s", output.c_str());
 }
 
 //display board and game information
 void display(int board[64],int player,int no[2],int lastmove){
-     int k;
+	 int totalWidth = (diskWidth + 1) * MAXN + 4;
+	 int distanceRight = 2 * diskWidth + 11;
+	 int distanceLeft = 13;
      
      //display board
      boarddisplay(board,player);
      
      //display last move and no[2]
      //row 1
-     printf("\n\n");
-     for(k=1;k<=31;k++) printf(" ");
+     space(totalWidth - distanceRight);
      printf("%s      %s",myConf.black[0],myConf.white[0]);
      //row 2
      printf("\nlast move: ");
@@ -2867,11 +2835,11 @@ void display(int board[64],int player,int no[2],int lastmove){
                              }
           printf("%d",lastmove/8+1);
           }
-     for(k=1;k<=18;k++) printf(" ");
+     space(totalWidth - distanceRight - distanceLeft);
      printf("%s x%2d  %s x%2d",myConf.black[1],no[0],myConf.white[1],no[1]);
      //row 3
      printf("\n");
-     for(k=1;k<=31;k++) printf(" ");
+     space(totalWidth - distanceRight);
      printf("%s      %s",myConf.black[2],myConf.white[2]);
      return;
 }
@@ -4207,6 +4175,7 @@ kirby flip(int board[64],int position,int player){
        kirby flip;
        int i;
        int poscheck;
+	   int opPlayer = opposite[player];
        
        flip.num=0; //start at 0
        if(board[position]) return flip; //if nonempty
@@ -4220,7 +4189,7 @@ kirby flip(int board[64],int position,int player){
        
        //upleft
        if(IsUpleftMovable[position]){
-       if(board[position-9]==3-player){
+       if(board[position-9]==opPlayer){
        
        poscheck=position-18;
        loop1:
@@ -4238,7 +4207,7 @@ kirby flip(int board[64],int position,int player){
        
        //up
        if(IsUpMovable[position]){
-       if(board[position-8]==3-player){
+       if(board[position-8]==opPlayer){
        
        poscheck=position-16;
        loop2:
@@ -4256,7 +4225,7 @@ kirby flip(int board[64],int position,int player){
        
        //upright
        if(IsUprightMovable[position]){
-       if(board[position-7]==3-player){
+       if(board[position-7]==opPlayer){
        
        poscheck=position-14;
        loop3:
@@ -4274,7 +4243,7 @@ kirby flip(int board[64],int position,int player){
        
        //left
        if(IsLeftMovable[position]){
-       if(board[position-1]==3-player){
+       if(board[position-1]==opPlayer){
        
        poscheck=position-2;
        loop4:
@@ -4292,7 +4261,7 @@ kirby flip(int board[64],int position,int player){
        
        //right
        if(IsRightMovable[position]){
-       if(board[position+1]==3-player){
+       if(board[position+1]==opPlayer){
        
        poscheck=position+2;
        loop5:
@@ -4310,7 +4279,7 @@ kirby flip(int board[64],int position,int player){
        
        //downleft
        if(IsDownleftMovable[position]){
-       if(board[position+7]==3-player){
+       if(board[position+7]==opPlayer){
        
        poscheck=position+14;
        loop6:
@@ -4328,7 +4297,7 @@ kirby flip(int board[64],int position,int player){
        
        //down
        if(IsDownMovable[position]){
-       if(board[position+8]==3-player){
+       if(board[position+8]==opPlayer){
        
        poscheck=position+16;
        loop7:
@@ -4346,7 +4315,7 @@ kirby flip(int board[64],int position,int player){
        
        //downright
        if(IsDownrightMovable[position]){
-       if(board[position+9]==3-player){
+       if(board[position+9]==opPlayer){
        
        poscheck=position+18;
        loop8:
@@ -4373,6 +4342,7 @@ int flipnum(int board[64],int position,int player){
        int i;
        int poscheck;
        int flipnum=0; //start at 0
+	   int opPlayer = opposite[player];
        
        if(board[position]) return 0; //if nonempty
        
@@ -4385,7 +4355,7 @@ int flipnum(int board[64],int position,int player){
        
        //upleft
        if(IsUpleftMovable[position]){
-       if(board[position-9]==3-player){
+       if(board[position-9]==opPlayer){
        
        poscheck=position-18;
        i=1;
@@ -4398,7 +4368,7 @@ int flipnum(int board[64],int position,int player){
        
        //up
        if(IsUpMovable[position]){
-       if(board[position-8]==3-player){
+       if(board[position-8]==opPlayer){
        
        poscheck=position-16;
        i=1;
@@ -4411,7 +4381,7 @@ int flipnum(int board[64],int position,int player){
        
        //upright
        if(IsUprightMovable[position]){
-       if(board[position-7]==3-player){
+       if(board[position-7]==opPlayer){
        
        poscheck=position-14;
        i=1;
@@ -4424,7 +4394,7 @@ int flipnum(int board[64],int position,int player){
        
        //left
        if(IsLeftMovable[position]){
-       if(board[position-1]==3-player){
+       if(board[position-1]==opPlayer){
        
        poscheck=position-2;
        i=1;
@@ -4437,7 +4407,7 @@ int flipnum(int board[64],int position,int player){
        
        //right
        if(IsRightMovable[position]){
-       if(board[position+1]==3-player){
+       if(board[position+1]==opPlayer){
        
        poscheck=position+2;
        i=1;
@@ -4450,7 +4420,7 @@ int flipnum(int board[64],int position,int player){
        
        //downleft
        if(IsDownleftMovable[position]){
-       if(board[position+7]==3-player){
+       if(board[position+7]==opPlayer){
        
        poscheck=position+14;
        i=1;
@@ -4463,7 +4433,7 @@ int flipnum(int board[64],int position,int player){
        
        //down
        if(IsDownMovable[position]){
-       if(board[position+8]==3-player){
+       if(board[position+8]==opPlayer){
        
        poscheck=position+16;
        i=1;
@@ -4476,7 +4446,7 @@ int flipnum(int board[64],int position,int player){
        
        //downright
        if(IsDownrightMovable[position]){
-       if(board[position+9]==3-player){
+       if(board[position+9]==opPlayer){
        
        poscheck=position+18;
        i=1;
