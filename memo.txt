@@ -1,15 +1,17 @@
-* why clrscr() doesn't work at start??
+* check correctness / awkwardness / blah blah (Oak only)
+* shallow search depth improve?
 * invent command set, etc. and organize commands/settings
   - make command, get rid of setting menu
+    -- change "bae bae"
   - give command in help
   - reinvent save system / save setting system
 * write timer (sleep then wake up)
   - use rotate graphic accordingly
   - rewrite tsearch accordingly
+    -- 2,4,6,8,10,...
 * solve graphic problem (off screen)
 * make infinite undo
 * make >>> for input
 ** continue to optimize/organize
 ** compatible with windows
 ** change to bit system
-

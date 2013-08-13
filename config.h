@@ -3,60 +3,11 @@
 	#include "mystdio.h"
 #endif
 #include <vector>
+#include <string>
 #include <map>
 
 #define printf printw
 #define SIZEOF(_a) (sizeof(_a) / sizeof(_a[0]))
-
-struct Conf{
-	char black[3][8];
-	char white[3][8];
-	
-	int rotateTime; //number of nodes between rotation effect displays
-	bool rotateOn; //rotation effect on/off
-
-	float flipTime; //time between each frame of flip animation
-	bool flipOn; //flip animation on/off
-	char flipLook[3][8];
-		
-	bool moveOn;
-	char moveLook[3][8];
-
-	bool randOn;
-	bool parallelAllow;
-	bool rawSet;
-	
-	int weight[19];
-};
-
-Conf myConf;
-	
-//default config
-const Conf DConf = {
-	{"  X X  ", 
-	 "   X   ", 
-	 "  X X  "}, // black
-	{" ooooo ",
-	 " ooooo ",
-	 " ooooo "}, // white
-	50000, // rotateTime
-	true, // rotateOn
-	0.3, // flipTime
-	true, // flipOn
-	{"   |   ",
-	 "   |   ",
-	 "   |   "}, // flipLook
-	true, // moveOn
-	{"       ",
-	 "   .   ",
-	 "       "}, // moveLook
-	true, // randOn
-	false, // parallelAllow
-	false, // rawSet
-	{-1, 40, 100, 600, 800, 140, 250, 100, 45, 2, 60, 40, 200, 800, 100, 250, 100, 1, 1000000}, // weight
-};
-						   
-const int weightNum = sizeof(DConf.weight) / sizeof(DConf.weight[0]); //number of weights
 
 //constant parameters
 const int weightChoice[][100]={
@@ -69,7 +20,7 @@ const char weightChoiceName[][100] = {
      "2nd generation",
      "3rd generation (default)"
 };
-const int weightChoiceNum = sizeof(weightChoice) / sizeof(weightChoice[0]); //number of weight choices
+const int weightChoiceNum = SIZEOF(weightChoice); //number of weight choices
 
 //move order
 //priority:
@@ -88,6 +39,9 @@ const int moveOrder[60] = {
     1,6,8,15,48,55,57,62,
     9,14,49,54
 };
+
+typedef std::vector<int> vint;
+typedef std::vector<std::string> texture;
 
 //weight's 'nickname'
 int wd; //disk difference
@@ -114,52 +68,40 @@ int wnew;
 //final disk difference (end-game)
 int wf;
 
-int weightRaw[100];
-
-int diskWidth = (sizeof(DConf.black[0]) / sizeof(DConf.black[0][0])) - 1;
-int diskHeight = sizeof(DConf.black) / sizeof(DConf.black[0]);
+vint weightRaw;
 
 //defaultation functions
 
 //map weights to their nicknames
 void nickname(){
-     wd = weightRaw[0];
-     wm = weightRaw[1];
-     wp = weightRaw[2];
-     wc = weightRaw[3];
-     wxx = weightRaw[4];
-     wcc = weightRaw[5];
-     we = weightRaw[6];
-     ws = weightRaw[7];
-     wcut = weightRaw[8];
-     wd1 = weightRaw[9];
-     wm1 = weightRaw[10];
-     wp1 = weightRaw[11];
-     wc1 = weightRaw[12];
-     wxx1 = weightRaw[13];
-     wcc1 = weightRaw[14];
-     we1 = weightRaw[15];
-     ws1 = weightRaw[16];
-     wnew = weightRaw[17];
-     wf = weightRaw[18];
+	assert(weightRaw.size() == 19);
+	wd = weightRaw[0];
+	wm = weightRaw[1];
+	wp = weightRaw[2];
+	wc = weightRaw[3];
+	wxx = weightRaw[4];
+	wcc = weightRaw[5];
+	we = weightRaw[6];
+	ws = weightRaw[7];
+	wcut = weightRaw[8];
+	wd1 = weightRaw[9];
+	wm1 = weightRaw[10];
+	wp1 = weightRaw[11];
+	wc1 = weightRaw[12];
+	wxx1 = weightRaw[13];
+	wcc1 = weightRaw[14];
+	we1 = weightRaw[15];
+	ws1 = weightRaw[16];
+	wnew = weightRaw[17];
+	wf = weightRaw[18];
 }
 
 //set weightRaws(and their nicknames) as weightSetting
-void weightInitialize(){
-     for(int i = 0; i < weightNum; i++) weightRaw[i] = DConf.weight[i];
-     nickname();
-}
-
-void initConfig(){
-	myConf = DConf;
-}
 
 //EXPERIMENTAL SECTION>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-typedef std::vector<int> vint;
-typedef std::vector<std::string> texture;
-
 char buffer[128];
+int diskWidth, diskHeight, weightNum, middleHeight;
 
 struct Property{
 	enum {Int, Bool, Float, Vint, Texture};
@@ -186,9 +128,9 @@ struct Property{
 	void set(float a){ v_float = a; }
 	void set(int* a){ v_vint = vint(a, a + num); }
 	void set(std::string* a){ v_texture = texture(a, a + row); }
-	void set(double a){ set(float(a)); }
+	void set(double a){ set(float(a)); } // for compatibility
 	
-	bool get(){
+	bool scan(){
 		std::string inp;
 		switch(type){
 			case Int:
@@ -216,7 +158,7 @@ struct Property{
 				texture inp;
 				for(int i = 0; i < row; ++i){
 					inp.push_back(std::string(fgets(buffer, sizeof(buffer), stdin)));
-					inp.back().resize(inp.back().size() - 1);
+					inp.back().pop_back();
 					if(int(inp.back().size()) != column){
 						alert("blah");
 						return false;
@@ -250,16 +192,22 @@ struct Property{
 				break;
 		}
 	}
+	
+	int& get_int(){ return v_int; }
+	float& get_float(){ return v_float; }
+	bool& get_bool(){ return v_bool; }
+	vint& get_vint(){ return v_vint; }
+	texture& get_texture(){ return v_texture; }
 };
 
-std::map<std::string,Property> setting;
+std::map<std::string,Property> setting, dSetting;
 
-void initConfigNew(){
+void initConfig(){
 	setting["black"].type = Property::Texture;
 	{
-		std::string tmp[] = {std::string(" x x "), 
-	 					 	 std::string("  x  "), 
-	 					 	 std::string(" x x ")};
+		std::string tmp[] = {std::string("  X X  "), 
+	 					 	 std::string("   X   "), 
+	 					 	 std::string("  X X  ")};
  		setting["black"].column = tmp[0].size();
  		setting["black"].row = SIZEOF(tmp);
 		setting["black"].set(tmp);
@@ -267,9 +215,9 @@ void initConfigNew(){
 	
 	setting["white"].type = Property::Texture;
 	{
-		std::string tmp[] = {std::string("ooooo"), 
-	 					 	 std::string("ooooo"), 
-	 					 	 std::string("ooooo")};
+		std::string tmp[] = {std::string(" ooooo "), 
+	 					 	 std::string(" ooooo "), 
+	 					 	 std::string(" ooooo ")};
 		setting["white"].column = tmp[0].size();
 		setting["white"].row = SIZEOF(tmp);
 		setting["white"].set(tmp);
@@ -289,9 +237,9 @@ void initConfigNew(){
 	
 	setting["fliplook"].type = Property::Texture;
 	{
-		std::string tmp[] = {std::string("  |  "), 
-	 					 	 std::string("  |  "), 
-	 					 	 std::string("  |  ")};
+		std::string tmp[] = {std::string("   |   "), 
+	 					 	 std::string("   |   "), 
+	 					 	 std::string("   |   ")};
  		setting["fliplook"].column = tmp[0].size();
  		setting["fliplook"].row = SIZEOF(tmp);
 		setting["fliplook"].set(tmp);
@@ -302,9 +250,9 @@ void initConfigNew(){
 	
 	setting["movelook"].type = Property::Texture;
 	{
-		std::string tmp[] = {std::string("     "), 
-	 					 	 std::string("  .  "), 
-	 					 	 std::string("     ")};
+		std::string tmp[] = {std::string("       "), 
+	 					 	 std::string("   .   "), 
+	 					 	 std::string("       ")};
 		setting["movelook"].column = tmp[0].size();
 		setting["movelook"].row = SIZEOF(tmp);
 		setting["movelook"].set(tmp);
@@ -325,5 +273,15 @@ void initConfigNew(){
 		setting["weight"].num = SIZEOF(vi);
 		setting["weight"].set(vi);
 	}
+	
+	dSetting = setting;
+	diskWidth = setting["black"].column;
+	diskHeight = setting["black"].row;
+	weightNum = setting["weight"].get_vint().size();
+	middleHeight = (diskHeight - 1) / 2;
 }
 
+void weightInitialize(){
+	weightRaw = setting["weight"].get_vint();
+	nickname();
+}
