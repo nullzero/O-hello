@@ -597,3 +597,12 @@ date: Aug 11, 2013 lines: 4405 lines
 - implemented new setting system (Oak)
 - generalized some more display
 - changed compiler to G++
+
+version 77
+date: Aug 14, 2013 lines: 4426 lines
+------------------------------------
+- fixed bug in mode 3
+- fixed bug "O-thello"
+- working on lambda function system
+- wrote function depthShallow
+- improved depthShallow calculation - 22% faster!

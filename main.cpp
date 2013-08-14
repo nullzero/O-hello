@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char version[] = "76";
+const char version[] = "77";
 const char author[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char date[] = "August 11, 2013";
+const char date[] = "August 14, 2013";
 const char language[] = "C++";
 const char compiler[] = "G++";
 
@@ -89,6 +89,15 @@ void print_bottom(int player, std::string prefix){
 			printf("  %s\n", setting[splayer].get_texture()[i].c_str());
 		}
 	}
+}
+
+int depthShallow(int depth, bool endgame){
+	int depthAdjust = depth;
+	if(endgame) depthAdjust -= 4;
+	if(depthAdjust >= 6) return (depthAdjust / 2) * 2 - 4;
+	else if(depthAdjust == 5) return 2;
+	else if(depthAdjust == 4 or depthAdjust == 3) return 1;
+	else return 0;
 }
 
 FILE *save; //save file
@@ -249,8 +258,8 @@ int main(){
 			depthperfect = pack.depthperfect;
 			times = pack.times;
 			int numvalue;
-			if(inp[0] == '2') numvalue = 2;
-			else numvalue = 3;
+			if(inp[0] == '2') numvalue = OC;
+			else numvalue = XC;
 			do{
 				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
 			 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
@@ -463,14 +472,10 @@ bool load(){
 			}else{
 				printf("0");
 			}
-		}else if(board[i] == 1){
-			printf("1");
-			no[0]++;
-		}else if(board[i] == 2){
-			printf("2");
-			no[1]++;
-		}
-		else{
+		}else if(board[i] == 1 or board[i] == 2){
+			printf("%d", board[i]);
+			no[board[i] - 1]++;
+		}else{
 			printf("\n\n%s is corrupted!\n\n", filename);
 			fclose(save);
 			return false;
@@ -1332,7 +1337,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
     //display board
     display(board,player,no,lastmove);
     //diplay player
-	print_bottom(player, (player == 1) ? "O-thello 1 is" : "O-thello 2 is");
+	print_bottom(player, (player == 1) ? "O-hello 1 is" : "O-hello 2 is");
     //compute mobility
     indexformob(board);
     mobilities=mobility(player);
@@ -1633,6 +1638,23 @@ int input(int board[64],int player,int no[2]){
     float times;
 	
     loop1:
+	/*
+	std::string inp = getString();
+	if(inp == "set"){
+		inp = getString();
+		if(inp == "move"){
+			
+		}
+	}else if(inp == "show"){
+	}else if(inp == "default"){
+		
+	}else{
+		goto loop1;
+	}
+		
+	// general input system
+	
+	*/
 	std::string option = getString();
 	
 	if(option == "moveon"){
@@ -1852,12 +1874,12 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
     //if searches up to end-game (or 1 square left)
     if(depthwant>=63-no[0]-no[1]){
                                   depthwant=64-no[0]-no[1];
-                                  depthshallow=fmax(depthwant/2-2,0);
+                                  depthshallow=depthShallow(depthwant, true);
                                   enginestate=0;
                                   perfect=1;
                                   }
     else{
-         depthshallow=fmax(depthwant/2-1,0);
+         depthshallow=depthShallow(depthwant, false);
          enginestate=0;
          perfect=0;
          }
@@ -2361,9 +2383,8 @@ int score(int board[64],int depthleft,int player,int no[2],int cmpscore,int disp
      if(no[0]+no[1]==63) return score63(board,player,no,display);
      
      //determine shallow depth
-     //check if searches up to end-game (or 1 square left)
-     if(depthleft>=63-no[0]-no[1]) depthshallow=fmax(depthleft/2-2,0);
-     else depthshallow=fmax(depthleft/2-1,0);
+
+	depthshallow = depthShallow(depthleft, depthleft >= 63 - no[0] - no[1]);
      
      //if no shallow search -- no record on position scores,move list, etc.
      //===================================================================

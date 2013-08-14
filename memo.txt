@@ -1,8 +1,9 @@
+* clrscr bug again ??
 * check correctness / awkwardness / blah blah (Oak only)
-* shallow search depth improve?
 * invent command set, etc. and organize commands/settings
   - make command, get rid of setting menu
     -- change "bae bae"
+    -- lambda function? (Oak)
   - give command in help
   - reinvent save system / save setting system
 * write timer (sleep then wake up)
