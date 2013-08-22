@@ -606,3 +606,14 @@ date: Aug 14, 2013 lines: 4426 lines
 - working on lambda function system
 - wrote function depthShallow
 - improved depthShallow calculation - 22% faster!
+
+version 78
+date: Aug 22, 2013 lines: 4306 lines
+------------------------------------
+- cleaned input system
+- made infinite undo
+- used LARGE instead of 123456789
+- used new(correct?) alpha-beta
+  -- lost some "random" functionality
+  -- lost some speed on tsearch
+  -- BUT gain speed on fsearch - 58% speedup!! *HOLY MACKEREL*

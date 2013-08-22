@@ -1,18 +1,20 @@
-* clrscr bug again ??
 * check correctness / awkwardness / blah blah (Oak only)
 * invent command set, etc. and organize commands/settings
   - make command, get rid of setting menu
-    -- change "bae bae"
     -- lambda function? (Oak)
   - give command in help
   - reinvent save system / save setting system
+** change input to readline
+*** support command + parameter
+*** make prompt for every input
+*** support multi undo
+** combine comhuman + human + … together
+*** undo: correct "bae bae"
 * write timer (sleep then wake up)
   - use rotate graphic accordingly
   - rewrite tsearch accordingly
     -- 2,4,6,8,10,...
 * solve graphic problem (off screen)
-* make infinite undo
-* make >>> for input
 ** continue to optimize/organize
 ** compatible with windows
 ** change to bit system

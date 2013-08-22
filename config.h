@@ -1,13 +1,7 @@
-#ifndef _MYSTDIO_
-	#define _MYSTDIO_
-	#include "mystdio.h"
-#endif
+#include "mystdio.h"
 #include <vector>
 #include <string>
 #include <map>
-
-#define printf printw
-#define SIZEOF(_a) (sizeof(_a) / sizeof(_a[0]))
 
 //constant parameters
 const int weightChoice[][100]={
@@ -134,30 +128,30 @@ struct Property{
 		std::string inp;
 		switch(type){
 			case Int:
-				v_int = getInt();
+				v_int = uget(int)();
 				break;
 			
 			case Bool:
-				inp = getString();
+				inp = uget(std::string)();
 				if(inp == "on") v_bool = true;
 				else if(inp == "off") v_bool = false;
 				else alert("bae bae");
 				break;
 			
 			case Float:
-				v_float = getFloat();
+				v_float = uget(float)();
 				break;
 			
 			case Vint:
 				printf("fill %d numbers\n", num);
-				for(int i = 0; i < num; ++i) v_vint[i] = getInt();
+				for(int i = 0; i < num; ++i) v_vint[i] = uget(int)();
 				break;
 			
 			case Texture:
 				printf("row = %d, column = %d\n", row, column);
 				texture inp;
 				for(int i = 0; i < row; ++i){
-					inp.push_back(std::string(fgets(buffer, sizeof(buffer), stdin)));
+					inp.push_back(uget(sline)());
 					inp.back().pop_back();
 					if(int(inp.back().size()) != column){
 						alert("blah");

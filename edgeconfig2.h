@@ -1,7 +1,7 @@
 //edgeconfig version 2
 //precomputed values of all edge configurations
 
-float edgeconfig[6561][2]={
+const float edgeconfig[6561][2]={
       {1.061,-1.061}, //--------
       {4.299,3.033}, //-------X
       {-3.033,-4.299}, //-------O
