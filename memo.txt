@@ -1,3 +1,4 @@
+* BUG >>> when fsearch,tsearch
 * check correctness / awkwardness / blah blah (Oak only)
 * invent command set, etc. and organize commands/settings
   - make command, get rid of setting menu
@@ -9,7 +10,8 @@
 *** make prompt for every input
 *** support multi undo
 ** combine comhuman + human + … together
-*** undo: correct "bae bae"
+ - undo: correct "bae bae"
+ - swap player by index
 * write timer (sleep then wake up)
   - use rotate graphic accordingly
   - rewrite tsearch accordingly

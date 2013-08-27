@@ -1,3 +1,5 @@
+#pragma once
+
 #include "mystdio.h"
 #include <vector>
 #include <string>
@@ -33,9 +35,6 @@ const int moveOrder[60] = {
     1,6,8,15,48,55,57,62,
     9,14,49,54
 };
-
-typedef std::vector<int> vint;
-typedef std::vector<std::string> texture;
 
 //weight's 'nickname'
 int wd; //disk difference
@@ -114,6 +113,8 @@ struct Property{
 	vint v_vint;
 	texture v_texture;
 	
+	std::string desc;
+	
 	int num; // for vint
 	int row, column; // for texture
 	
@@ -123,6 +124,21 @@ struct Property{
 	void set(int* a){ v_vint = vint(a, a + num); }
 	void set(std::string* a){ v_texture = texture(a, a + row); }
 	void set(double a){ set(float(a)); } // for compatibility
+	void set(std::string a){
+		switch(type){
+			case Int:
+				v_int = std::stoi(a);
+				break;
+			case Bool:
+				if(a == "on") v_bool = true;
+				else if(a == "off") v_bool = false;
+				else alert("bae bae");
+				break;
+			case Float:
+				v_float = std::stof(a);
+				break;
+		}
+	}
 	
 	bool scan(){
 		std::string inp;
@@ -132,7 +148,7 @@ struct Property{
 				break;
 			
 			case Bool:
-				inp = uget(std::string)();
+				inp = uget(sline)();
 				if(inp == "on") v_bool = true;
 				else if(inp == "off") v_bool = false;
 				else alert("bae bae");
@@ -185,6 +201,7 @@ struct Property{
 				for(int i = 0; i < int(v_texture.size()); ++i) printf("%s\n", v_texture[i].c_str());
 				break;
 		}
+		printf("\n");
 	}
 	
 	int& get_int(){ return v_int; }
@@ -205,6 +222,7 @@ void initConfig(){
  		setting["black"].column = tmp[0].size();
  		setting["black"].row = SIZEOF(tmp);
 		setting["black"].set(tmp);
+		setting["black"].desc = "olla";
 	}
 	
 	setting["white"].type = Property::Texture;
@@ -215,6 +233,7 @@ void initConfig(){
 		setting["white"].column = tmp[0].size();
 		setting["white"].row = SIZEOF(tmp);
 		setting["white"].set(tmp);
+		setting["white"].desc = "looa";
 	}
 	
 	setting["rotate"].type = Property::Bool;

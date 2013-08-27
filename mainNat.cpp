@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "80";
+const char __version__[] = "79";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "August 27, 2013";
+const char __date__[] = "August 23, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -17,6 +17,7 @@ const char __compiler__[] = "G++";
 #include "edgeconfig2.h" //precomputed edge configurations
 #include "mobtable.h" //precomputed mobility table
 
+//Oak's definitions
 #include <stack>
 #include <string>
 #include <cassert>
@@ -29,22 +30,27 @@ const char __compiler__[] = "G++";
 #include "precompute.h"
 #include "config.h"
 #include "sharedfunc.h"
-#include "help.h"
 
 const int EXIT = 555;
 const int MAXN = 8;
 enum COLOR {BC, XC, OC};
-enum INPUT_MODE {MENUMODE, PLAYMODE};
 const int UNINIT = -1;
 const int LARGE = 2147483647;
 
 void init(){
-	srand(time(NULL));
 	usleep(100000);
 	system("stty erase ^?");
 	signal(SIGINT, finish);
 	
 	initConfig();
+}
+
+int rand(int a){
+	return rand() % a;
+}
+
+int rand(int a, int b){
+	return (rand() % (b - a + 1)) + a;
 }
 
 void print_bottom(int player, std::string prefix){
@@ -155,85 +161,10 @@ kirby move(int board[64],int player);
 kirby flip(int board[64],int position,int player);
 int flipnum(int board[64],int position,int player);
 
-texture newinput(int mode){
-	texture inp;
-	inp = getl();
-	
-	auto x = inp.read();
-	if(x == "quit" and inp.empty()) finish(0);
-	if(x == "help"){
-		commandHelp(inp);
-		return texture();
-	}
-	if(x == "reset"){
-		if(inp.empty()){
-            alert("type a variable or 'all'");
-            inp = getl();
-        }
-		x = inp.read();
-        if(not x.empty()){
-            alert("no the given variable. try again");
-        }else if(x == "all"){
-            setting = dSetting;
-        }else if(setting.find(x) == setting.end()){
-			alert("no the given variable. try again");
-		}else{
-    		setting[x] = dSetting[x];
-        }
-		alert("reset!");
-		return texture();
-	}
-	if(x == "set"){
-		if(inp.empty()){
-			alert("type a variable");
-			inp = getl();
-		}
-		x = inp.read();
-		if(setting.find(x) == setting.end()){
-			alert("no the given variable. try again");
-			return texture();
-		}
-		texture ret;
-		if(x == "move"){
-			ret.push_back("~");
-			ret.push_back("move");
-		}
-		if(inp.empty()){
-			setting[x].scan();
-		}else{
-			auto y = inp.read();
-			if(inp.empty()){
-				setting[x].set(y);
-			}else{
-				alert("too many parameters\n");
-				return texture();
-			}
-		}
-		alert("set!");
-		return ret;
-	}else if(x == "show"){
-		if(inp.empty()){
-			alert("type a variable");
-			inp = getl();
-		}
-		x = inp.read();
-        if(not x.empty()){
-            alert("no the given variable. try again");
-        }else if(x == "all"){
-            // TODO
-        }else if(setting.find(x) == setting.end()){
-			alert("no the given variable. try again");
-		}else{
-    		setting[x].show();
-        }
-		return texture();
-	}
-	inp.push_front(x);
-	return inp;
-}
-
 //interface
-void newgame(){
+int main(){
+	init();
+	
     int mode;
     int depth;
     int depthperfect;
@@ -250,6 +181,9 @@ void newgame(){
     float sentdoubletimes[2];
     comset pack;
 	
+    srand(time(NULL)); //set up the random number generator
+	
+    start:
     clrscr(); //clear screen
     printf("\n version %s\n", __version__);
 	printf("                                  -----------\n");
@@ -269,7 +203,7 @@ void newgame(){
     //set weight as defaults
     weightInitialize();
     //set board
-    //board: 0 = space, 1 = player_1, 2 = player_2
+    //board: 0=space,1=player 1,2=player 2
     int board[MAXN * MAXN] = {};
     board[27] = OC;
     board[28] = XC;
@@ -279,35 +213,26 @@ void newgame(){
     int player = XC; //set current player
 	
 	while(true){
-		texture vec = newinput(MENUMODE);
-		
-		if(vec.empty() or vec.front() == "~") continue;
-		auto inp = vec.read();
-		
-		if(inp == "hello"){
-			sayhello();
-			continue;
-		}
-		else if(inp == "speed"){
-			speedtest();
-			continue;
-		}
+		std::string inp = uget(std::string)();
+		if(settingCommand(inp)) continue;
+		if(inp == "hello") sayhello();
+		else if(inp == "speed") speedtest();
 		else if(inp == "load"){
-			if(not load()) continue;
-		}
-		else if(inp == "menu");
-	    else if(inp.size() != 1){
-			alert("incorrect syntax!");
-			continue;
-		}
+			if(load()) goto start;
+		}else if(inp == "help") commandHelp();
+		else if(inp == "menu") goto start;
+		else if(inp == "quit") finish(0);
+	    else if(inp.size() != 1) alert("incorrect syntax!");
 		else if(inp == "0"){
 			settings();
+			goto start;
 		}else if(inp == "1"){
 			//human vs human
 			do{
 				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
 				for(int i = 0; i < 2; i++) sentno[i] = no[i];
 			}while(human(sentboard, sentno, player) == EXIT);
+			goto start;
 		}else if(inp == "2" or inp == "3"){
 			 //human vs computer,computer vs human
 			clrscr();
@@ -326,7 +251,8 @@ void newgame(){
 				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
 			 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
 			}while(comhuman(sentboard, sentno, player, numvalue, mode, depth, depthperfect, times) == EXIT);
-	    }else if(inp == "4"){
+			goto start;
+	    }else if(inp[0] == '4'){
 			//computer vs computer
 			for(int i = 0; i < 2; i++){
 				printf("\nselect search mode for O-hello %d:\n", i + 1);
@@ -347,21 +273,17 @@ void newgame(){
 	            for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
 	            for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
 			}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
-		}else if(inp == "5"){
+	        goto start;
+		}else if(inp[0] == '5'){
 			weighttest();
-		}else if(inp == "6"){
+			goto start;
+		}else if(inp[0] == '6'){
 			about();
+			goto start;
 		}else{
 			alert("invalid mode!");
-			continue;
 		}
-		return;
 	}
-}
-
-int main(){
-	init();
-	while(true) newgame();
 }
 
 //AI settings interface
@@ -664,6 +586,32 @@ bool load(){
 	}
 }
 
+//show command list
+void commandHelp(){
+	printf("\n\
+COMMAND HELP\n\
+\n\
+M = available in main menu\n\
+G = available in-game\n\
+O = available as one-letter command on O-hello's turns\n\
+\n\
+hello   M     - say hello to program\n\
+speed   M     - test speed of computer\n\
+load    M     - load game from file\n\
+help    M G   - view this text\n\
+menu    M G O - go to main menu\n\
+quit    M G O - exit program\n\
+new       G O - restart game using current settings\n\
+save      G O - save game in file\n\
+undo      G   - undo move\n\
+reflect   G   - reflect board (horizontally)\n\
+fsearch   G   - fixed depth search, followed by depth\n\
+tsearch   G   - time limit search, followed by time (sec)\n\
+\n\
+*SETTING COMMANDS ARE STILL UNDER DEVELOPMENT\n\
+\n");
+}
+
 //about program
 void about(){
 	clrscr();
@@ -734,18 +682,50 @@ void speedtest(){
 
 //say hello :)
 void sayhello(){
-	const char* greeting[] = {	"Hello, player.",
-								"Hi, player.",
-								"Greetings, player.",
-								"Hello there, player.",
-								"Hi there, player.",
-								"Oh, hello player.",
-								"Oh, hi player.",
+	const char* greeting[] = {	"hello, player",
+								"hi, player",
+								"greetings, player",
+								"hello there, player",
+								"hi there, player",
+								"Oh, hello player",
+								"Oh, hi player",
 								"Oh, hello - that's my name!",
-								"Hello player. Nice to meet you.",
-								"Hello player. Pleased to meet you."
+								"hello player, nice to meet you",
+								"hello player, pleased to meet you"
 							};
 	printf("\n%s\n\n", greeting[rand(sizeof(greeting) / sizeof(greeting[0]))]);
+}
+
+//commands for settings
+bool settingCommand(std::string option){
+    if(option == "randon"){
+		setting["rand"].set(true);
+		alert("random feature on!");
+	}else if(option == "randoff"){
+		setting["rand"].set(false);
+		alert("random feature off!");
+	}else if(option == "moveon"){
+		setting["move"].set(true);
+		alert("move display on!");
+	}else if(option == "moveoff"){
+		setting["move"].set(false);
+		alert("move display off!");
+	}else if(option == "spinon"){
+		setting["rotate"].set(true);
+		alert("rotation effect on!");
+	}else if(option == "spinoff"){
+		setting["rotate"].set(false);
+		alert("rotation effect off!");
+	}else if(option == "flipon"){
+		setting["flip"].set(true);
+		alert("flip animation on!");
+	}else if(option == "flipoff"){
+		setting["flip"].set(false);
+		alert("flip animation off!");
+	}else{
+		return false;
+	}
+	return true;
 }
 
 //settings
@@ -965,7 +945,7 @@ int human(int board[64],int no[2],int player){
     display(board,player,no,lastmove);
     //diplay player
 	
-	print_bottom(player, "you are"); // TODO
+	print_bottom(player, "you are");
 
     //compute mobility
     indexformob(board);
@@ -1545,35 +1525,44 @@ int input(int board[64],int player,int no[2]){
     float times;
 	
     loop1:
-	texture vec;
-	do{
-	 	vec = newinput(PLAYMODE);
-	}while(vec.empty());
+	std::string option = uget(std::string)();
 	
-	auto option = vec.read();
-	
-	if(option == "~"){
-		option = vec.read();
-		// sure that get correct format
-		if(option == "move") return -5;
+	if(option == "moveon"){
+		setting["move"].set(true);
+		return -5;
+	}
+	if(option == "moveoff"){
+		setting["move"].set(false);
+		return -5;
+	}
+
+	if(settingCommand(option)){
+		goto loop1;
 	}
 	
-	if(option == "menu" and vec.empty()){
+    if(option == "help"){
+		commandHelp();
+		goto loop1;
+	}
+	if(option == "menu"){
 		return -4; //-4 means menu
 	}
-	if(option == "new" and vec.empty()){
+	if(option == "quit"){
+		finish(0);
+	}
+	if(option == "new"){
 		return -3; //-3 means new
 	}
-	if(option == "save" and vec.empty()){
+	if(option == "save"){
 		return -999; //-999 means save
 	}
-	if(option == "undo" and vec.empty()){
+	if(option == "undo"){
 		return -1; //-1 means undo
 	}
-	if(option == "reflect" and vec.empty()){
+	if(option == "reflect"){
 		return -2; //-2 means reflect
 	}
-	if(option == "fsearch" and vec.empty()){
+	if(option == "fsearch"){
         int depth = uget(int)([](int depth){ return depth >= 1; }, "invalid depth! please input depth again.");
         printf("\nthinking");
 		space(10);
@@ -1581,7 +1570,7 @@ int input(int board[64],int player,int no[2]){
         printf("\n\n");
         goto loop1;
 	}
-	if(option == "tsearch" and vec.empty()){
+	if(option == "tsearch"){
         scanf("%f",&times);
         if(times<0){
              printf("\ninvalid time!\n\n");

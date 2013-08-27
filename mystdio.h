@@ -136,3 +136,10 @@ void presstogo(){
 	printf("press any key to continue");
 	getch();
 }
+
+texture getl(){
+	texture x;
+	do x = simplify(split(uget(sline)(), ' '));
+	while(x.empty());
+	return x;
+}
