@@ -1,0 +1,62 @@
+bool visit[][];
+char board[][];
+
+struct Access{
+    bool white, black, sum;
+    // sum = true = odd
+    // sum = false == even
+    
+    Access(bool _white, bool _black, bool _sum){
+        white = _white;
+        black = _black;
+        sum = _sum;
+    }
+    
+    Access operator+=(Access o){
+        white |= o.white;
+        black |= o.black;
+        sum ^= o.sum;
+    }
+};
+
+Access access(int y, int x){
+    visit[y][x] = true;
+    
+    Access result(mobility[BLACKPLAYER][y][x], mobility[WHITEPLAYER][y][x], true);
+    
+    for(int dy = -1; dy <= 1; ++dy)
+        for(int dx = -1; dx <= 1; ++dx)
+            if(not visit[y + dy][x + dx])
+                result += access(y + dy, x + dx);
+    
+    return result;
+}
+
+
+int main(){
+    reset(visit);
+    for(int i = 0; i < r; ++i)
+        for(int j = 0; j < c; ++j)
+            if(board[i][j] != BC)
+                visit[i][j] = true;
+                
+    for(int i = 0; i < r; ++i){
+        for(int j = 0; j < c; ++j){
+            if(not visit[y][x]){
+                Access tmp = access(i, j);
+                if(not tmp.white and not tmp.black){
+                    // NOACCESS
+                }else if(not tmp.white){
+                    // BLACKONLY
+                }else if(not tmp.black){
+                    // WHITEONLY
+                }else if(not tmp.sum){
+                    player++;
+                }else{
+                    player--;
+                }
+            }
+        }
+    }
+    return 0;
+}

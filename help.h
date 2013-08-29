@@ -1,7 +1,7 @@
 #include "utility.h"
 #include "config.h"
 
-void commandHelp(texture l){
+bool commandHelp(texture l){
 	if(l.empty()){
 		printf(R"(
 Type 'help' to see this list.
@@ -30,7 +30,7 @@ show    M G   - show variable
 reset   M G   - reset variable to default
 
 )");
-		return;
+		return true;
 	}
 	auto x = l.read();
 	if(x == "hello" and l.empty()){
@@ -40,7 +40,7 @@ hello: hello
     Say hello to the program. The program will respond with a message.
 
 )");
-        return;
+        return true;
     }
     if(x == "speed" and l.empty()){
         printf(R"(
@@ -50,7 +50,7 @@ speed: speed
     one second.
 
 )");
-        return;
+        return true;
     }
     if(x == "load" and l.empty()){
         printf(R"(
@@ -60,7 +60,7 @@ load: load <filename>
     must be in the same folder as the program.
 
 )");
-        return;
+        return true;
     }
     if(x == "help" and l.empty()){
         printf(R"(
@@ -72,7 +72,7 @@ help: help [<command>]
     information about variables in the program.
 
 )");
-        return;
+        return true;
     }
     if(x == "menu" and l.empty()){
         printf(R"(
@@ -81,7 +81,7 @@ menu: menu
     Go to main menu.
 
 )");
-        return;
+        return true;
     }
     if(x == "quit" and l.empty()){
         printf(R"(
@@ -90,7 +90,7 @@ quit: quit
     Exit the program.
 
 )");
-        return;
+        return true;
     }
     if(x == "new" and l.empty()){
         printf(R"(
@@ -101,7 +101,7 @@ new: new
     initial board but with same settings.
 
 )");
-        return;
+        return true;
     }
     if(x == "save" and l.empty()){
         printf(R"(
@@ -111,7 +111,7 @@ save: save <filename>
     created in the same folder as the program.
 
 )");
-        return;
+        return true;
     }
     if(x == "undo" and l.empty()){
         printf(R"(
@@ -123,7 +123,7 @@ undo: undo [<number>]
     command 'new'.
 
 )");
-        return;
+        return true;
     }
     if(x == "redo" and l.empty()){
         printf(R"(
@@ -134,7 +134,7 @@ redo: redo [<number>]
     NUMBER is set to 1. 'redo all' restores the game to its furthest position.
 
 )");
-        return;
+        return true;
     }
     if(x == "reflect" and l.empty()){
         printf(R"(
@@ -143,7 +143,7 @@ reflect: reflect
     Reflect the board horizontally.
 
 )");
-        return;
+        return true;
     }
     if(x == "fsearch" and l.empty()){
         printf(R"(
@@ -153,7 +153,7 @@ fsearch: fsearch <number>
     least 1). Return the search position, score and statistics. 
 
 )");
-        return;
+        return true;
     }
     if(x == "tsearch" and l.empty()){
         printf(R"(
@@ -163,7 +163,7 @@ tsearch: tsearch <time>
     greater than 0). Return the search position, score and statistics. 
 
 )");
-        return;
+        return true;
     }
     if(x == "set" and l.empty()){
         printf(R"(
@@ -172,10 +172,10 @@ set: set <variable> [<value>]
     Set VARIABLE to have the value VALUE. Some values cannot be assigned
     directly. In such cases, 'set <variable>' must be used instead, and you
     will be asked to input VALUE later.
-                
     Type 'help variable' to find out more about variables.
+
 )");
-        return;
+        return true;
     }
     if(x == "show" and l.empty()){
         printf(R"(
@@ -184,26 +184,39 @@ show: show <variable>
     Available in main menu and in-game.
     Display the current value of VARIABLE. 'show all' displays current values
     of all variables.
-
     Type 'help variable' to find out more about variables.
+
 )");
-        return;
+        return true;
     }
     if(x == "reset" and l.empty()){
         printf(R"(
 reset: reset <variable>
        reset all
     Available in main menu and in-game.
-    Reset VARIABLE to its default value.
-    
+    Reset VARIABLE to its default value. 'reset all' resets all variables.
     Type 'help variable' to find out more about variables.
+
 )");
-        return;
+        return true;
     }
     
     if(x == "variable" and l.empty()){
+        std::string typeName[] = {"int", "bool", "float", "vint", "texture"};
+        printf(R"(
+int     : value = integer
+bool    : value = on, off
+float   : value = real number
+vint    : value = multiple integers
+texture : value = row x column characters
+
+)");
+        printf("%10s %7s   %s\n", "VARIABLE", "TYPE", "DESCRIPTION");
         for(auto var : setting){
-            printf("%10s %10d %10s\n", var.first.c_str(), var.second.type, var.second.desc.c_str());
+            printf("%10s %7s - %s\n", var.first.c_str(), typeName[var.second.type].c_str(), var.second.desc.c_str());
         }
-    }    
+        printf("\n");
+        return true;
+    }
+    return false;
 }

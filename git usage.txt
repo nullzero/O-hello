@@ -1,0 +1,10 @@
+cd O-hello before everything
+
+"git status": use before git commit to check any fault
+"git diff": check difference
+
+"git add .": add every file to the workspace
+"git rm 'file'": remove 'file' from git
+"git commit": make a new version (use after "git add .")
+"git push origin master": upload version(s) to internet (use after git commit)
+"git pull": download new version from internet

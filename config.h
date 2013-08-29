@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cassert>
+#include <functional>
 
 //constant parameters
 const int weightChoice[][100]={
@@ -14,7 +16,7 @@ const int weightChoice[][100]={
 const char weightChoiceName[][100] = {
      "1st generation",
      "2nd generation",
-     "3rd generation (default)"
+     "3rd generation"
 };
 const int weightChoiceNum = SIZEOF(weightChoice); //number of weight choices
 
@@ -89,10 +91,6 @@ void nickname(){
 	wf = weightRaw[18];
 }
 
-//set weightRaws(and their nicknames) as weightSetting
-
-//EXPERIMENTAL SECTION>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 char buffer[128];
 int diskWidth, diskHeight, weightNum, middleHeight;
 
@@ -105,6 +103,8 @@ struct Property{
 	// Vint => num
 	// Texture => row, column
 	
+    std::function<bool(void)> func;
+    
 	int type;
 	
 	int v_int;
@@ -118,13 +118,31 @@ struct Property{
 	int num; // for vint
 	int row, column; // for texture
 	
-	void set(int a){ v_int = a; }	
-	void set(bool a){ v_bool = a; }
-	void set(float a){ v_float = a; }
-	void set(int* a){ v_vint = vint(a, a + num); }
-	void set(std::string* a){ v_texture = texture(a, a + row); }
-	void set(double a){ set(float(a)); } // for compatibility
-	void set(std::string a){
+	bool set(int a){
+        v_int = a;
+        return true;
+    }	
+	bool set(bool a){
+        v_bool = a;
+        return true;
+    }
+	bool set(float a){
+        v_float = a;
+        return true;
+    }
+	bool set(int* a){
+        v_vint = vint(a, a + num);
+        return true;
+    }
+	bool set(std::string* a){
+        v_texture = texture(a, a + row);
+        return true;
+    }
+	bool set(double a){
+        set(float(a));
+        return true;
+    } // for compatibility
+	bool set(std::string a){
 		switch(type){
 			case Int:
 				v_int = std::stoi(a);
@@ -132,15 +150,24 @@ struct Property{
 			case Bool:
 				if(a == "on") v_bool = true;
 				else if(a == "off") v_bool = false;
-				else alert("bae bae");
+				else{
+                    alert("invalid. value must be on/off.");
+                    return false;
+                }
 				break;
 			case Float:
 				v_float = std::stof(a);
 				break;
+            default:
+                alert("invalid. can't set with this method.");
+                return false;
 		}
+        return true;
 	}
 	
 	bool scan(){
+        if(func) return func();
+        alert("input value");
 		std::string inp;
 		switch(type){
 			case Int:
@@ -148,10 +175,8 @@ struct Property{
 				break;
 			
 			case Bool:
-				inp = uget(sline)();
-				if(inp == "on") v_bool = true;
-				else if(inp == "off") v_bool = false;
-				else alert("bae bae");
+                inp = uget(sline)([](std::string x){ return x == "on" or x == "off"; }, "invalid. input value again.");
+				v_bool = (inp == "on");
 				break;
 			
 			case Float:
@@ -159,7 +184,7 @@ struct Property{
 				break;
 			
 			case Vint:
-				printf("fill %d numbers\n", num);
+				printf("enter %d integers\n", num);
 				for(int i = 0; i < num; ++i) v_vint[i] = uget(int)();
 				break;
 			
@@ -168,9 +193,8 @@ struct Property{
 				texture inp;
 				for(int i = 0; i < row; ++i){
 					inp.push_back(uget(sline)());
-					inp.back().pop_back();
 					if(int(inp.back().size()) != column){
-						alert("blah");
+						alert("column has invalid length!");
 						return false;
 					}
 				}
@@ -180,6 +204,34 @@ struct Property{
 	}
 	
 	void show(){
+		switch(type){
+			case Int:
+				printf("\nvalue = %d\n", v_int);
+				break;
+			
+			case Bool:
+				printf("\nvalue = %s\n", v_bool ? "on" : "off");
+				break;
+			
+			case Float:
+				printf("\nvalue = %.2f\n", v_float);
+				break;
+			
+			case Vint:
+                printf("\nvalue =");
+				for(int i = 0; i < int(v_vint.size()); ++i) printf(" %d", v_vint[i]);
+                printf("\n");
+				break;
+			
+			case Texture:
+                printf("\n");
+				for(int i = 0; i < int(v_texture.size()); ++i) printf("%s\n", v_texture[i].c_str());
+				break;
+		}
+		printf("\n");
+	}
+    
+	void showCompact(){
 		switch(type){
 			case Int:
 				printf("%d", v_int);
@@ -198,10 +250,9 @@ struct Property{
 				break;
 			
 			case Texture:
-				for(int i = 0; i < int(v_texture.size()); ++i) printf("%s\n", v_texture[i].c_str());
+				for(int i = 0; i < int(v_texture.size()); ++i) printf("\n%s", v_texture[i].c_str());
 				break;
 		}
-		printf("\n");
 	}
 	
 	int& get_int(){ return v_int; }
@@ -210,6 +261,8 @@ struct Property{
 	vint& get_vint(){ return v_vint; }
 	texture& get_texture(){ return v_texture; }
 };
+
+bool customweight();
 
 std::map<std::string,Property> setting, dSetting;
 
@@ -222,7 +275,8 @@ void initConfig(){
  		setting["black"].column = tmp[0].size();
  		setting["black"].row = SIZEOF(tmp);
 		setting["black"].set(tmp);
-		setting["black"].desc = "olla";
+		setting["black"].desc = "black disk appearance";
+        setting["black"].desc = "enter string with row and column by ...da.d.a";
 	}
 	
 	setting["white"].type = Property::Texture;
@@ -233,33 +287,39 @@ void initConfig(){
 		setting["white"].column = tmp[0].size();
 		setting["white"].row = SIZEOF(tmp);
 		setting["white"].set(tmp);
-		setting["white"].desc = "looa";
+		setting["white"].desc = "white disk appearance";
 	}
 	
 	setting["rotate"].type = Property::Bool;
 	setting["rotate"].set(true);
+    setting["rotate"].desc = "display rotation effect when thinking";
 	
 	setting["rotatetime"].type = Property::Int;
 	setting["rotatetime"].set(50000);
+    setting["rotatetime"].desc = "number of nodes between each rotation";
 	
 	setting["flip"].type = Property::Bool;
 	setting["flip"].set(true);
+    setting["flip"].desc = "display disk flipping";
 	
 	setting["fliptime"].type = Property::Float;
 	setting["fliptime"].set(0.3);
+    setting["fliptime"].desc = "time (sec) between each frame of flipping";
 	
 	setting["fliplook"].type = Property::Texture;
 	{
-		std::string tmp[] = {std::string("   |   "), 
-	 					 	 std::string("   |   "), 
+		std::string tmp[] = {std::string("   |   "),
+	 					 	 std::string("   |   "),
 	 					 	 std::string("   |   ")};
  		setting["fliplook"].column = tmp[0].size();
  		setting["fliplook"].row = SIZEOF(tmp);
 		setting["fliplook"].set(tmp);
+        setting["fliplook"].desc = "disk flipping appearance";
 	}
 	
 	setting["move"].type = Property::Bool;
 	setting["move"].set(true);
+    setting["move"].desc = "display legal moves";
 	
 	setting["movelook"].type = Property::Texture;
 	{
@@ -269,22 +329,28 @@ void initConfig(){
 		setting["movelook"].column = tmp[0].size();
 		setting["movelook"].row = SIZEOF(tmp);
 		setting["movelook"].set(tmp);
+        setting["movelook"].desc = "legal move appearance";
 	}
 	
 	setting["rand"].type = Property::Bool;
 	setting["rand"].set(true);
+    setting["rand"].desc = "randomize between equally good moves";
 	
 	setting["parallel"].type = Property::Bool;
 	setting["parallel"].set(false);
-	
+	setting["parallel"].desc = "allow parallel opening";
+    
 	setting["raw"].type = Property::Bool;
 	setting["raw"].set(false);
+    setting["raw"].desc = "use raw mode to configure O-hello levels";
 	
 	setting["weight"].type = Property::Vint;
 	{
 		int vi[] = {-1, 40, 100, 600, 800, 140, 250, 100, 45, 2, 60, 40, 200, 800, 100, 250, 100, 1, 1000000};
 		setting["weight"].num = SIZEOF(vi);
 		setting["weight"].set(vi);
+        setting["weight"].desc = "weights of evaluation function";
+        setting["weight"].func = customweight;
 	}
 	
 	dSetting = setting;
@@ -297,4 +363,31 @@ void initConfig(){
 void weightInitialize(){
 	weightRaw = setting["weight"].get_vint();
 	nickname();
+}
+
+bool customweight(){
+	clrscr(); //clear screen
+	printf("\n");
+	printf("current weights:\n\n ");
+	setting["weight"].show();
+	printf("\n\n\n");
+	printf("choose evaluation function weights:\n");
+	printf("-----------------------------------\n\n");
+	printf("0. customize weights\n\n");
+	for(int i = 0; i < weightChoiceNum; i++){
+		printf("%d. %s\n\n", i + 1, weightChoiceName[i]);
+		printf("  ");
+		for(int j = 0; j < int(setting["weight"].get_vint().size()); j++) printf(" %d", weightChoice[i][j]); // TODO
+		printf("\n\n");
+	}
+	int input = uget(int)([](int x){ return x >= 0 and x <= weightChoiceNum; }, "invalid. input again");
+	if(input != 0){
+		setting["weight"].set(weightChoice[input - 1]);
+	}else{
+		printf("\nenter evaluation function weights:\n\n");
+		setting["weight"].scan();
+	}
+	printf("\nsuccessfully set weights\n");
+	presstogo();
+    return true;
 }

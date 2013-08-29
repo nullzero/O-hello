@@ -32,7 +32,7 @@ test6.c
 date: 5/9/2011 lines: 432 lines
 -------------------------------
 - made menu interface
-- seperated game engine from 'main' (to function 'human')
+- separated game engine from 'main' (to function 'human')
 - wrote comments
 - first playable 2 player game
 
@@ -288,7 +288,7 @@ date: 18/11/2011 lines: 2598 lines
   -- made syntax 'menu' available in main menu
 - changed function name from 'wtest' to 'weighttest'
 - created variable 'weightnum'
-- created function 'humansave','comhumansave','comcomsave' for a seperated
+- created function 'humansave','comhumansave','comcomsave' for a separated
   save engine
 
 test41.c
@@ -625,8 +625,11 @@ date: Aug 23, 2013 lines: 4306 lines
   -- endgame search also faster
 
 version 80
-date: Aug 27, 2013 lines: 4317 lines
+date: Aug 28, 2013 lines: 3865 lines
 ------------------------------------
 - supported new settings
-- rewrited help
-- prepared to merge three games together
+- supported all commands
+  -- fully functional, but needs polishing !!
+  -- include undo,redo for the first time
+- rewrote help
+- prepared to merge three games together (broken)

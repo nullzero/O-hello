@@ -3,7 +3,7 @@
 //general info
 const char __version__[] = "80";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "August 28, 2013";
+const char __date__[] = "August 27, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -32,6 +32,12 @@ const char __compiler__[] = "G++";
 #include "sharedfunc.h"
 #include "help.h"
 
+struct Profile{
+	char mode, depth, depthP, no, id; // mode = -1 => player not com!
+	float times;
+};
+
+const int PLAYERM = -1;
 const int EXIT = 555;
 const int MAXN = 8;
 enum COLOR {BC, XC, OC};
@@ -72,6 +78,8 @@ struct undoStruct{
 		lastMove = _lastMove;
 	}
 };
+
+std::stack<undoStruct> undoStack;
 //End of Oak's definitions
 
 int depthShallow(int depth, bool endgame){
@@ -97,102 +105,1005 @@ struct triad{
 	int win, lose, draw;
 };
 
-//used in function 'settings'
-//to return AI settings
-struct comset{
-	int mode, depth, depthperfect;
-	float times;
-};
-
-//index array for mobility table
 int node; //count the number of nodes searched
 
 //functions in this source code are arranged in this order
 int main();
-comset comsettings();
-bool load(const char*);
-bool commandHelp();
+Profile comsettings();
+bool load();
+void commandHelp();
 void about();
 void speedtest();
 void sayhello();
 bool settingCommand(std::string option);
 void settings();
 void aisinterface();
+void customweight();
 void rotateoption();
 void flipoption();
 void openingoption();
-int human(int board[64],int no[2],int player);
-void humansave(int board[64],int player);
-int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,float times);
-void comhumansave(int board[64],int player,int complayer,int mode,int depth,int depthperfect,float times);
-int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]);
-void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]);
 void weightfortest(int doubleweight[2][100],int player);
 void weighttest();
 triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2],int doubleweight[2][100],int numgame,int numrand);
-int input(int board[64],int& player,int no[2], std::vector<undoStruct>&, int&, int&);
+int input(int board[64],int player,int no[2]);
 void shownode(int node);
-int random(int board[64],int player,int no[2],int display);
 int fsearch(int board[64],int depthwant,int player,int no[2],int display);
 int tsearch(int board[64],float times,int player,int no[2],int display);
 int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int betaGet,int display);
 int score63(int board[64],int player,int no[2],int display);
 void nodedisplay(int display);
-void boarddisplay(int board[64],int playertoshowmove);
-void display(int board[64],int player,int no[2],int lastmove);
 void flipanimation(int board[64],int player,int position,int flipboard[64]);
 int mobility(int player);
 int pmobility(int board[64]);
 int triplesq(int board[64],int corner,int xsquare,int csquare);
 float edgevalue(int board[64],int player);
 int stabledisk(int board[64]);
-kirby move(int board[64],int player);
-kirby flip(int board[64],int position,int player);
 int flipnum(int board[64],int position,int player);
+
+//return all legal moves (as kirby)
+//move.board - these moves
+//move.num - number of these moves (= function 'mobility')
+kirby move(vint& board, char player){
+    kirby move;
+    move.num = 0; //start at 0
+    int index = -1; //for move order
+    int position;
+    int poscheck;
+    
+    prove:
+    index++;
+    if(index==60) return move;
+    
+    position=moveOrder[index];
+    if(board[position]!=0) goto prove; //deal with the occupied
+    
+    //search 8 directions away from position
+    //ignore 'non-player'
+    //if reach border -- no good
+    //if reach empty -- no good
+    //if reach player (that is not next to position) -- good
+    //else(reach non-player) search further
+
+    //upleft
+    poscheck=position;
+    loop1:
+    poscheck -= 9;
+    if(poscheck < 0 or poscheck % 8 == 7); //do nothing
+    else if(board[poscheck] == 0); //do nothing
+    else if(board[poscheck] == player){
+        if(poscheck != position - 9){ //update and to next position!
+            move.board[move.num]=position;
+            move.num++;
+            goto prove;
+        }
+    }else{
+        goto loop1;
+    }
+       
+    //up
+    poscheck = position;
+    loop2:
+    poscheck -= 8;
+    if(poscheck < 0); //do nothing
+    else if(board[poscheck] == 0); //do nothing
+    else if(board[poscheck] == player){
+        if(poscheck != position - 8){ //update and to next position!
+            move.board[move.num]=position;
+            move.num++;
+            goto prove;
+        }
+    }else{
+        goto loop2;
+    }
+       
+    //upright
+    poscheck=position;
+    loop3:
+    poscheck-=7;
+    if(poscheck<0 or poscheck%8==0); //do nothing
+    else if(board[poscheck]==0); //do nothing
+    else if(board[poscheck]==player){
+                                     if(poscheck!=position-7){ //update and to next position!
+                                                              move.board[move.num]=position;
+                                                              move.num++;
+                                                              goto prove;
+                                                              }
+                                     }
+    else goto loop3;
+       
+    //left
+    poscheck=position;
+    loop4:
+    poscheck-=1;
+    if(poscheck<0 or poscheck%8==7); //do nothing
+    else if(board[poscheck]==0); //do nothing
+    else if(board[poscheck]==player){
+                                     if(poscheck!=position-1){ //update and to next position!
+                                                              move.board[move.num]=position;
+                                                              move.num++;
+                                                              goto prove;
+                                                              }
+                                     }
+    else goto loop4;
+       
+    //right
+    poscheck=position;
+    loop5:
+    poscheck+=1;
+    if(poscheck%8==0); //do nothing
+    else if(board[poscheck]==0); //do nothing
+    else if(board[poscheck]==player){
+                                     if(poscheck!=position+1){ //update and to next position!
+                                                              move.board[move.num]=position;
+                                                              move.num++;
+                                                              goto prove;
+                                                              }
+                                     }
+    else goto loop5;
+       
+    //downleft
+    poscheck=position;
+    loop6:
+    poscheck+=7;
+    if(poscheck>63 or poscheck%8==7); //do nothing
+    else if(board[poscheck]==0); //do nothing
+    else if(board[poscheck]==player){
+                                     if(poscheck!=position+7){ //update and to next position!
+                                                              move.board[move.num]=position;
+                                                              move.num++;
+                                                              goto prove;
+                                                              }
+                                     }
+    else goto loop6;
+       
+    //down
+    poscheck=position;
+    loop7:
+    poscheck+=8;
+    if(poscheck>63); //do nothing
+    else if(board[poscheck]==0); //do nothing
+    else if(board[poscheck]==player){
+                                     if(poscheck!=position+8){ //update and to next position!
+                                                              move.board[move.num]=position;
+                                                              move.num++;
+                                                              goto prove;
+                                                              }
+                                     }
+    else goto loop7;
+    
+    //downright
+    poscheck=position;
+    loop8:
+    poscheck+=9;
+    if(poscheck>63 or poscheck%8==0); //do nothing
+    else if(board[poscheck]==0); //do nothing
+    else if(board[poscheck]==player){
+                                     if(poscheck!=position+9){ //update and to next position!
+                                                              move.board[move.num]=position;
+                                                              move.num++;
+                                                              goto prove;
+                                                              }
+                                     }
+    else goto loop8;
+    
+    goto prove;
+}
+
+//-- random,fsearch,tsearch --
+//determine the position that computer places a disk
+//int display = mode of display
+//0 = nothing (for weight test)
+//1 = for computer's turn
+//2 = for in-game search
+
+//random move
+int random(vint& board, Profile* player, int display){
+    int position, randvar;
+    kirby moves = move(board, player[0].id); //get move list
+    
+    //opening move
+    if(player[0].no + player[1].no == 5){
+		//if no parallel opening
+		if(not setting["parallel"].get_bool()){
+			//recompute moves.board
+			if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
+			if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
+			if(board[37]!=0){moves.board[0]=43; moves.board[1]=45;}
+			if(board[44]!=0){moves.board[0]=29; moves.board[1]=45;}
+			if(board[20]!=0){moves.board[0]=21; moves.board[1]=37;}
+			if(board[29]!=0){moves.board[0]=19; moves.board[1]=21;}
+			if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
+			if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
+			randvar = 2;
+		}else{
+			//if allow parallel opening
+			randvar = 3;
+		}
+	    if(setting["rand"].get_bool()) randvar = 0;
+		position = moves.board[rand(randvar)];
+	}else{
+		position = moves.board[rand(moves.num)];
+    }
+    if(display != 0){
+		backspace(18); //clear "thinking "
+		printf("O-hello decided to place a disk at ");
+		printf("%c%d", 'a' + (position % 8), position / 8 + 1);
+	}
+    return position;
+}
+
+//fsearch: fixed depth search
+//act like function 'score' that operates on the first depth
+//*now it can perform shallow search first before the deep search
+int fsearch(vint& board,int depthwant, Profile* player,int display){
+    timeb time1,time2; //for 'ftime'
+    int scores[64]; //keep scores of each position
+    int bestscore = UNINIT; //best of scores[64]
+    kirby flips; //from function 'flip'
+    kirby moves; //from function 'move'
+    int position;
+    int candidate[64]; //keep positions with bestscore
+    int numcan=0; //number of candidates
+    int k;
+    int a;
+    int depthshallow; //for shallow search
+    int enginestate=0; //0=normal,1=only reply,2=opening
+    int perfect=0;
+	int alpha,beta;
+    
+    ftime(&time1); //get current time
+    node=0; //reset node
+    moves=move(board,player[0].id); //get move list
+
+    //if only one legal move -- no need to search
+    if(moves.num==1){position=moves.board[0]; depthwant=0; enginestate=1; goto finish;}
+
+    //for starting position -- no need to search
+    if(player[0].no+player[1].no==4){
+                       //if random feature is on
+                       if(setting["rand"].get_bool()) position = moves.board[rand(4)];
+                       else position=moves.board[0];
+                       depthwant=0;
+                       enginestate=2;
+                       goto finish;
+                       }
+    if(player[0].no+player[1].no==5){
+                       //if no parallel opening
+                       if(not setting["parallel"].get_bool()){
+                                            //recompute moves.board
+                                            if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
+                                            if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
+                                            if(board[37]!=0){moves.board[0]=43; moves.board[1]=45;}
+                                            if(board[44]!=0){moves.board[0]=29; moves.board[1]=45;}
+                                            if(board[20]!=0){moves.board[0]=21; moves.board[1]=37;}
+                                            if(board[29]!=0){moves.board[0]=19; moves.board[1]=21;}
+                                            if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
+                                            if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
+                                            
+                                            if(setting["rand"].get_bool()) position = moves.board[rand(2)];
+                                            else position=moves.board[0];
+                                            }
+                       //if allow parallel opening
+                       else{
+                            if(setting["rand"].get_bool()) position = moves.board[rand(3)];
+                            else position=moves.board[0];
+                            }
+                       
+                       depthwant=0;
+                       enginestate=2;
+                       goto finish;
+                       }
+    
+    //if searches up to end-game (or 1 square left)
+    if(depthwant>=63-player[0].no-player[1].no){
+                                  depthwant=64-player.[0]no-player[1].no;
+                                  depthshallow=depthShallow(depthwant, true);
+                                  enginestate=0;
+                                  perfect=1;
+                                  }
+    else{
+         depthshallow=depthShallow(depthwant, false);
+         enginestate=0;
+         perfect=0;
+         }
+    
+    //for the shallow search------------------------------------
+    
+    if(depthshallow>0){
+                       //set extreme value
+                       alpha = -LARGE;
+                       beta = LARGE;   
+                       //get score for all legal moves
+                       for(k=0;k<moves.num;k++){
+                                                position=moves.board[k];
+                                                flips=flip(board,position,player[0].id); //flip!
+                                                //update no[2] (as nonew[2])
+                                                nonew[player[0].id-1]=no[player[0].id-1]+flips.num+1;
+                                                nonew[2-player[0].id]=no[2-player[0].id]-flips.num;
+                                                //get score
+                                                scores[k]=score(flips.board,depthshallow-1,3-player[0].id,nonew,alpha,beta,display);
+												//NO UPDATE alpha,beta IN SHALLOW SEARCH
+												/*
+                                                if(player[0].id==1){ //if player[0].id 1: max mode
+                                                               if(scores[k]>alpha) alpha=scores[k];
+                                                               }
+                                                else{ //if player[0].id 2: min mode
+                                                      if(scores[k]<beta) beta=scores[k];
+                                                      }*/
+                                                }
+                       //rearrange moves by scores from shallow search
+                       order:
+                       for(k=0;k<moves.num-1;k++){
+                                                  if((player[0].id==1 and scores[k]<scores[k+1]) or (player==2 and scores[k]>scores[k+1])){
+                                                                a=scores[k]; //switch score
+                                                                scores[k]=scores[k+1];
+                                                                scores[k+1]=a;
+                                                                a=moves.board[k]; //switch position
+                                                                moves.board[k]=moves.board[k+1];
+                                                                moves.board[k+1]=a;
+                                                                goto order;
+                                                                }
+                                                  }
+                       }
+    
+    //for the deep search---------------------------------------
+    
+    //set extreme value
+    alpha = -LARGE;
+    beta = LARGE;          
+    //get score for all legal moves
+    for(k=0;k<moves.num;k++){
+                             position=moves.board[k];
+                             flips=flip(board,position,player); //flip!
+                             //update no[2] (as nonew[2])
+                             nonew[player-1]=no[player-1]+flips.num+1;
+                             nonew[2-player]=no[2-player]-flips.num;
+                             //get score
+                             scores[k]=score(flips.board,depthwant-1,3-player,nonew,alpha,beta,display);
+                             if(player==1){ //if player 1: max mode
+                                           if(scores[k]>alpha) alpha=scores[k];
+                                           }
+                             else{ //if player 2: min mode
+                                  if(scores[k]<beta) beta=scores[k];
+                                  }
+                             }
+                             
+    //---------------------------------------------------------
+    
+    //set extreme value
+    if(player==1) bestscore=-LARGE;
+    else bestscore=LARGE;
+    //determine candidates
+    for(k=0;k<moves.num;k++){
+                             position=moves.board[k];
+							 //ONLY ONE CANDIDATE
+							 /*
+                             if(scores[k]==bestscore){ //add a candidate
+                                                      numcan++;
+                                                      candidate[numcan-1]=position;
+                                                      }*/
+                             if(player==1){ //if player 1: max mode
+                                           if(scores[k]>bestscore){
+                                                                   bestscore=scores[k];
+                                                                   //be the first candidate
+                                                                   numcan=1;
+                                                                   candidate[0]=position;
+                                                                   }
+                                           }
+                             else{ //if player 2: min mode
+                                  if(scores[k]<bestscore){
+                                                          bestscore=scores[k];
+                                                          //be the first candidate
+                                                          numcan=1;
+                                                          candidate[0]=position;
+                                                          }
+                                  }
+                             }
+
+    //arrrange candidates (for same result in randoff mode)
+    order2:
+    for(k=0;k<numcan-1;k++){
+                            if(candidate[k]>candidate[k+1]){
+                                                            a=candidate[k];
+                                                            candidate[k]=candidate[k+1];
+                                                            candidate[k+1]=a;
+                                                            goto order2;
+                                                            }
+                            }
+    //if random feature is on
+    if(setting["rand"].get_bool()) position = candidate[rand(numcan)]; //random from candidates 
+    else position=candidate[0];
+
+    finish:
+    ftime(&time2); //get current time
+    if(display != 0){
+		if(display == 1){
+			backspace(18); //clear "thinking "
+			printf("O-hello decided to place a disk at ");
+		}else{
+			backspace(18); //clear "thinking "
+			printf("search result: ");
+		}
+		switch(position % 8){
+			case 0: printf("a"); break;
+			case 1: printf("b"); break;
+			case 2: printf("c"); break;
+			case 3: printf("d"); break;
+			case 4: printf("e"); break;
+			case 5: printf("f"); break;
+			case 6: printf("g"); break;
+			case 7: printf("h"); break;
+		}
+		printf("%d ", position / 8 + 1);
+		//.time = seconds, .millitm = milliseconds
+		printf("\n\n%.2f sec  ", time2.time - time1.time + 0.001 * (time2.millitm - time1.millitm));
+		shownode(node); //display node
+		printf("depth %d  ", depthwant);
+		//display score
+		switch(enginestate){
+			case 0:
+				if(player == 1){
+					 if(bestscore >= wf) printf(": win +%d", bestscore / wf);
+					 else if(bestscore <= -wf) printf(": lose %d", bestscore / wf);
+					 else if(bestscore == 0 and perfect == 1) printf(": draw");
+					 else if(bestscore >= 0) printf(": score +%d", bestscore);
+					 else printf(": score %d", bestscore);
+				}else{
+					if(bestscore <= -wf) printf(": win +%d", -bestscore / wf);
+					else if(bestscore >= wf) printf(": lose %d", -bestscore / wf);
+					else if(bestscore == 0 and perfect == 1) printf(": draw");
+					else if(bestscore <= 0) printf(": score +%d", -bestscore);
+					else printf(": score %d", -bestscore);
+				}
+				break;
+			case 1: printf(": only move"); break;
+			case 2: printf(": opening"); break;
+		}
+	}
+    return position;
+}
+
+
+//flip board when player places a disk at a position
+//flip.board=flipped board, flip.num=number of flipped disks
+//if flip.num=0 return some random board (save time) 
+kirby flip(const vint& board,int position,int player){
+       kirby flip;
+       int i;
+       int poscheck;
+	   int opPlayer = opposite[player];
+       
+       flip.num=0; //start at 0
+       if(board[position]) return flip; //if nonempty
+       
+       //search 8 directions away from position
+       //first check conditions: position is movable and first sq is opponent
+       //then look further in that direction
+       //if reach player - flip!
+       //if reach opponent and not border - look further
+       //else - end process
+       
+       //upleft
+       if(IsUpleftMovable[position]){
+       if(board[position-9]==opPlayer){
+       
+       poscheck=position-18;
+       loop1:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position-9;i>poscheck;i-=9){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsUpleftBorder[poscheck]){poscheck-=9; goto loop1;}
+       
+       }
+       }
+       
+       //up
+       if(IsUpMovable[position]){
+       if(board[position-8]==opPlayer){
+       
+       poscheck=position-16;
+       loop2:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position-8;i>poscheck;i-=8){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsUpBorder[poscheck]){poscheck-=8; goto loop2;}
+       
+       }
+       }
+       
+       //upright
+       if(IsUprightMovable[position]){
+       if(board[position-7]==opPlayer){
+       
+       poscheck=position-14;
+       loop3:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position-7;i>poscheck;i-=7){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsUprightBorder[poscheck]){poscheck-=7; goto loop3;}
+       
+       }
+       }
+       
+       //left
+       if(IsLeftMovable[position]){
+       if(board[position-1]==opPlayer){
+       
+       poscheck=position-2;
+       loop4:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position-1;i>poscheck;i-=1){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsLeftBorder[poscheck]){poscheck-=1; goto loop4;}
+       
+       }
+       }
+       
+       //right
+       if(IsRightMovable[position]){
+       if(board[position+1]==opPlayer){
+       
+       poscheck=position+2;
+       loop5:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position+1;i<poscheck;i+=1){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsRightBorder[poscheck]){poscheck+=1; goto loop5;}
+       
+       }
+       }
+       
+       //downleft
+       if(IsDownleftMovable[position]){
+       if(board[position+7]==opPlayer){
+       
+       poscheck=position+14;
+       loop6:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position+7;i<poscheck;i+=7){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsDownleftBorder[poscheck]){poscheck+=7; goto loop6;}
+       
+       }
+       }
+       
+       //down
+       if(IsDownMovable[position]){
+       if(board[position+8]==opPlayer){
+       
+       poscheck=position+16;
+       loop7:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position+8;i<poscheck;i+=8){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsDownBorder[poscheck]){poscheck+=8; goto loop7;}
+       
+       }
+       }
+       
+       //downright
+       if(IsDownrightMovable[position]){
+       if(board[position+9]==opPlayer){
+       
+       poscheck=position+18;
+       loop8:
+       if(board[poscheck]==player){
+                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
+                                   for(i=position+9;i<poscheck;i+=9){
+                                                                     flip.board[i]=player;
+                                                                     flip.num++;
+                                                                     }
+                                   }
+       else if(board[poscheck]) if(!IsDownrightBorder[poscheck]){poscheck+=9; goto loop8;}
+       
+       }
+       }
+       
+       //place player's disk at position
+       flip.board[position]=player;
+       return flip;
+}
+
+//display board string
+//to be used in function 'display' and 'flipanimation'
+//interpretation of board input: 0=empty,1=black,2=white,3=flipping
+void boarddisplay(vint& board, int playertoshowmove){
+	std::string output;
+
+	//ascii for components
+	char upLeftCorner = '+';
+	char upRightCorner= '+';
+	char downLeftCorner = '+';
+	char downRightCorner = '+';
+	char horizontal = '-';
+	char horizontalDown = '+';
+	char horizontalUp = '+';
+	char vertical = '|';
+	char verticalRight = '+';
+	char verticalLeft = '+';
+	char fourArm = '+';
+
+	int heightPutChar = (diskHeight + 1) / 2;
+	int spaceBeforeChar = (diskWidth + 1) / 2;
+	int spaceAfterChar = diskWidth - spaceBeforeChar;
+
+	//construct board string
+
+	//header
+	appendSame(output, ' ', 3);
+	for(char i = 'a'; i <= 'h'; ++i){
+		appendSame(output, ' ', spaceBeforeChar);
+		output += i;
+		appendSame(output, ' ', spaceAfterChar);
+	}
+	output += "\n";
+
+	appendSame(output, ' ', 3);
+	output += upLeftCorner;
+
+	for(int i = 1; i <= 7; i++){
+		appendSame(output, horizontal, diskWidth);
+		output += horizontalDown;
+	}
+	appendSame(output, horizontal, diskWidth);
+	output += upRightCorner;
+	output += '\n';
+
+	// loop
+	for(int i = 0; i < 8; ++i){
+		for(int j = 0; j < diskHeight; ++j){
+			if(j == heightPutChar - 1){
+				output += ' ';
+				output += '1' + i;
+				output += ' ';
+			}else{
+			 	appendSame(output, ' ', 3);
+			}
+			output += vertical;
+			for(int k = 8 * i; k < 8 * i + 8; ++k){
+				if(board[k] == 1) output += setting["black"].get_texture()[j];
+				else if(board[k] == 2) output += setting["white"].get_texture()[j];
+				else if(board[k] == 3) output += setting["fliplook"].get_texture()[j];
+				else{
+					//if move is to be shown (not in flipping process)
+					if(playertoshowmove != 0){
+						//if move is legal and show move is on
+						if(setting["move"].get_bool() and flip(board, k, playertoshowmove).num != 0) output += setting["movelook"].get_texture()[j];
+						else appendSame(output, ' ', diskWidth);
+					}else{
+						appendSame(output, ' ', diskWidth);
+					}
+				}
+				output += vertical;
+			}
+			output += '\n';
+		}
+		if(i != 7){
+			//not last row
+			appendSame(output, ' ', 3);
+			output += verticalRight;
+			for(int j = 1; j <= 7; j++){
+				appendSame(output, horizontal, diskWidth);
+				output += fourArm;
+			}
+			appendSame(output, horizontal, diskWidth);
+			output += verticalLeft;
+			output += '\n';
+		}else{
+			appendSame(output, ' ', 3);
+			output += downLeftCorner;
+			for(int j = 1; j <= 7; j++){
+				appendSame(output, horizontal, diskWidth);
+				output += horizontalUp;
+			}
+			appendSame(output, horizontal, diskWidth);
+			output += downRightCorner;
+		}
+	}
+	output += "\n\n";
+	printf("%s", output.c_str());
+}
+
+//display board and game information
+void display(vint& board, Profile* player, int lastMove){
+	int totalWidth = (diskWidth + 1) * MAXN + 4;
+	int distanceRight = 2 * diskWidth + 11;
+	int distanceLeft = 13;
+
+	//display board
+	boarddisplay(board, player[0].id);
+
+	for(int i = 0; i < diskHeight; ++i){
+		if(i == middleHeight){
+			printf("last move: ");
+			if(lastMove == -1) printf("- ");
+			else printf("%c%d", 'a' + (lastMove % 8), lastMove / 8 + 1);
+			space(totalWidth - distanceRight - distanceLeft);
+			printf("%s x%2d  %s x%2d\n", setting["black"].get_texture()[i].c_str(), player[0].no,
+										 setting["white"].get_texture()[i].c_str(), player[1].no);
+		}else{
+			space(totalWidth - distanceRight);
+			printf("%s      %s\n", setting["black"].get_texture()[i].c_str(), setting["white"].get_texture()[i].c_str());
+		}
+	}
+}
+
+int game(vint& board, Profile* player){
+    int currmove = -1;
+    int lastMove = -1;
+    int position;
+	
+	while(true){
+	    clrscr();
+	    // display board
+	    display(board, player, lastMove);
+	
+	    //diplay player
+		if(player[0].mode == PLAYERM){
+			print_bottom(player[0].id, "you are");
+		}else{
+			if(player[1].mode == PLAYERM) print_bottom(player[0].id, "O-hello is");
+			else print_bottom(player[0].id, (boost::format("O-hello %1% is") % player[0].id).str());
+		}
+	
+	    //compute mobility
+	    indexformob(board);
+	    int mobilities = mobility(player[0].id);
+	
+	    if(mobilities != 0){
+			//if player is movable
+			if(player[0].mode != PLAYERM){
+				//for computer's turn
+				printf("\nthinking");
+				space(10);
+				//get position
+				if(player[0].mode == 0){
+					position = random(board, player, 1);
+				}else if(player[0].mode == 1){
+					//for near-end evaluation, use depthperfect
+					if(player[0].no + player[1].no >= 64 - player[0].depthP) position = fsearch(board, player[0].depthP, player, 1);
+					else position = fsearch(board, player[0].depth, player, 1);
+				}else if(player[0].mode == 2){
+					position = tsearch(board, player[0].times, player, 1);
+				}
+				printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
+				printf("\npress any other key to continue");
+				char letter = getch();
+				if(letter == 's'){
+					printf("\n");
+					printf("no save function for now!\n");
+					continue;  // render again
+				}
+				if(letter == 'n') return EXIT;
+				if(letter == 'm') return 0;
+				if(letter == 'q') finish(0);
+				currmove = position;
+				lastMove = currmove;
+				flips = flip(board, position, player[0].id); //flip!
+				//show flip animation
+				if(setting["flip"].get_bool()) flipanimation(board,player[0].id,position,flips.board);
+				//get board from function 'flip'
+				for(int i = 0; i < 64; i++) board[i] = flips.board[i];
+				//update no[2]
+				player[0].no += flips.num + 1;
+				player[1].no -= flips.num;						
+			}else{
+		   	 	//for human's turn
+				printf("\nyour turn: input position or command\n\n");
+			    loop1: // WTF
+				texture vec;
+				do vec = newinput(PLAYMODE);
+				while(vec.empty());
+
+				auto option = vec.read();
+
+				if(option == "~"){
+					option = vec.read();
+					// sure that get correct format
+					if(option == "move") continue; // render again
+				}
+
+				if(option == "menu" and vec.empty()) return 0;
+				if(option == "new" and vec.empty()) return EXIT;
+				if(option == "save" and vec.empty()){
+					printf("no save function for now!\n");
+					continue; // render again
+				}
+				if(option == "undo" and vec.empty()){
+					if(undoStack.empty()){
+					   alert("Hey!! Stack is empty... Pung Woeyyyy");
+					}
+					board = undoStack.top().board;
+					player[0] = undoStack.top().player[0];
+					player[1] = undoStack.top().player[1];
+					lastMove = undoStack.top().lastMove;
+					undoStack.pop();
+					continue; // render again
+				}
+				if(option == "reflect" and vec.empty()){
+					for(int i = 0; i < 8; i++) //row i
+						for(int j = 0; j < 4; j++) //column j
+							std::swap(board[8*i+j], board[8*i+7-j]);
+				
+					//last move
+					if(lastMove != -1) lastMove += 7 - 2 * (lastMove % 8);
+					continue; // render again
+				}
+				if(option == "fsearch"){
+					if(vec.empty()){
+						// ...
+					}
+			        int depth = uget(int)([](int depth){ return depth >= 1; }, "invalid depth! please input depth again.");
+			        printf("\nthinking");
+					space(10);
+			        fsearch(board, depth, player, 2);
+			        printf("\n\n");
+			        goto loop1; // input again
+				}
+				if(option == "tsearch"){
+					if(vec.empty()){
+						// ...
+					}
+					float times = uget(float)();
+			        if(times < 0){
+						printf("\ninvalid time!\n\n");
+					}else{
+				        printf("\nthinking ");
+						space(10);
+				        tsearch(board, times, player, 2);
+				        printf("\n\n");
+					}
+			        goto loop1;
+				}
+
+			    if(option.size()!=2){
+					printf("\nincorrect syntax!\n\n");
+					goto loop1;
+				}
+			    char column = option[0] - 'a';
+			    char row=option[1] - '1';
+			    //column to 0-7
+				if(column < 0 or column > 7){
+					alert("incorrect syntax!");
+					goto loop1;
+				}
+			    //row to 0-7
+				if(row < 0 or row > 7){
+					alert("incorrect syntax!");
+					goto loop1;
+				}
+				position = row * 8 + column;
+			
+				flips = flip(board, position, player[0].id); //flip!
+				//if nothing is flipped
+				if(flips.num == 0){
+					printf("\nillegal move!\n\n");
+					goto loop1;
+				}
+				//show flip animation
+				if(setting["flip"].get_bool()) flipanimation(board, player[0].id, position, flips.board);
+				currmove = position;
+				//update old values
+				undoStack.push(undoStruct(board, player[0], player[1], lastMove);
+				//get board from function 'flip'
+				board = flips.board;
+				//update no[2]
+				player[0].no += flips.num + 1;
+				player[1].no -= flips.num;
+			}
+			swap(player[0], player[1]);
+			continue;
+		}else if(mobility(player[1].id) == 0){ //if player is not movable and opponent is not movable too
+			printf("\n\nno more moves can be made! game over!\n\n");
+			// display result :)
+			
+			if(player[0].id == 2) swap(player[0], player[1]); // standardize
+			
+			if(player[0].no > player[1].no){
+				if(player[0].mode == PLAYERM and player[1].mode == PLAYERM) showwin("PLAYER 1 WINS", player);
+				else if(player[0].mode == PLAYERM) showwin("YOU WIN", player);
+				else if(player[1].mode == PLAYERM) showwin("O-HELLO WINS", player);
+				else showwin("O-HELLO 1 WINS", player);
+			}else if(player[0].no < player[1].no){
+				if(player[1].mode == PLAYERM and player[0].mode == PLAYERM) showwin("PLAYER 2 WINS", player);
+				else if(player[1].mode == PLAYERM) showwin("YOU WIN", player);
+				else if(player[0].mode == PLAYERM) showwin("O-HELLO WINS", player);
+				else showwin("O-HELLO 2 WINS", player);
+			}else{
+				printf("-----------------\n");
+				printf("IT'S A DRAW 32-32\n");
+				printf("-----------------\n");
+			}
+			printf("\n's' to save  'n' for new game  'm' for menu  'q' to quit");
+			while(true){
+				char letter = getch();
+				if(letter == 's'){
+					printf("\n");
+					printf("no save function for now!\n");
+				}else if(letter == 'n') return EXIT;
+				else if(letter == 'm') return 0;
+				else if(letter == 'q') finish(0);
+			}
+		}else{ //pass turn :)
+			if(player[0].mode != PLAYERM){
+				printf("\n\nO-hello passed its turn");
+				printf("\n\npress any key to continue");
+			}else{
+				printf("\n\nyour turn: no moves left",player);
+				printf("\n\npress any key to pass turn");
+			}
+			getch();
+			printf("\n");
+			swap(player[0], player[1]);
+		}
+	}
+}
+
 
 texture newinput(int mode){
 	texture inp;
 	inp = getl();
 	
 	auto x = inp.read();
-	if(x == "quit"){
-        if(not inp.empty()){
-            alert("too many parameters");
-            return texture();
-        }
-        else finish(0);
-    }
+	if(x == "quit" and inp.empty()) finish(0);
 	if(x == "help"){
-		if(not commandHelp(inp)) alert("invalid help entry");
+		commandHelp(inp);
 		return texture();
 	}
 	if(x == "reset"){
 		if(inp.empty()){
-            alert("input variable or 'all'");
+            alert("type a variable or 'all'");
             inp = getl();
         }
 		x = inp.read();
-        if(not inp.empty()){
-            alert("too many parameters");
+        if(not x.empty()){
+            alert("no the given variable. try again");
         }else if(x == "all"){
             setting = dSetting;
-            alert("all variables reset");
         }else if(setting.find(x) == setting.end()){
-			alert("invalid variable");
+			alert("no the given variable. try again");
 		}else{
     		setting[x] = dSetting[x];
-            printf("\n'%s' reset\n\n", x.c_str());
         }
+		alert("reset!");
 		return texture();
 	}
 	if(x == "set"){
 		if(inp.empty()){
-			alert("input variable");
+			alert("type a variable");
 			inp = getl();
 		}
 		x = inp.read();
 		if(setting.find(x) == setting.end()){
-			alert("invalid variable");
+			alert("no the given variable. try again");
 			return texture();
 		}
 		texture ret;
@@ -201,37 +1112,30 @@ texture newinput(int mode){
 			ret.push_back("move");
 		}
 		if(inp.empty()){
-			if(not setting[x].scan()) return texture();
+			setting[x].scan();
 		}else{
 			auto y = inp.read();
 			if(inp.empty()){
-				if(not setting[x].set(y)) return texture();
+				setting[x].set(y);
 			}else{
-                if(setting[x].type == Property::Vint or setting[x].type == Property::Texture)
-                    alert("invalid. can't set with this method.");
-                else
-				    alert("too many parameters");
+				alert("too many parameters\n");
 				return texture();
 			}
 		}
-		alert((boost::format("'%1%' set!") % x.c_str()).str());
+		alert("set!");
 		return ret;
 	}else if(x == "show"){
 		if(inp.empty()){
-			alert("input variable or 'all'");
+			alert("type a variable");
 			inp = getl();
 		}
 		x = inp.read();
-        if(not inp.empty()){
-            alert("too many parameters");
+        if(not x.empty()){
+            alert("no the given variable. try again");
         }else if(x == "all"){
-            for(auto var : setting){
-                printf("\nvalue %s = ", var.first.c_str());
-                setting[var.first].showCompact();
-            }
-            printf("\n\n");
+            // TODO
         }else if(setting.find(x) == setting.end()){
-			alert("invalid variable");
+			alert("no the given variable. try again");
 		}else{
     		setting[x].show();
         }
@@ -243,22 +1147,6 @@ texture newinput(int mode){
 
 //interface
 void newgame(){
-    int mode;
-    int depth;
-    int depthperfect;
-    float times;
-    int doublemode[2];
-    int doubledepth[2];
-    int doubledepthperfect[2];
-    float doubletimes[2];
-    int sentboard[64];
-    int sentno[2];
-    int sentdoublemode[2];
-    int sentdoubledepth[2];
-    int sentdoubledepthperfect[2];
-    float sentdoubletimes[2];
-    comset pack;
-	
     clrscr(); //clear screen
     printf("\n version %s\n", __version__);
 	printf("                                  -----------\n");
@@ -279,13 +1167,14 @@ void newgame(){
     weightInitialize();
     //set board
     //board: 0 = space, 1 = player_1, 2 = player_2
-    int board[MAXN * MAXN] = {};
-    board[27] = OC;
-    board[28] = XC;
-    board[35] = XC;
-    board[36] = OC;
-    int no[2] = {2, 2}; //set number of each player's disks
-    int player = XC; //set current player
+    vint t_board(MAXN * MAXN);
+    t_board[27] = OC;
+    t_board[28] = XC;
+    t_board[35] = XC;
+    t_board[36] = OC;
+    
+    Profile t_human;
+    t_human.mode = PLAYERM;
 	
 	while(true){
 		texture vec = newinput(MENUMODE);
@@ -294,93 +1183,66 @@ void newgame(){
 		auto inp = vec.read();
 		
 		if(inp == "hello"){
-            if(not vec.empty()){
-                alert("too many parameters");
-            }
-			else sayhello();
+			sayhello();
 			continue;
 		}
 		else if(inp == "speed"){
-            if(not vec.empty()){
-                alert("too many parameters");
-            }
-			else speedtest();
+			speedtest();
 			continue;
 		}
 		else if(inp == "load"){
-            if(vec.empty()) vec = getl();
-            inp = vec.read();
-            if(not vec.empty()){
-                alert("too many parameters");
-                continue;
-            }else{
-			    if(not load(inp.c_str())) continue;
-            }
+			if(not load()) continue;
 		}
-		else if(inp == "menu"){
-		    if(not vec.empty()){
-		        alert("too many parameters");
-                continue;
-		    }
-		}
+		else if(inp == "menu");
 	    else if(inp.size() != 1){
-			alert("invalid command");
+			alert("incorrect syntax!");
 			continue;
 		}
-		else if(inp == "0"){
-			settings();
-		}else if(inp == "1"){
-			//human vs human
-			do{
-				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
-				for(int i = 0; i < 2; i++) sentno[i] = no[i];
-			}while(human(sentboard, sentno, player) == EXIT);
-		}else if(inp == "2" or inp == "3"){
-			 //human vs computer,computer vs human
-			clrscr();
-			printf("\nselect search mode for O-hello:\n");
-			printf("-------------------------------\n\n");
-			//get settings
-			pack = comsettings();
-			mode = pack.mode;
-			depth = pack.depth;
-			depthperfect = pack.depthperfect;
-			times = pack.times;
-			int numvalue;
-			if(inp[0] == '2') numvalue = OC;
-			else numvalue = XC;
-			do{
-				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
-			 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
-			}while(comhuman(sentboard, sentno, player, numvalue, mode, depth, depthperfect, times) == EXIT);
-	    }else if(inp == "4"){
-			//computer vs computer
-			for(int i = 0; i < 2; i++){
-				printf("\nselect search mode for O-hello %d:\n", i + 1);
-				printf("---------------------------------\n\n");
-				//get settings
-	            pack = comsettings();
-	            doublemode[i] = pack.mode;
-	            doubledepth[i] = pack.depth;
-	            doubledepthperfect[i] = pack.depthperfect;
-	            doubletimes[i] = pack.times;
-	            printf("\n");
-			}
-	        do{
-				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
-				for(int i = 0; i < 2; i++) sentno[i] = no[i];
-	            for(int i = 0; i < 2; i++) sentdoublemode[i] = doublemode[i];
-	            for(int i = 0; i < 2; i++) sentdoubledepth[i] = doubledepth[i];
-	            for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
-	            for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
-			}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
-		}else if(inp == "5"){
-			weighttest();
-		}else if(inp == "6"){
-			about();
-		}else{
-			alert("invalid mode");
-			continue;
+		else if(inp == "0") settings();
+        else if(inp == "5") weighttest();
+        else if(inp == "6") about();
+		else{
+            Profile p[2];
+            vint board = t_board;
+            if(inp == "1"){
+                //human vs human
+    			Profile human = t_human;
+                p[0] = human;
+                p[1] = human;
+    		}else if(inp == "2" or inp == "3"){
+    			 //human vs computer, computer vs human
+    			clrscr();
+    			printf("\nselect search mode for O-hello:\n");
+    			printf("-------------------------------\n\n");
+    			//get settings
+    			Profile computer = comsettings();
+                Profile human = t_human;
+            
+    			if(inp == "2"){
+                    p[0] = human;
+                    p[1] = computer;
+    			}else{
+                    p[0] = computer;
+                    p[1] = human;
+                }
+    	    }else if(inp == "4"){
+    			//computer vs computer
+    			for(int i = 0; i < 2; i++){
+    				printf("\nselect search mode for O-hello %d:\n", i + 1);
+    				printf("---------------------------------\n\n");
+    				//get settings
+    	            p[i] = comsettings();
+    	            printf("\n");
+    			}
+            }else{
+                alert("invalid mode!");
+                continue;
+            }
+            p[0].id = XC;
+            p[1].id = OC;
+            p[0].no = 2;
+            p[1].no = 2;
+            while(game(board, p) == EXIT);
 		}
 		return;
 	}
@@ -392,8 +1254,8 @@ int main(){
 }
 
 //AI settings interface
-comset comsettings(){
-	comset pack;
+Profile comsettings(){
+	Profile pack;
 	if(setting["raw"].get_bool()){
 		// old interface
 		printf("0. random : random play\n");
@@ -410,17 +1272,17 @@ comset comsettings(){
 				printf("\ninvalid depth!\n");
 				goto setdetail;
 			}
-			scanf("%d", &pack.depthperfect);
-			if(pack.depthperfect < 1){
+			scanf("%d", &pack.depthP);
+			if(pack.depthP < 1){
 				printf("\ninvalid depthperfect!\n");
 				goto setdetail;
 			}
 		}else if(pack.mode == 2){
-		    printf("\nTHIS MODE IS UNDER DEVELOPMENT -- USE WITH CARE");
+		    printf("\nTHIS MODE IS UNDER DEVELOPMENT - USE WITH CARE");
 		    printf("\n\ninput time limit (sec): ");
 		    scanf("%f", &pack.times);
-		    if(pack.times <= 0){
-				printf("\ninvalid time\n");
+		    if(pack.times<0){
+				printf("\ninvalid time!\n");
 				goto setdetail;
 			}
 		}
@@ -430,7 +1292,7 @@ comset comsettings(){
 		printf("2. search with time limit\n\n");
 		
 		newsetmode:
-        pack.mode = uget(int)();
+		scanf("%d", &pack.mode);
 		if(pack.mode < 0 or pack.mode > 2){
 			alert("invalid mode!"); 
 			goto newsetmode;
@@ -452,41 +1314,41 @@ comset comsettings(){
 			
 			newsetdepth:
 			
-			std::string option = uget(sline)();
+			std::string option = uget(std::string)();
 			if(option == "1"){
 				pack.depth = 1;
-				pack.depthperfect = 1;
+				pack.depthP = 1;
 			}else if(option == "2"){
 				pack.depth = 2;
-				pack.depthperfect = 2;
+				pack.depthP = 2;
 			}else if(option == "3"){
 				pack.depth = 3;
-				pack.depthperfect = 3;
+				pack.depthP = 3;
 			}else if(option == "4"){
 				pack.depth = 4;
-				pack.depthperfect = 4;
+				pack.depthP = 4;
 			}else if(option == "4a"){
 				pack.depth = 4;
-				pack.depthperfect = 10;
+				pack.depthP = 10;
 			}else if(option == "6"){
 				pack.depth = 6;
-				pack.depthperfect = 6;
+				pack.depthP = 6;
 			}else if(option == "6a"){
 				pack.depth = 6;
-				pack.depthperfect = 12;
+				pack.depthP = 12;
 			}else if(option == "8"){
 				pack.depth = 8;
-				pack.depthperfect = 14;
+				pack.depthP = 14;
 			}else if(option == "10"){
 				pack.depth = 10;
-				pack.depthperfect = 16;
+				pack.depthP = 16;
 			}else{
-				alert("invalid selection");
+				alert("invalid selection!");
 				goto newsetdepth;
 			}
 		}else{
-		    printf("\nTHIS MODE IS UNDER DEVELOPMENT -- USE WITH CARE\n\n");
-		    pack.times = uget(float)([](int x){ return x > 0; }, "invalid: time must be more than 0", "input time limit (sec)");
+		    printf("\nTHIS MODE IS UNDER DEVELOPMENT - USE WITH CARE\n\n");
+		    pack.times = uget(float)([](int x){ return x >= 0; }, "invalid: time must more than 0", "input time limit (sec)");
 		}
 	}
 	return pack;
@@ -495,9 +1357,9 @@ comset comsettings(){
 //load engine
 //return false if file is corrupted
 //return true if load successfully
-bool load(const char* filename2){
-    char filename[100] = {};
-    strcpy(filename, filename2);
+bool load(){
+    /*
+    char filename[100];
     int prerand;
     int board[64];
     int no[2];
@@ -519,6 +1381,8 @@ bool load(const char* filename2){
     int sentdoubledepthperfect[2];
     float sentdoubletimes[2];
     
+    printf("\nfile name (no extension): ");
+    scanf("%s", filename);
     save = fopen(strcat(filename, ".ohl"), "r");
     if(save == NULL){
 		printf("\n\ncan't open %s or file doesn't exist\n\n",filename); 
@@ -688,6 +1552,7 @@ bool load(const char* filename2){
 		printf("\n\n%s is corrupted!\n\n", filename);
 		return false;
 	}
+    */
 }
 
 //about program
@@ -767,7 +1632,7 @@ void sayhello(){
 								"Hi there, player.",
 								"Oh, hello player.",
 								"Oh, hi player.",
-								"Oh, hello -- that's my name!",
+								"Oh, hello - that's my name!",
 								"Hello player. Nice to meet you.",
 								"Hello player. Pleased to meet you."
 							};
@@ -822,6 +1687,46 @@ void aisinterface(){
 		  	invalid = true;
 		}
 	}while(invalid);
+}
+
+//customize weights
+void customweight(){
+	clrscr(); //clear screen
+	printf("\n");
+	printf("current weights:\n\n ");
+	setting["weight"].show();
+	printf("\n\n\n");
+	printf("choose evaluation function weights:\n");
+	printf("-----------------------------------\n\n");
+	printf("0. customize weights\n\n");
+	for(int i = 0; i < weightChoiceNum; i++){
+		printf("%d. %s\n\n", i + 1, weightChoiceName[i]);
+		printf("  ");
+		for(int j = 0; j < int(setting["weight"].get_vint().size()); j++) printf(" %d", weightChoice[i][j]); // TODO
+		printf("\n\n");
+	}
+	printf("%d. back\n\n", weightChoiceNum + 1);
+	bool invalid;
+	int input;
+	do{
+		invalid = false;
+		input = uget(int)();
+		if(input < 0 or input > weightChoiceNum + 1){
+			alert("invalid selection!");
+			invalid = true;
+		}
+	}while(invalid);
+	
+	if(input == weightChoiceNum + 1){
+		return;
+	}else if(input != 0){
+		setting["weight"].set(weightChoice[input - 1]);
+	}else{
+		printf("\nenter evaluation function weights:\n\n");
+		setting["weight"].scan();
+	}
+	printf("\nsuccessfully set weights\n");
+	presstogo();
 }
 
 //rotation effect options
@@ -935,118 +1840,7 @@ void openingoption(){
 	presstogo();
 }
 
-//human vs human
-int human(int board[64],int no[2],int player){
-    std::vector<undoStruct> undoData;
-    int undoItr = -1;
-    int i,j,k; //for reflect
-    int position;
-    int mobilities; //value from function 'mobility'
-    kirby flips; //value from function 'flip'
-    char letter; //for one-letter command
-    int currmove=-1;
-    int lastmove=-1;
-    undoData.push_back(undoStruct(board, no, player, lastmove));
-    undoItr++;
-
-    loop2: //start here!
-    clrscr(); //clear screen
-    //display board
-    display(board,player,no,lastmove);
-    //diplay player
-	
-	print_bottom(player, "you are"); // TODO
-
-    //compute mobility
-    indexformob(board);
-    mobilities=mobility(player);
-    if(mobilities!=0){
-                      //if player is movable
-                      printf("\nplayer %d's turn: input position or command\n\n",player);
-                      loop1:
-                      position=input(board,player,no, undoData, undoItr, lastmove); //get position
-                      //-999 means save
-                      if(position==-999){humansave(board,player); goto loop2;}
-                      //-1 means undo
-                      if(position==-1){
-	                       goto loop2;
-                      }
-                      //-2 means reflect
-                      if(position==-2){
-                                       for(i=0;i<8;i++){ //row i
-                                       for(j=0;j<4;j++){ //column j
-                                                        k=board[8*i+j];
-                                                        board[8*i+j]=board[8*i+7-j];
-                                                        board[8*i+7-j]=k;
-                                                        }
-                                                        }
-                                       //last move
-                                       if(lastmove!=-1) lastmove+=7-2*(lastmove%8);
-                                       goto loop2;
-                                       }
-                      if(position==-3) return EXIT; //-3 means new
-                      if(position==-4) return 0; //-4 means menu
-                      if(position==-5) goto loop2; //-5 means move on-off
-                      flips=flip(board,position,player); //flip!
-                      //if nothing is flipped
-                      if(flips.num==0){
-                                       printf("\nillegal move!\n\n");
-                                       goto loop1;
-                                       }
-                      //show flip animation
-                      if(setting["flip"].get_bool()) flipanimation(board,player,position,flips.board);
-                      currmove=position;
-                      //update old values
-                      lastmove=currmove;
-                      //get board from function 'flip'
-                      for(i=0;i<64;i++) board[i]=flips.board[i];
-                      //update no[2]
-                      no[player-1]+=flips.num+1;
-                      no[2-player]-=flips.num;
-                      player=3-player; //switch player
-                      while(undoData.size() - 1 > undoItr) undoData.pop_back();
-                      undoData.push_back(undoStruct(board, no, player, lastmove));
-                      undoItr++;
-                      goto loop2;
-                      }
-    //if player is not movable
-    else if(mobility(3-player)==0){ //if opponent is not movable too
-         printf("\nno more moves can be made! game over!\n\n");
-         //display result :)
-         if(no[0]>no[1]){
-                         printf("-------------------\n");
-                         printf("PLAYER 1 WINS %d-%d\n",64-no[1],no[1]);
-                         printf("-------------------\n");
-                         }
-         else if(no[0]<no[1]){
-              printf("-------------------\n");
-              printf("PLAYER 2 WINS %d-%d\n",64-no[0],no[0]);
-              printf("-------------------\n");
-              }
-         else{
-              printf("-----------------\n");
-              printf("IT'S A DRAW 32-32\n");
-              printf("-----------------\n");
-              }
-         printf("\n's' to save  'n' for new game  'm' for menu  'q' to quit");
-         do{
-            letter=getch();
-            if(letter=='s'){printf("\n"); humansave(board,player); goto loop2;}
-            if(letter=='n') return EXIT;
-            if(letter=='m') return 0;
-            if(letter=='q') finish(0);
-            }while(1);
-         }
-    else{ //pass turn :)
-         printf("\nplayer %d's turn: no moves left",player);
-         printf("\n\npress any key to pass turn");
-         getch();
-         printf("\n");
-         player=3-player; //switch player
-         goto loop2;
-         }
-}
-
+/*
 //save engine of human vs human
 void humansave(int board[64],int player){
      char filename[100];
@@ -1065,155 +1859,6 @@ void humansave(int board[64],int player){
      fclose(save);
      printf("\ngame saved in %s successfully!\n",filename);
      presstogo();
-}
-
-//human vs computer,computer vs human
-//complayer=player that computer plays as
-int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,float times){
-    std::vector<undoStruct> undoData;
-    int undoItr = -1;
-    int i,j,k; //for reflect
-    int position = UNINIT;
-    int mobilities; //value from function 'mobility'
-    kirby flips; //value from function 'flip'
-    char letter; //for one-letter command
-    int currmove=-1;
-    int lastmove=-1;
-    undoData.push_back(undoStruct(board, no, player, lastmove));
-    undoItr++;
-     
-    loop2: //start here!
-    clrscr(); //clear screen
-    //display board
-    display(board,player,no,lastmove);
-    //diplay player
-	print_bottom(player, (player == complayer) ? "O-hello is" : "you are");
-    //compute mobility
-    indexformob(board);
-    mobilities=mobility(player);
-    if(mobilities!=0){
-                      //if player is movable
-                      if(player == complayer){
-                                            //for computer's turn
-                                            printf("\nthinking");
-											space(10);
-                                            //get position
-                                            if(mode==0) position=random(board,player,no,1);
-                                            if(mode==1){
-                                                        //for near-end evaluation, use depthperfect
-                                                        if(no[0]+no[1]>=64-depthperfect) position=fsearch(board,depthperfect,player,no,1);
-                                                        else position=fsearch(board,depth,player,no,1);
-                                                        }
-                                            if(mode==2) position=tsearch(board,times,player,no,1);
-                                            printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
-                                            printf("\npress any other key to continue");
-                                            letter=getch();
-                                            if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
-                                            if(letter=='n') return EXIT;
-                                            if(letter=='m') return 0;
-                                            if(letter=='q') finish(0);
-                                            currmove=position;
-                                            lastmove=currmove;
-                                            flips=flip(board,position,player); //flip!
-                                            //show flip animation
-                                            if(setting["flip"].get_bool()) flipanimation(board,player,position,flips.board);
-                                            //get board from function 'flip'
-                                            for(i=0;i<64;i++) board[i]=flips.board[i];
-                                            //update no[2]
-                                            no[player-1]+=flips.num+1;
-                                            no[2-player]-=flips.num;
-                                            }
-                      else{
-                           //for human's turn
-                           printf("\nyour turn: input position or command\n\n");
-                           loop1:
-                           position=input(board,player,no, undoData, undoItr, lastmove); //get position
-                           //-999 means save
-                           if(position==-999){comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
-                           //-1 means undo
-                           if(position==-1){
-							   goto loop2;
-                                            }
-                           //-2 means reflect
-                           if(position==-2){
-                                            for(i=0;i<8;i++){ //row i
-                                            for(j=0;j<4;j++){ //column j
-                                                             k=board[8*i+j];
-                                                             board[8*i+j]=board[8*i+7-j];
-                                                             board[8*i+7-j]=k;
-                                                             }
-                                                             }
-                                            //last move
-                                            if(lastmove!=-1) lastmove+=7-2*(lastmove%8);
-                                            goto loop2;
-                                            }
-                           if(position==-3) return EXIT; //-3 means new
-                           if(position==-4) return 0; //-4 means menu
-                           if(position==-5) goto loop2; //-5 means move on-off
-                           flips=flip(board,position,player); //flip!
-                           //if nothing is flipped
-                           if(flips.num==0){
-                                            alert("illegal move!");
-                                            goto loop1;
-                                            }
-                           //show flip animation
-                           if(setting["flip"].get_bool()) flipanimation(board,player,position,flips.board);
-                           currmove=position;
-                           //update old values
-                           //get board from function 'flip'
-                           for(i=0;i<64;i++) board[i]=flips.board[i];
-                           //update no[2]
-                           no[player-1]+=flips.num+1;
-                           no[2-player]-=flips.num;
-                           while(undoData.size() - 1 > undoItr) undoData.pop_back();
-                           undoData.push_back(undoStruct(board, no, 3-player, lastmove));
-                           undoItr++;
-                           }
-                      player=3-player; //switch player
-                      goto loop2;
-                      }
-    //if player is not movable
-    else if(mobility(3-player)==0){ //if opponent is not movable too
-         printf("\n\nno more moves can be made! game over!\n\n");
-         //display result :)
-         if(no[complayer-1]>no[2-complayer]){
-                                             printf("------------------\n");
-                                             printf("O'HELLO WINS %d-%d\n",64-no[2-complayer],no[2-complayer]);
-                                             printf("------------------\n");
-                                             }
-         else if(no[complayer-1]<no[2-complayer]){
-              printf("-------------\n");
-              printf("YOU WIN %d-%d\n",64-no[complayer-1],no[complayer-1]);
-              printf("-------------\n");
-              }
-         else{
-              printf("-----------------\n");
-              printf("IT'S A DRAW 32-32\n");
-              printf("-----------------\n");
-              }
-         printf("\n's' to save  'n' for new game  'm' for menu  'q' to quit");
-         do{
-            letter=getch();
-            if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
-            if(letter=='n') return EXIT;
-            if(letter=='m') return 0;
-            if(letter=='q') finish(0);
-            }while(1);
-         }
-    else{ //pass turn :)
-         if(player==complayer){
-                               printf("\n\nO-hello passed its turn");
-                               printf("\n\npress any key to continue");
-                               }
-         else{
-              printf("\n\nyour turn: no moves left",player);
-              printf("\n\npress any key to pass turn");
-              }
-         getch();
-         printf("\n");
-         player=3-player; //switch player
-         goto loop2;
-         }
 }
 
 //save engine of human vs computer,computer vs human
@@ -1239,94 +1884,6 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
      fclose(save);
      printf("\ngame saved in %s successfully!\n\n",filename);
      presstogo();
-}
-
-//computer vs computer
-int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]){
-    printf(""); //prevent bug
-    int i;
-    int position = UNINIT;
-    int mobilities; //value from function 'mobility'
-    struct kirby flips; //value from function 'flip'
-    char letter;
-    int currmove=-1;
-    int lastmove=-1;
-    
-    loop2: //start here!
-    clrscr(); //clear screen
-    //display board
-    display(board,player,no,lastmove);
-    //diplay player
-	print_bottom(player, (player == 1) ? "O-hello 1 is" : "O-hello 2 is");
-    //compute mobility
-    indexformob(board);
-    mobilities=mobility(player);
-    if(mobilities!=0){ //if player is movable
-                      printf("\nthinking");
-					  space(10);
-                      //get position
-                      if(doublemode[player-1]==0) position=random(board,player,no,1);
-                      if(doublemode[player-1]==1){
-                                                  //for near-end evaluation, use depthperfect
-                                                  if(no[0]+no[1]>=64-doubledepthperfect[player-1]) position=fsearch(board,doubledepthperfect[player-1],player,no,1);
-                                                  else position=fsearch(board,doubledepth[player-1],player,no,1);
-                                                  }
-                      if(doublemode[player-1]==2) position=tsearch(board,doubletimes[player-1],player,no,1);
-                      printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
-                      printf("\npress any other key to continue");
-                      letter=getch();
-                      if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubletimes); goto loop2;}
-                      if(letter=='n') return EXIT;
-                      if(letter=='m') return 0;
-                      if(letter=='q') finish(0);
-                      currmove=position;
-                      lastmove=currmove;
-                      flips=flip(board,position,player); //flip!
-                      //show flip animation
-                      if(setting["flip"].get_bool()) flipanimation(board,player,position,flips.board);
-                      //get board from function 'flip'
-                      for(i=0;i<64;i++) board[i]=flips.board[i];
-                      //update no[2]
-                      no[player-1]+=flips.num+1;
-                      no[2-player]-=flips.num;
-                      player=3-player; //switch player
-                      goto loop2;
-                      }
-    //if player is not movable
-    else if(mobility(3-player)==0){ //if opponent is not movable too
-         printf("\n\nno more moves can be made! game over!\n\n");
-         //display result :)
-         if(no[0]>no[1]){
-                         printf("--------------------\n");
-                         printf("O'HELLO 1 WINS %d-%d\n",64-no[1],no[1]);
-                         printf("--------------------\n");
-                         }
-         else if(no[0]<no[1]){
-              printf("--------------------\n");
-              printf("O'HELLO 2 WINS %d-%d\n",64-no[0],no[0]);
-              printf("--------------------\n");
-              }
-         else{
-              printf("-----------------\n");
-              printf("IT'S A DRAW 32-32\n");
-              printf("-----------------\n");
-              }
-         printf("\n's' to save  'n' for new game  'm' for menu  'q' to quit");
-         do{
-            letter=getch();
-            if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubletimes); goto loop2;}
-            if(letter=='n') return EXIT;;
-            if(letter=='m') return 0;
-            if(letter=='q') finish(0);
-            }while(1);
-         }
-    else{ //pass turn :)
-         printf("\n\nO-hello %d passed its turn\n\n",player);
-         presstogo();
-         printf("\n");
-         player=3-player; //switch player
-         goto loop2;
-         }
 }
 
 //save engine of computer vs computer
@@ -1355,6 +1912,7 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
      printf("\ngame saved in %s successfully!\n\n",filename);
      presstogo();
 }
+*/
 
 //set weight for weight test
 void weightfortest(int doubleweight[2][100],int player){
@@ -1519,9 +2077,10 @@ triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2]
 }
 
 //return input from column/row format in 0-63 format 
-int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData, int& undoItr, int& lastMove){
+int input(int board[64],int player,int no[2]){
     char row;
     char column;
+    float times;
 	
     loop1:
 	texture vec;
@@ -1537,118 +2096,35 @@ int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData
 		if(option == "move") return -5;
 	}
 	
-	if(option == "menu"){
-        if(not vec.empty()){
-            alert("too many parameters");
-            goto loop1;
-        }
-		else return -4; //-4 means menu
+	if(option == "menu" and vec.empty()){
+		return -4; //-4 means menu
 	}
-	if(option == "new"){
-        if(not vec.empty()){
-            alert("too many parameters");
-            goto loop1;
-        }
-		else return -3; //-3 means new
+	if(option == "new" and vec.empty()){
+		return -3; //-3 means new
 	}
 	if(option == "save" and vec.empty()){
 		return -999; //-999 means save
 	}
-	if(option == "undo"){
-        int step = -1;
-        if(not vec.empty()){
-            option = vec.read();
-            if(option != "all") step = std::stoi(option);
-        }else{
-            step = 1;
-        }
-        if(step == -1){
-            undoItr = 0;
-        }else{
-            if(undoItr - step < 0){
-                alert("cannot undo");
-                goto loop1;
-            }else{
-                undoItr -= step;
-            }
-        }
-        for(int i=0;i<64;i++) board[i] = undoData[undoItr].board[i];
-        no[0] = undoData[undoItr].no[0];
-        no[1] = undoData[undoItr].no[1];
-        player= undoData[undoItr].player;
-        lastMove = undoData[undoItr].lastMove;
+	if(option == "undo" and vec.empty()){
 		return -1; //-1 means undo
 	}
-	if(option == "redo"){
-        int step = -1;
-        if(not vec.empty()){
-            option = vec.read();
-            if(option != "all") step = std::stoi(option);
-        }else{
-            step = 1;
-        }
-        if(step == -1){
-            undoItr = undoData.size() - 1;
-        }else{
-            if(undoItr + step >= undoData.size()){
-                alert("cannot redo");
-                goto loop1;
-            }else{
-                undoItr += step;
-            }
-        }
-        for(int i=0;i<64;i++) board[i] = undoData[undoItr].board[i];
-        no[0] = undoData[undoItr].no[0];
-        no[1] = undoData[undoItr].no[1];
-        player= undoData[undoItr].player;
-        lastMove = undoData[undoItr].lastMove;
-		return -1; //-1 means undo
+	if(option == "reflect" and vec.empty()){
+		return -2; //-2 means reflect
 	}
-	if(option == "reflect"){
-        if(not vec.empty()){
-            alert("too many parameters");
-            goto loop1;
-        }
-		else return -2; //-2 means reflect
-	}
-	if(option == "fsearch"){
-        int depth;
-        if(vec.empty()){
-            alert("input depth");
-            depth = uget(int)([](int a){ return a >= 1; }, "invalid depth. please input depth again.");
-        }else{
-            depth = std::stoi(vec.read());
-            if(not vec.empty()){
-                alert("too many parameters");
-                goto loop1;
-            }
-            if(depth < 1){
-                alert("invalid depth");
-                goto loop1;
-            }
-        }
+	if(option == "fsearch" and vec.empty()){
+        int depth = uget(int)([](int depth){ return depth >= 1; }, "invalid depth! please input depth again.");
         printf("\nthinking");
 		space(10);
         fsearch(board, depth, player, no, 2);
         printf("\n\n");
         goto loop1;
 	}
-	if(option == "tsearch"){
-        float times;
-        if(vec.empty()){
-            alert("input time (sec)");
-            times = uget(float)([](float a){ return a > 0; }, "invalid time. please input time again.");
-        }else{
-            times = std::stof(vec.read());
-            if(not vec.empty()){
-                alert("too many parameters");
-                goto loop1;
-            }
-            if(times <= 0){
-                alert("invalid time");
-                goto loop1;
-            }
-        }
+	if(option == "tsearch" and vec.empty()){
+        scanf("%f",&times);
+        if(times<0){
+             printf("\ninvalid time!\n\n");
+             goto loop1;
+             }
         printf("\nthinking ");
 		space(10);
         tsearch(board,times,player,no,2);
@@ -1657,21 +2133,21 @@ int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData
 	}
 
     if(option.size()!=2){
-        alert("invalid command");
-        goto loop1;
-        }
+                          printf("\nincorrect syntax!\n\n");
+                          goto loop1;
+                          }
     column=option[0];
     row=option[1];
     //column to 0-7
 	column -= 'a';
 	if(column < 0 or column > 7){
-		alert("invalid position");
+		alert("incorrect syntax!");
 		goto loop1;
 	}
 	row -= '1';
     //row to 0-7
 	if(row < 0 or row > 7){
-		alert("invalid position");
+		alert("incorrect syntax!");
 		goto loop1;
 	}
 	return row * 8 + column;
@@ -1688,296 +2164,6 @@ void shownode(int node){
      else if(node<1000000000) printf("%.0f Mn",floor(0.000001*node));
      else printf("%.2f Gn",0.01*floor(0.0000001*node));
      printf("  ");
-}
-
-//-- random,fsearch,tsearch --
-//determine the position that computer places a disk
-//int display = mode of display
-//0 = nothing (for weight test)
-//1 = for computer's turn
-//2 = for in-game search
-
-//random move
-int random(int board[64],int player,int no[2],int display){
-    int position;
-    struct kirby moves; //from function 'move'
-    
-    moves=move(board,player); //get move list
-    
-    //opening move
-    if(no[0]+no[1]==5){
-                       //if no parallel opening
-                       if(not setting["parallel"].get_bool()){
-                                            //recompute moves.board
-                                            if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
-                                            if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
-                                            if(board[37]!=0){moves.board[0]=43; moves.board[1]=45;}
-                                            if(board[44]!=0){moves.board[0]=29; moves.board[1]=45;}
-                                            if(board[20]!=0){moves.board[0]=21; moves.board[1]=37;}
-                                            if(board[29]!=0){moves.board[0]=19; moves.board[1]=21;}
-                                            if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
-                                            if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
-                                            
-                                            if(setting["rand"].get_bool()) position = moves.board[rand(2)];
-                                            else position=moves.board[0];
-                                            }
-                       //if allow parallel opening
-                       else{
-                            if(setting["rand"].get_bool()) position = moves.board[rand(3)];
-                            else position=moves.board[0];
-                            }
-                       }
-    else position=moves.board[rand(moves.num)]; //random move
-    
-    if(display!=0){
-                   backspace(18); //clear "thinking "
-                   printf("O-hello decided to place a disk at ");
-                   switch(position%8){
-                                      case 0:printf("a"); break;
-                                      case 1:printf("b"); break;
-                                      case 2:printf("c"); break;
-                                      case 3:printf("d"); break;
-                                      case 4:printf("e"); break;
-                                      case 5:printf("f"); break;
-                                      case 6:printf("g"); break;
-                                      case 7:printf("h"); break;
-                                      default:;
-                                      }
-                   printf("%d",position/8+1);
-                   }
-    return position;
-}
-
-//fsearch: fixed depth search
-//act like function 'score' that operates on the first depth
-//*now it can perform shallow search first before the deep search
-int fsearch(int board[64],int depthwant,int player,int no[2],int display){
-    struct timeb time1,time2; //for 'ftime'
-    int scores[64]; //keep scores of each position
-    int bestscore = UNINIT; //best of scores[64]
-    struct kirby flips; //from function 'flip'
-    struct kirby moves; //from function 'move'
-    int position;
-    int candidate[64]; //keep positions with bestscore
-    int numcan=0; //number of candidates
-    int nonew[2]; //no[2] after a flip
-    int k;
-    int a;
-    int depthshallow; //for shallow search
-    int enginestate=0; //0=normal,1=only reply,2=opening
-    int perfect=0;
-	int alpha,beta;
-    
-    ftime(&time1); //get current time
-    node=0; //reset node
-    moves=move(board,player); //get move list
-
-    //if only one legal move -- no need to search
-    if(moves.num==1){position=moves.board[0]; depthwant=0; enginestate=1; goto finish;}
-
-    //for starting position -- no need to search
-    if(no[0]+no[1]==4){
-                       //if random feature is on
-                       if(setting["rand"].get_bool()) position = moves.board[rand(4)];
-                       else position=moves.board[0];
-                       depthwant=0;
-                       enginestate=2;
-                       goto finish;
-                       }
-    if(no[0]+no[1]==5){
-                       //if no parallel opening
-                       if(not setting["parallel"].get_bool()){
-                                            //recompute moves.board
-                                            if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
-                                            if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
-                                            if(board[37]!=0){moves.board[0]=43; moves.board[1]=45;}
-                                            if(board[44]!=0){moves.board[0]=29; moves.board[1]=45;}
-                                            if(board[20]!=0){moves.board[0]=21; moves.board[1]=37;}
-                                            if(board[29]!=0){moves.board[0]=19; moves.board[1]=21;}
-                                            if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
-                                            if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
-                                            
-                                            if(setting["rand"].get_bool()) position = moves.board[rand(2)];
-                                            else position=moves.board[0];
-                                            }
-                       //if allow parallel opening
-                       else{
-                            if(setting["rand"].get_bool()) position = moves.board[rand(3)];
-                            else position=moves.board[0];
-                            }
-                       
-                       depthwant=0;
-                       enginestate=2;
-                       goto finish;
-                       }
-    
-    //if searches up to end-game (or 1 square left)
-    if(depthwant>=63-no[0]-no[1]){
-                                  depthwant=64-no[0]-no[1];
-                                  depthshallow=depthShallow(depthwant, true);
-                                  enginestate=0;
-                                  perfect=1;
-                                  }
-    else{
-         depthshallow=depthShallow(depthwant, false);
-         enginestate=0;
-         perfect=0;
-         }
-    
-    //for the shallow search------------------------------------
-    
-    if(depthshallow>0){
-                       //set extreme value
-                       alpha = -LARGE;
-                       beta = LARGE;   
-                       //get score for all legal moves
-                       for(k=0;k<moves.num;k++){
-                                                position=moves.board[k];
-                                                flips=flip(board,position,player); //flip!
-                                                //update no[2] (as nonew[2])
-                                                nonew[player-1]=no[player-1]+flips.num+1;
-                                                nonew[2-player]=no[2-player]-flips.num;
-                                                //get score
-                                                scores[k]=score(flips.board,depthshallow-1,3-player,nonew,alpha,beta,display);
-												//NO UPDATE alpha,beta IN SHALLOW SEARCH
-												/*
-                                                if(player==1){ //if player 1: max mode
-                                                               if(scores[k]>alpha) alpha=scores[k];
-                                                               }
-                                                else{ //if player 2: min mode
-                                                      if(scores[k]<beta) beta=scores[k];
-                                                      }*/
-                                                }
-                       //rearrange moves by scores from shallow search
-                       order:
-                       for(k=0;k<moves.num-1;k++){
-                                                  if((player==1 and scores[k]<scores[k+1]) or (player==2 and scores[k]>scores[k+1])){
-                                                                a=scores[k]; //switch score
-                                                                scores[k]=scores[k+1];
-                                                                scores[k+1]=a;
-                                                                a=moves.board[k]; //switch position
-                                                                moves.board[k]=moves.board[k+1];
-                                                                moves.board[k+1]=a;
-                                                                goto order;
-                                                                }
-                                                  }
-                       }
-    
-    //for the deep search---------------------------------------
-    
-    //set extreme value
-    alpha = -LARGE;
-    beta = LARGE;          
-    //get score for all legal moves
-    for(k=0;k<moves.num;k++){
-                             position=moves.board[k];
-                             flips=flip(board,position,player); //flip!
-                             //update no[2] (as nonew[2])
-                             nonew[player-1]=no[player-1]+flips.num+1;
-                             nonew[2-player]=no[2-player]-flips.num;
-                             //get score
-                             scores[k]=score(flips.board,depthwant-1,3-player,nonew,alpha,beta,display);
-                             if(player==1){ //if player 1: max mode
-                                           if(scores[k]>alpha) alpha=scores[k];
-                                           }
-                             else{ //if player 2: min mode
-                                  if(scores[k]<beta) beta=scores[k];
-                                  }
-                             }
-                             
-    //---------------------------------------------------------
-    
-    //set extreme value
-    if(player==1) bestscore=-LARGE;
-    else bestscore=LARGE;
-    //determine candidates
-    for(k=0;k<moves.num;k++){
-                             position=moves.board[k];
-							 //ONLY ONE CANDIDATE
-							 /*
-                             if(scores[k]==bestscore){ //add a candidate
-                                                      numcan++;
-                                                      candidate[numcan-1]=position;
-                                                      }*/
-                             if(player==1){ //if player 1: max mode
-                                           if(scores[k]>bestscore){
-                                                                   bestscore=scores[k];
-                                                                   //be the first candidate
-                                                                   numcan=1;
-                                                                   candidate[0]=position;
-                                                                   }
-                                           }
-                             else{ //if player 2: min mode
-                                  if(scores[k]<bestscore){
-                                                          bestscore=scores[k];
-                                                          //be the first candidate
-                                                          numcan=1;
-                                                          candidate[0]=position;
-                                                          }
-                                  }
-                             }
-
-    //arrrange candidates (for same result in randoff mode)
-    order2:
-    for(k=0;k<numcan-1;k++){
-                            if(candidate[k]>candidate[k+1]){
-                                                            a=candidate[k];
-                                                            candidate[k]=candidate[k+1];
-                                                            candidate[k+1]=a;
-                                                            goto order2;
-                                                            }
-                            }
-    //if random feature is on
-    if(setting["rand"].get_bool()) position = candidate[rand(numcan)]; //random from candidates 
-    else position=candidate[0];
-
-    finish:
-    ftime(&time2); //get current time
-    if(display != 0){
-		if(display == 1){
-			backspace(18); //clear "thinking "
-			printf("O-hello decided to place a disk at ");
-		}else{
-			backspace(18); //clear "thinking "
-			printf("search result: ");
-		}
-		switch(position % 8){
-			case 0: printf("a"); break;
-			case 1: printf("b"); break;
-			case 2: printf("c"); break;
-			case 3: printf("d"); break;
-			case 4: printf("e"); break;
-			case 5: printf("f"); break;
-			case 6: printf("g"); break;
-			case 7: printf("h"); break;
-		}
-		printf("%d ", position / 8 + 1);
-		//.time = seconds, .millitm = milliseconds
-		printf("\n\n%.2f sec  ", time2.time - time1.time + 0.001 * (time2.millitm - time1.millitm));
-		shownode(node); //display node
-		printf("depth %d  ", depthwant);
-		//display score
-		switch(enginestate){
-			case 0:
-				if(player == 1){
-					 if(bestscore >= wf) printf(": win +%d", bestscore / wf);
-					 else if(bestscore <= -wf) printf(": lose %d", bestscore / wf);
-					 else if(bestscore == 0 and perfect == 1) printf(": draw");
-					 else if(bestscore >= 0) printf(": score +%d", bestscore);
-					 else printf(": score %d", bestscore);
-				}else{
-					if(bestscore <= -wf) printf(": win +%d", -bestscore / wf);
-					else if(bestscore >= wf) printf(": lose %d", -bestscore / wf);
-					else if(bestscore == 0 and perfect == 1) printf(": draw");
-					else if(bestscore <= 0) printf(": score +%d", -bestscore);
-					else printf(": score %d", -bestscore);
-				}
-				break;
-			case 1: printf(": only move"); break;
-			case 2: printf(": opening"); break;
-		}
-	}
-    return position;
 }
 
 //tsearch: time limit search
@@ -2635,130 +2821,6 @@ void nodedisplay(int display){
                    else if(node<1000000000) printf("%.0f Mn ",floor(0.000001*node));
                    else printf("%.2f Gn",0.01*floor(0.0000001*node));
                    }
-}
-
-//display board string
-//to be used in function 'display' and 'flipanimation'
-//interpretation of board input: 0=empty,1=black,2=white,3=flipping
-void boarddisplay(int board[64],int playertoshowmove){
-	std::string output;
-
-	//ascii for components
-	char upLeftCorner = '+';
-	char upRightCorner= '+';
-	char downLeftCorner = '+';
-	char downRightCorner = '+';
-	char horizontal = '-';
-	char horizontalDown = '+';
-	char horizontalUp = '+';
-	char vertical = '|';
-	char verticalRight = '+';
-	char verticalLeft = '+';
-	char fourArm = '+';
-
-	int heightPutChar = (diskHeight + 1) / 2;
-	int spaceBeforeChar = (diskWidth + 1) / 2;
-	int spaceAfterChar = diskWidth - spaceBeforeChar;
-
-	//construct board string
-
-	//header
-	appendSame(output, ' ', 3);
-	for(char i = 'a'; i <= 'h'; ++i){
-		appendSame(output, ' ', spaceBeforeChar);
-		output += i;
-		appendSame(output, ' ', spaceAfterChar);
-	}
-	output += "\n";
-
-	appendSame(output, ' ', 3);
-	output += upLeftCorner;
-
-	for(int i = 1; i <= 7; i++){
-		appendSame(output, horizontal, diskWidth);
-		output += horizontalDown;
-	}
-	appendSame(output, horizontal, diskWidth);
-	output += upRightCorner;
-	output += '\n';
-
-	// loop
-	for(int i = 0; i < 8; ++i){
-		for(int j = 0; j < diskHeight; ++j){
-			if(j == heightPutChar - 1){
-				output += ' ';
-				output += '1' + i;
-				output += ' ';
-			}else{
-			 	appendSame(output, ' ', 3);
-			}
-			output += vertical;
-			for(int k = 8 * i; k < 8 * i + 8; ++k){
-				if(board[k] == 1) output += setting["black"].get_texture()[j];
-				else if(board[k] == 2) output += setting["white"].get_texture()[j];
-				else if(board[k] == 3) output += setting["fliplook"].get_texture()[j];
-				else{
-					//if move is to be shown (not in flipping process)
-					if(playertoshowmove != 0){
-						//if move is legal and show move is on
-						if(setting["move"].get_bool() and flip(board, k, playertoshowmove).num != 0) output += setting["movelook"].get_texture()[j];
-						else appendSame(output, ' ', diskWidth);
-					}else{
-						appendSame(output, ' ', diskWidth);
-					}
-				}
-				output += vertical;
-			}
-			output += '\n';
-		}
-		if(i != 7){
-			//not last row
-			appendSame(output, ' ', 3);
-			output += verticalRight;
-			for(int j = 1; j <= 7; j++){
-				appendSame(output, horizontal, diskWidth);
-				output += fourArm;
-			}
-			appendSame(output, horizontal, diskWidth);
-			output += verticalLeft;
-			output += '\n';
-		}else{
-			appendSame(output, ' ', 3);
-			output += downLeftCorner;
-			for(int j = 1; j <= 7; j++){
-				appendSame(output, horizontal, diskWidth);
-				output += horizontalUp;
-			}
-			appendSame(output, horizontal, diskWidth);
-			output += downRightCorner;
-		}
-	}
-	output += "\n\n";
-	printf("%s", output.c_str());
-}
-
-//display board and game information
-void display(int board[64], int player, int no[2], int lastmove){
-	int totalWidth = (diskWidth + 1) * MAXN + 4;
-	int distanceRight = 2 * diskWidth + 11;
-	int distanceLeft = 13;
-
-	//display board
-	boarddisplay(board, player);
-
-	for(int i = 0; i < diskHeight; ++i){
-		if(i == middleHeight){
-			printf("last move: ");
-			if(lastmove == -1) printf("- ");
-			else printf("%c%d", 'a' + (lastmove % 8), lastmove / 8 + 1);
-			space(totalWidth - distanceRight - distanceLeft);
-			printf("%s x%2d  %s x%2d\n", setting["black"].get_texture()[i].c_str(), no[0],
-										 setting["white"].get_texture()[i].c_str(), no[1]);
-		}else{
-			space(totalWidth - distanceRight);
-			printf("%s      %s\n", setting["black"].get_texture()[i].c_str(), setting["white"].get_texture()[i].c_str());
-		}
-	}
 }
 
 //show flip animation!
@@ -3422,321 +3484,6 @@ int stabledisk(int board[64]){
                     }
     
     return value;
-}
-
-//return all legal moves (as kirby)
-//move.board - these moves
-//move.num - number of these moves (= function 'mobility')
-kirby move(int board[64],int player){
-    kirby move;
-    move.num = 0; //start at 0
-    int index = -1; //for move order
-    int position;
-    int poscheck;
-    
-    prove:
-    index++;
-    if(index==60) return move;
-    
-    position=moveOrder[index];
-    if(board[position]!=0) goto prove; //deal with the occupied
-    
-    //search 8 directions away from position
-    //ignore 'non-player'
-    //if reach border -- no good
-    //if reach empty -- no good
-    //if reach player (that is not next to position) -- good
-    //else(reach non-player) search further
-
-    //upleft
-    poscheck=position;
-    loop1:
-    poscheck-=9;
-    if(poscheck<0 or poscheck%8==7); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position-9){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop1;
-       
-    //up
-    poscheck=position;
-    loop2:
-    poscheck-=8;
-    if(poscheck<0); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position-8){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop2;
-       
-    //upright
-    poscheck=position;
-    loop3:
-    poscheck-=7;
-    if(poscheck<0 or poscheck%8==0); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position-7){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop3;
-       
-    //left
-    poscheck=position;
-    loop4:
-    poscheck-=1;
-    if(poscheck<0 or poscheck%8==7); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position-1){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop4;
-       
-    //right
-    poscheck=position;
-    loop5:
-    poscheck+=1;
-    if(poscheck%8==0); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position+1){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop5;
-       
-    //downleft
-    poscheck=position;
-    loop6:
-    poscheck+=7;
-    if(poscheck>63 or poscheck%8==7); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position+7){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop6;
-       
-    //down
-    poscheck=position;
-    loop7:
-    poscheck+=8;
-    if(poscheck>63); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position+8){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop7;
-    
-    //downright
-    poscheck=position;
-    loop8:
-    poscheck+=9;
-    if(poscheck>63 or poscheck%8==0); //do nothing
-    else if(board[poscheck]==0); //do nothing
-    else if(board[poscheck]==player){
-                                     if(poscheck!=position+9){ //update and to next position!
-                                                              move.board[move.num]=position;
-                                                              move.num++;
-                                                              goto prove;
-                                                              }
-                                     }
-    else goto loop8;
-    
-    goto prove;
-}
-
-//flip board when player places a disk at a position
-//flip.board=flipped board, flip.num=number of flipped disks
-//if flip.num=0 return some random board (save time) 
-kirby flip(int board[64],int position,int player){
-       kirby flip;
-       int i;
-       int poscheck;
-	   int opPlayer = opposite[player];
-       
-       flip.num=0; //start at 0
-       if(board[position]) return flip; //if nonempty
-       
-       //search 8 directions away from position
-       //first check conditions: position is movable and first sq is opponent
-       //then look further in that direction
-       //if reach player - flip!
-       //if reach opponent and not border - look further
-       //else - end process
-       
-       //upleft
-       if(IsUpleftMovable[position]){
-       if(board[position-9]==opPlayer){
-       
-       poscheck=position-18;
-       loop1:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position-9;i>poscheck;i-=9){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsUpleftBorder[poscheck]){poscheck-=9; goto loop1;}
-       
-       }
-       }
-       
-       //up
-       if(IsUpMovable[position]){
-       if(board[position-8]==opPlayer){
-       
-       poscheck=position-16;
-       loop2:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position-8;i>poscheck;i-=8){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsUpBorder[poscheck]){poscheck-=8; goto loop2;}
-       
-       }
-       }
-       
-       //upright
-       if(IsUprightMovable[position]){
-       if(board[position-7]==opPlayer){
-       
-       poscheck=position-14;
-       loop3:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position-7;i>poscheck;i-=7){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsUprightBorder[poscheck]){poscheck-=7; goto loop3;}
-       
-       }
-       }
-       
-       //left
-       if(IsLeftMovable[position]){
-       if(board[position-1]==opPlayer){
-       
-       poscheck=position-2;
-       loop4:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position-1;i>poscheck;i-=1){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsLeftBorder[poscheck]){poscheck-=1; goto loop4;}
-       
-       }
-       }
-       
-       //right
-       if(IsRightMovable[position]){
-       if(board[position+1]==opPlayer){
-       
-       poscheck=position+2;
-       loop5:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position+1;i<poscheck;i+=1){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsRightBorder[poscheck]){poscheck+=1; goto loop5;}
-       
-       }
-       }
-       
-       //downleft
-       if(IsDownleftMovable[position]){
-       if(board[position+7]==opPlayer){
-       
-       poscheck=position+14;
-       loop6:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position+7;i<poscheck;i+=7){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsDownleftBorder[poscheck]){poscheck+=7; goto loop6;}
-       
-       }
-       }
-       
-       //down
-       if(IsDownMovable[position]){
-       if(board[position+8]==opPlayer){
-       
-       poscheck=position+16;
-       loop7:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position+8;i<poscheck;i+=8){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsDownBorder[poscheck]){poscheck+=8; goto loop7;}
-       
-       }
-       }
-       
-       //downright
-       if(IsDownrightMovable[position]){
-       if(board[position+9]==opPlayer){
-       
-       poscheck=position+18;
-       loop8:
-       if(board[poscheck]==player){
-                                   if(flip.num==0) for(i=0;i<64;i++) flip.board[i]=board[i];
-                                   for(i=position+9;i<poscheck;i+=9){
-                                                                     flip.board[i]=player;
-                                                                     flip.num++;
-                                                                     }
-                                   }
-       else if(board[poscheck]) if(!IsDownrightBorder[poscheck]){poscheck+=9; goto loop8;}
-       
-       }
-       }
-       
-       //place player's disk at position
-       flip.board[position]=player;
-       return flip;
 }
 
 //flip function that return number of disks flipped -- used in end-game position

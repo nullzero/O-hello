@@ -51,7 +51,7 @@ char getch(bool ignoreBack=false){
 /* begin uget */
 #define uget(...) _uget<__VA_ARGS__>::get
 
-// default
+// default (old uget)
 template <typename T>
 class _uget{
 public:
@@ -79,32 +79,73 @@ public:
 	};
 };
 
-// sline
-struct sline{};
-
 template <>
-class _uget<sline>{
+class _uget<int>{
 public:
-	static std::string get(std::function<bool(std::string)> func,
+	static int get(std::function<bool(int)> func = nullptr,
 						   std::string warn = "invalid! please type again.",
 						   std::string prompt = ""){
 		if(prompt != "") prompt += ": ";
 		printf(">>> %s", prompt.c_str());
    		std::string x;
    		std::getline(std::cin, x);
-   		while(not func(x)){
-			printf("\n%s\n\n", warn.c_str());
-			printf(">>> %s", prompt.c_str());
-   			std::getline(std::cin, x);
-   		}
-   		return x;
+        int data = std::stoi(x);
+        if(func){
+       		while(not func(data)){
+    			printf("\n%s\n\n", warn.c_str());
+    			printf(">>> %s", prompt.c_str());
+       			std::getline(std::cin, x);
+                data = std::stoi(x);
+       		}
+        }
+   		return data;
 	};
-	
-	static std::string get(std::string prompt = ""){
+};
+
+
+template <>
+class _uget<float>{
+public:
+	static float get(std::function<bool(float)> func = nullptr,
+						   std::string warn = "invalid! please type again.",
+						   std::string prompt = ""){
 		if(prompt != "") prompt += ": ";
 		printf(">>> %s", prompt.c_str());
    		std::string x;
    		std::getline(std::cin, x);
+        float data = std::stof(x);
+        if(func){
+       		while(not func(data)){
+    			printf("\n%s\n\n", warn.c_str());
+    			printf(">>> %s", prompt.c_str());
+       			std::getline(std::cin, x);
+                data = std::stoi(x);
+       		}
+        }
+   		return data;
+	};
+};
+
+// sline
+struct sline{};
+
+template <>
+class _uget<sline>{
+public:
+	static std::string get(std::function<bool(std::string)> func = nullptr,
+						   std::string warn = "invalid! please type again.",
+						   std::string prompt = ""){
+		if(prompt != "") prompt += ": ";
+		printf(">>> %s", prompt.c_str());
+   		std::string x;
+   		std::getline(std::cin, x);
+        if(func){
+       		while(not func(x)){
+    			printf("\n%s\n\n", warn.c_str());
+    			printf(">>> %s", prompt.c_str());
+       			std::getline(std::cin, x);
+       		}
+        }
    		return x;
 	};
 };

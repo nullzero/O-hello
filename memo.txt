@@ -1,22 +1,28 @@
-* BUG >>> when fsearch,tsearch
+URGENT>>>
+* polish set
+  - texture
+  - weight
+* polish load/save
+  - prompt
+  - method
+* make help each variable
+* polish undo/redo ?
+  - correct new description
+
+* correct 6 scanfs
 * check correctness / awkwardness / blah blah (Oak only)
 * invent command set, etc. and organize commands/settings
   - make command, get rid of setting menu
     -- lambda function? (Oak)
-  - give command in help
   - reinvent save system / save setting system
-** change input to readline
-*** support command + parameter
-*** make prompt for every input
-*** support multi undo
-** combine comhuman + human + … together
- - undo: correct "bae bae"
+* combine comhuman + human + … together (Oak only)
  - swap player by index
-* write timer (sleep then wake up)
+* write timer (sleep then wake up) (Oak)
   - use rotate graphic accordingly
   - rewrite tsearch accordingly
     -- 2,4,6,8,10,...
 * solve graphic problem (off screen)
+* IMPLEMENT PARITY
 ** continue to optimize/organize
 ** compatible with windows
 ** change to bit system
