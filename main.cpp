@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "80";
+const char __version__[] = "81";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "August 28, 2013";
+const char __date__[] = "August 30, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -31,6 +31,10 @@ const char __compiler__[] = "G++";
 #include "config.h"
 #include "sharedfunc.h"
 #include "help.h"
+
+#define CORRUPTION(x) {alert((boost::format("\n%1% is corrupted") % filename).str());\
+        fclose(save);\
+		return false;}
 
 const int EXIT = 555;
 const int MAXN = 8;
@@ -105,22 +109,16 @@ struct comset{
 };
 
 //index array for mobility table
+int mobindex[38];
 int node; //count the number of nodes searched
 
 //functions in this source code are arranged in this order
 int main();
 comset comsettings();
 bool load(const char*);
-bool commandHelp();
 void about();
 void speedtest();
 void sayhello();
-bool settingCommand(std::string option);
-void settings();
-void aisinterface();
-void rotateoption();
-void flipoption();
-void openingoption();
 int human(int board[64],int no[2],int player);
 void humansave(int board[64],int player);
 int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,float times);
@@ -141,6 +139,7 @@ void nodedisplay(int display);
 void boarddisplay(int board[64],int playertoshowmove);
 void display(int board[64],int player,int no[2],int lastmove);
 void flipanimation(int board[64],int player,int position,int flipboard[64]);
+void indexformob(int board[64]);
 int mobility(int player);
 int pmobility(int board[64]);
 int triplesq(int board[64],int corner,int xsquare,int csquare);
@@ -176,11 +175,13 @@ texture newinput(int mode){
             alert("too many parameters");
         }else if(x == "all"){
             setting = dSetting;
+            weightInitialize();
             alert("all variables reset");
         }else if(setting.find(x) == setting.end()){
 			alert("invalid variable");
 		}else{
     		setting[x] = dSetting[x];
+            weightInitialize();
             printf("\n'%s' reset\n\n", x.c_str());
         }
 		return texture();
@@ -208,7 +209,7 @@ texture newinput(int mode){
 				if(not setting[x].set(y)) return texture();
 			}else{
                 if(setting[x].type == Property::Vint or setting[x].type == Property::Texture)
-                    alert("invalid. can't set with this method.");
+                    alert("invalid. can't set value directly.");
                 else
 				    alert("too many parameters");
 				return texture();
@@ -267,7 +268,7 @@ void newgame(){
 	printf("                                 |           |\n");
     printf("                                  -----------\n\n\n");
     printf("welcome! please select game mode or function below:\n\n");
-    printf("0. program settings\n");
+    printf("0. help\n");
     printf("1. human   [black] vs human   [white]\n");
     printf("2. human   [black] vs O-hello [white]\n"); //human starts first
     printf("3. O-hello [black] vs human   [white]\n"); //computer starts first
@@ -275,8 +276,6 @@ void newgame(){
     printf("5. weight test\n");
     printf("6. about program\n\n");
 	
-    //set weight as defaults
-    weightInitialize();
     //set board
     //board: 0 = space, 1 = player_1, 2 = player_2
     int board[MAXN * MAXN] = {};
@@ -308,7 +307,10 @@ void newgame(){
 			continue;
 		}
 		else if(inp == "load"){
-            if(vec.empty()) vec = getl();
+            if(vec.empty()){
+                alert("input file name (no extension)");
+                vec = getl();
+            }
             inp = vec.read();
             if(not vec.empty()){
                 alert("too many parameters");
@@ -328,7 +330,8 @@ void newgame(){
 			continue;
 		}
 		else if(inp == "0"){
-			settings();
+			commandHelp();
+            continue;
 		}else if(inp == "1"){
 			//human vs human
 			do{
@@ -521,22 +524,18 @@ bool load(const char* filename2){
     
     save = fopen(strcat(filename, ".ohl"), "r");
     if(save == NULL){
-		printf("\n\ncan't open %s or file doesn't exist\n\n",filename); 
+		alert((boost::format("can't open %1% or file doesn't exist") % filename).str()); 
 		return false;
 	}
-    printf("\n\nopening %s\n",filename);
+    alert((boost::format("opening %1%") % filename).str()); 
     //get myConf.randOn
     prerand = -1;
     fscanf(save, "%d", &prerand);
-    if(prerand != 0 and prerand != 1){
-		printf("\n%s is corrupted!\n\n", filename);
-		fclose(save);
-		return false;
-	}
+    if(prerand != 0 and prerand != 1) CORRUPTION();
     setting["rand"].set(prerand);
-    printf("\nvalue randon=%d", setting["rand"].get_bool());
+    printf("value randon = %d", setting["rand"].get_bool());
     //get board[64] (along with no[2])
-    printf("\nvalue board=");
+    printf("\nvalue board = ");
     no[0] = 0;
     no[1] = 0;
     for(int i = 0; i < 64; ++i){
@@ -546,37 +545,29 @@ bool load(const char* filename2){
 			//the 4 centers can't be empty -- this will affect the searches
 			//since they aren't included in moveOrder[60]
 			if(i == 27 or i == 28 or i == 35 or i == 36){
-				printf("\n\n%s is corrupted!\n\n", filename);
-				fclose(save);
-				return false;
-			}else{
-				printf("0");
-			}
+                CORRUPTION();
+            }else{
+                printf("0");
+            }
 		}else if(board[i] == 1 or board[i] == 2){
 			printf("%d", board[i]);
 			no[board[i] - 1]++;
 		}else{
-			printf("\n\n%s is corrupted!\n\n", filename);
-			fclose(save);
-			return false;
+			CORRUPTION();
 		}
 	}
     //get player
     player = -1;
     fscanf(save, "%d", &player);
-    if(player != 1 and player != 2){
-		printf("\n\n%s is corrupted!\n\n", filename);
-		fclose(save);
-		return false;
-	}
-    printf("\nvalue player=%d", player);
+    if(player != 1 and player != 2) CORRUPTION();
+    printf("\nvalue player = %d", player);
     //get loadmode
     int loadmode = -1;
     fscanf(save, "%d", &loadmode);
     if(loadmode == 1){
 		//human vs human
-		printf("\nvalue loadmode=1\n\n");
-		printf("game successfully loaded!\n\n");
+		printf("\nvalue loadmode = 1");
+        printf("\n\n");
 		presstogo();
 		do{
 			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
@@ -585,45 +576,29 @@ bool load(const char* filename2){
 		return true;
 	}else if(loadmode == 2 or loadmode == 3){
 		//computer vs human, human vs computer
-		printf("\nvalue loadmode=%d", loadmode);
+		printf("\nvalue loadmode = %d", loadmode);
 		//get mode
 		mode = -1;
 		fscanf(save, "%d", &mode);
-		if(mode < 0 or mode > 3){
-			printf("\n\n%s is corrupted!\n\n", filename);
-			fclose(save);
-			return false;
-		}
-		printf("\nvalue mode=%d", mode);
+		if(mode < 0 or mode > 2) CORRUPTION();
+		printf("\nvalue mode = %d", mode);
 		//get depth or times
 		depth = -1;
 		depthperfect = -1;
 		times = -1;
-		if(mode == 1 or mode == 2){
+		if(mode == 1){
 			fscanf(save, "%d", &depth);
-			if(depth < 1){
-				printf("\n\n%s is corrupted!\n\n", filename);
-				fclose(save);
-				return false;
-			}
-			printf("\nvalue depth=%d", depth);
+			if(depth < 1) CORRUPTION();
+			printf("\nvalue depth = %d", depth);
 			fscanf(save, "%d", &depthperfect);
-			if(depthperfect < 1){
-				printf("\n\n%s is corrupted!\n\n", filename);
-				fclose(save);
-				return false;
-			}
-			printf("\nvalue depthperfect=%d", depthperfect);
-		}else if(mode == 3){
+			if(depthperfect < 1) CORRUPTION();
+			printf("\nvalue depthperfect = %d", depthperfect);
+		}else if(mode == 2){
 			fscanf(save, "%f", &times);
-			if(times < 0){
-				printf("\n\n%s is corrupted!\n\n", filename);
-				fclose(save);
-				return false;
-			}
-			printf("\nvalue times=%f", times);
+			if(times < 0) CORRUPTION();
+			printf("\nvalue times = %f", times);
 		}
-		printf("\n\ngame successfully loaded!\n\n");
+        printf("\n\n");
 		presstogo();
 		do{
 			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
@@ -632,48 +607,32 @@ bool load(const char* filename2){
 		return true;
 	}else if(loadmode == 4){
 		//computer vs computer
-		printf("\nvalue loadmode=4");
+		printf("\nvalue loadmode = 4");
 		for(int i = 0; i <= 1; i++){
 			//get doublemode
 			doublemode[i] = -1;
 			fscanf(save, "%d", &doublemode[i]);
-			if(doublemode[i] < 0 or doublemode[i] > 3){
-				printf("\n\n%s is corrupted!\n\n", filename);
-				fclose(save);
-				return false;
-			}
-			printf("\nvalue doublemode[%d]=%d", i, doublemode[i]);
+			if(doublemode[i] < 0 or doublemode[i] > 2) CORRUPTION();
+			printf("\nvalue doublemode[%d] = %d", i, doublemode[i]);
 			//get doubledepth or doubletimes
 			doubledepth[i] = -1;
 			doubledepthperfect[i] = -1;
 			doubletimes[i] = -1;
-			if(doublemode[i] == 1 or doublemode[i] == 2){
+			if(doublemode[i] == 1){
 				fscanf(save, "%d", &doubledepth[i]);
-				if(doubledepth[i] < 1){
-					printf("\n\n%s is corrupted!\n\n", filename);
-					fclose(save);
-					return false;
-				}
-				printf("\nvalue doubledepth[%d]=%d", i, doubledepth[i]);
+				if(doubledepth[i] < 1) CORRUPTION();
+				printf("\nvalue doubledepth[%d] = %d", i, doubledepth[i]);
 				fscanf(save, "%d", &doubledepthperfect[i]);
-				if(doubledepthperfect[i] < 1){
-					printf("\n\n%s is corrupted!\n\n", filename);
-					fclose(save);
-					return false;
-				}
-				printf("\nvalue doubledepthperfect[%d]=%d", i, doubledepthperfect[i]);
+				if(doubledepthperfect[i] < 1) CORRUPTION();
+				printf("\nvalue doubledepthperfect[%d] = %d", i, doubledepthperfect[i]);
 			}
-			if(doublemode[i] == 3){
+			if(doublemode[i] == 2){
 				fscanf(save, "%f", &doubletimes[i]);
-				if(doubletimes[i] < 0){
-					printf("\n\n%s is corrupted!\n\n", filename);
-					fclose(save);
-					return false;
-				}
-				printf("\nvalue doubletimes[%d]=%f", i, doubletimes[i]);
+				if(doubletimes[i] < 0) CORRUPTION();
+				printf("\nvalue doubletimes[%d] = %f", i, doubletimes[i]);
 			}
 		}
-		printf("\n\ngame successfully loaded!\n\n");
+        printf("\n\n");
 		presstogo();
 		do{
 			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
@@ -685,61 +644,64 @@ bool load(const char* filename2){
 		}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
 		return true;
 	}else{
-		printf("\n\n%s is corrupted!\n\n", filename);
-		return false;
+        CORRUPTION();
 	}
 }
 
 //about program
 void about(){
 	clrscr();
-	printf("\n\
-About Program\n\
--------------\n\
-\n\
-project O-hello\n\
-\n\
-version  %s\n\
-author   %s\n\
-date     %s\n\
-language %s\n\
-compiler %s\n\
-\n\
-O-hello is a command-line program that mainly features an AI that plays othello.\n\
-It is only an elementary level program with low search speed and weak evaluation\n\
-function. However we hope it would be a good practice for all players aiming to\n\
-improve their skills at othello.\n\
-\n\
-Note: there are several commands available in O-hello. You can type 'help' to\n\
-view the list of commands.\n\
-\n\n\
-press 'h' to view information on how to play othello\n\
-press any other key to go back to the main menu", __version__, __author__, __date__, __language__, __compiler__);
+	printf(R"(
+About Program
+-------------
+
+project O-hello
+
+version  %s
+author   %s
+date     %s
+language %s
+compiler %s
+
+O-hello is a command-line program that mainly features an AI that plays othello.
+It is only an elementary level program with low search speed and weak evaluation
+function. However we hope it would be a good practice for all players aiming to
+improve their skills at othello.
+
+Note: there are several commands available in O-hello. You can type 'help' to
+view the list of commands.
+
+
+press 'h' to view information on how to play othello
+press any other key to go back to the main menu
+)", __version__, __author__, __date__, __language__, __compiler__);
 
 	if(getch() == 'h'){
 		clrscr();
-		printf("\n\
-How to Play Othello\n\
--------------------\n\
-\n\
-Othello is played on an 8x8 board using disks coloured black on one side and\n\
-white on the other side. The game starts with 2 black disks on d5 and e4, and 2\n\
-white disks on d4 and e5. The two players take turns to place a disk of his own\n\
-colour on the board, with black going first.\n\
-\n\
-A move consists of placing a new disk on an empty square, and flipping every\n\
-opponent's disk or row of opponent's disks that is between the new disk and one\n\
-of the player's disks in any direction: horizontal, vertical or diagonal.\n\
-\n\
-A move is legal if it flips at least one opponent's disk. A player with no legal\n\
-moves must pass his turn. On the contrary, a player with a legal move cannot\n\
-pass his turn.\n\
-\n\
-The game ends when no one has a legal move. The winner is the player with a\n\
-larger number of disks, with a draw possible if both numbers are the same. The\n\
-remaining empty squares, if any, are usually awarded to the winner.\n\
-\n\n\
-press any key to go back to the main menu");
+		printf(R"(
+How to Play Othello
+-------------------
+
+Othello is played on an 8x8 board using disks coloured black on one side and
+white on the other side. The game starts with 2 black disks on d5 and e4, and 2
+white disks on d4 and e5. The two players take turns to place a disk of his own
+colour on the board, with black going first.
+
+A move consists of placing a new disk on an empty square, and flipping every
+opponent's disk or row of opponent's disks that is between the new disk and one
+of the player's disks in any direction: horizontal, vertical or diagonal.
+
+A move is legal if it flips at least one opponent's disk. A player with no legal
+moves must pass his turn. On the contrary, a player with a legal move cannot
+pass his turn.
+
+The game ends when no one has a legal move. The winner is the player with a
+larger number of disks, with a draw possible if both numbers are the same. The
+remaining empty squares, if any, are usually awarded to the winner.
+
+
+press any key to go back to the main menu
+)");
 		getch();
 	}
 	return;
@@ -774,167 +736,6 @@ void sayhello(){
 	printf("\n%s\n\n", greeting[rand(sizeof(greeting) / sizeof(greeting[0]))]);
 }
 
-//settings
-void settings(){
-     printf("\nselect settings:\n\n");
-     printf("1. AI settings interface\n");
-     printf("2. evaluation function weights\n");
-     printf("3. rotation effect options\n");
-     printf("4. flip animation options\n");
-     printf("5. opening move options\n");
-     printf("\n");
-	 bool invalid;
-	 do{
-		invalid = false;
-		switch(uget(int)()){
-			case 1: aisinterface(); break;
-			case 2: customweight(); break;
-			case 3: rotateoption(); break;
-			case 4: flipoption(); break;
-			case 5: openingoption(); break;
-
-			default:
-			alert("invalid selection!");
-			invalid = true;
-		}
-	}while(invalid);
-}
-
-//set value of myConf.rawSet
-void aisinterface(){
-	printf("\n");
-	printf("select interface:\n");
-	printf("-----------------\n");
-	printf("1. new one (default)\n");
-	printf("2. old one\n");
-	printf("3. back\n\n");
-	bool invalid;
-	do{
-		invalid = false;
-		int input = uget(int)();
-		if(input == 1 or input == 2){
-			setting["raw"].set(input != 1);
-			printf("\nsuccessfully set interface\n");
-			presstogo();
-		}else if(input == 3);
-		else{
-		  	alert("invalid selection!");
-		  	invalid = true;
-		}
-	}while(invalid);
-}
-
-//rotation effect options
-void rotateoption(){
-     clrscr(); //clear screen
-     printf("\n");
-     printf("current rotation settings:\n");
-     printf("--------------------------\n\n");
-     if(setting["rotate"].get_bool()) printf("rotation effect is enabled\n\n");
-     else printf("rotation effect is disabled\n\n");
-     printf("display effect every %d node(s)", setting["rotatetime"].get_int());
-     printf("\n\n\n");
-     printf("select options:\n");
-     printf("---------------\n");
-     printf("1.enable effect\n");
-     printf("2.disable effect\n");
-     printf("3.customize frequency\n");
-     printf("4.back\n\n");
-	 bool invalid = false;
-	 do{
-		 invalid = false;
-	     switch(uget(int)()){
-			 case 1:
-		         setting["rotate"].set(true);
-		         printf("\nsuccessfully enabled effect\n");
-				 break;
-			 case 2:
-		         setting["rotate"].set(false);
-		         printf("\nsuccessfully disabled effect\n");		 	 
-				 break;
-			 case 3:
-		         printf("\n");
-		         select2:
-		         printf("enter number of nodes between effects: ");
-				 setting["rotatetime"].scan();
-		         if(setting["rotatetime"].get_int() < 1){
-					 alert("invalid number!");
-					 goto select2;
-				 }
-		         printf("\nsuccessfully set effect frequency\n");
-				 break;
-			 case 4:
-				 return;
-			 default:
-				 invalid = true;
-				 alert("invalid selection!");
-	     }
-	 }while(invalid);
-	 presstogo();
-}
-
-//flip animation options
-void flipoption(){
-     int input;
-     
-     clrscr(); //clear screen
-     printf("\n");
-     printf("current flip settings:\n");
-     printf("----------------------\n\n");
-     if(setting["flip"].get_bool()) printf("flip animation is enabled\n\n");
-     else printf("flip animation is disabled\n\n");
-     printf("time between each frame: %.2f second(s)",setting["fliptime"].get_float());
-     printf("\n\n\n");
-     printf("select options:\n");
-     printf("---------------\n");
-     printf("1.enable effect\n");
-     printf("2.disable effect\n");
-     printf("3.customize flip speed\n");
-     printf("4.back\n\n");
-     select:
-	 input = uget(int)();
-     if(input<1 or input>4){printf("\ninvalid selection!\n\n"); goto select;}
-     else if(input==4) return;
-     else if(input==1){
-                       setting["flip"].set(true);
-                       printf("\nsuccessfully enabled effect\n");
-                       }
-     else if(input==2){
-                       setting["flip"].set(false);
-                       printf("\nsuccessfully disabled effect\n");
-                       }
-     else{
-          printf("\n");
-          select2:
-          printf("enter time between frames: ");
-		  setting["fliptime"].scan();
-          if(setting["fliptime"].get_float() < 0){
-			  printf("\ninvalid number!\n\n");
-			  goto select2;
-		  }
-          printf("\nsuccessfully set flip speed\n");
-          }
-		  presstogo();
-}
-
-//opening move options
-void openingoption(){
-	clrscr(); //clear screen
-	printf("\n");
-	printf("current setting:\n\n");
-	if(not setting["parallel"].get_bool()) printf("allow diagonal and perpendicular opening");
-	else printf("allow diagonal, perpendicular and parallel opening");
-	printf("\n\n\n");
-	printf("select options:\n");
-	printf("---------------\n");
-	printf("1. allow diagonal and perpendicular opening\n");
-	printf("2. allow diagonal, perpendicular and parallel opening\n");
-	int choice = uget(int)([](int x){ return x >= 1 and x <= 2; }, "enter only 1 - 2");
-	setting["parallel"].set(choice == 2);
-	printf("\nsuccessfully set opening moves\n");
-	presstogo();
-}
-
 //human vs human
 int human(int board[64],int no[2],int player){
     std::vector<undoStruct> undoData;
@@ -944,8 +745,8 @@ int human(int board[64],int no[2],int player){
     int mobilities; //value from function 'mobility'
     kirby flips; //value from function 'flip'
     char letter; //for one-letter command
-    int currmove=-1;
     int lastmove=-1;
+    
     undoData.push_back(undoStruct(board, no, player, lastmove));
     undoItr++;
 
@@ -995,16 +796,15 @@ int human(int board[64],int no[2],int player){
                                        }
                       //show flip animation
                       if(setting["flip"].get_bool()) flipanimation(board,player,position,flips.board);
-                      currmove=position;
+                      lastmove = position;
                       //update old values
-                      lastmove=currmove;
                       //get board from function 'flip'
                       for(i=0;i<64;i++) board[i]=flips.board[i];
                       //update no[2]
                       no[player-1]+=flips.num+1;
                       no[2-player]-=flips.num;
                       player=3-player; //switch player
-                      while(undoData.size() - 1 > undoItr) undoData.pop_back();
+                      while((int)undoData.size() - 1 > undoItr) undoData.pop_back();
                       undoData.push_back(undoStruct(board, no, player, lastmove));
                       undoItr++;
                       goto loop2;
@@ -1077,11 +877,13 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
     int mobilities; //value from function 'mobility'
     kirby flips; //value from function 'flip'
     char letter; //for one-letter command
-    int currmove=-1;
-    int lastmove=-1;
-    undoData.push_back(undoStruct(board, no, player, lastmove));
-    undoItr++;
-     
+    int lastmove = -1;
+    
+    if(complayer == 2){
+        undoData.push_back(undoStruct(board, no, player, lastmove));
+        undoItr++;
+    }
+    
     loop2: //start here!
     clrscr(); //clear screen
     //display board
@@ -1112,8 +914,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             if(letter=='n') return EXIT;
                                             if(letter=='m') return 0;
                                             if(letter=='q') finish(0);
-                                            currmove=position;
-                                            lastmove=currmove;
+                                            lastmove=position;
                                             flips=flip(board,position,player); //flip!
                                             //show flip animation
                                             if(setting["flip"].get_bool()) flipanimation(board,player,position,flips.board);
@@ -1122,6 +923,11 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             //update no[2]
                                             no[player-1]+=flips.num+1;
                                             no[2-player]-=flips.num;
+                                            player = 3-player;
+                                            //UNDO UPDATE
+                                            while((int)undoData.size() - 1 > undoItr) undoData.pop_back();
+                                            undoData.push_back(undoStruct(board, no, player, lastmove));
+                                            undoItr++;
                                             }
                       else{
                            //for human's turn
@@ -1158,18 +964,16 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                                             }
                            //show flip animation
                            if(setting["flip"].get_bool()) flipanimation(board,player,position,flips.board);
-                           currmove=position;
+                           lastmove = position;
+                           
                            //update old values
                            //get board from function 'flip'
                            for(i=0;i<64;i++) board[i]=flips.board[i];
                            //update no[2]
                            no[player-1]+=flips.num+1;
                            no[2-player]-=flips.num;
-                           while(undoData.size() - 1 > undoItr) undoData.pop_back();
-                           undoData.push_back(undoStruct(board, no, 3-player, lastmove));
-                           undoItr++;
+                           player = 3-player;
                            }
-                      player=3-player; //switch player
                       goto loop2;
                       }
     //if player is not movable
@@ -1234,8 +1038,8 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
      //print mode
      fprintf(save," %d",mode);
      //print depth or times
-     if(mode==1 or mode==2) fprintf(save," %d %d",depth,depthperfect);
-     if(mode==3) fprintf(save," %f",times);
+     if(mode==1) fprintf(save," %d %d",depth,depthperfect);
+     if(mode==2) fprintf(save," %f",times);
      fclose(save);
      printf("\ngame saved in %s successfully!\n\n",filename);
      presstogo();
@@ -1348,8 +1152,8 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
                        //print doublemode
                        fprintf(save," %d",doublemode[i]);
                        //print doubledepth or doubletimes
-                       if(doublemode[i]==1 or doublemode[i]==2) fprintf(save," %d %d",doubledepth[i],doubledepthperfect[i]);
-                       if(doublemode[i]==3) fprintf(save," %f",doubletimes[i]);
+                       if(doublemode[i]==1) fprintf(save," %d %d",doubledepth[i],doubledepthperfect[i]);
+                       if(doublemode[i]==2) fprintf(save," %f",doubletimes[i]);
                        }
      fclose(save);
      printf("\ngame saved in %s successfully!\n\n",filename);
@@ -1575,7 +1379,7 @@ int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData
         for(int i=0;i<64;i++) board[i] = undoData[undoItr].board[i];
         no[0] = undoData[undoItr].no[0];
         no[1] = undoData[undoItr].no[1];
-        player= undoData[undoItr].player;
+        player = undoData[undoItr].player;
         lastMove = undoData[undoItr].lastMove;
 		return -1; //-1 means undo
 	}
@@ -1588,9 +1392,9 @@ int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData
             step = 1;
         }
         if(step == -1){
-            undoItr = undoData.size() - 1;
+            undoItr = (int)undoData.size() - 1;
         }else{
-            if(undoItr + step >= undoData.size()){
+            if(undoItr + step >= (int)undoData.size()){
                 alert("cannot redo");
                 goto loop1;
             }else{
@@ -2795,6 +2599,520 @@ void flipanimation(int board[64],int player,int position,int flipboard[64]){
         }while(time2.time-time1.time+0.001*(time2.millitm-time1.millitm)<setting["fliptime"].get_float());
      
      return;
+}
+
+//generate index array
+void indexformob(int board[64]){
+     mobindex[0]=2187*board[0]+729*board[1]+243*board[2]+81*board[3]+27*board[4]+9*board[5]+3*board[6]+board[7];
+     mobindex[1]=2187*board[8]+729*board[9]+243*board[10]+81*board[11]+27*board[12]+9*board[13]+3*board[14]+board[15];
+     mobindex[2]=2187*board[16]+729*board[17]+243*board[18]+81*board[19]+27*board[20]+9*board[21]+3*board[22]+board[23];
+     mobindex[3]=2187*board[24]+729*board[25]+243*board[26]+81*board[27]+27*board[28]+9*board[29]+3*board[30]+board[31];
+     mobindex[4]=2187*board[32]+729*board[33]+243*board[34]+81*board[35]+27*board[36]+9*board[37]+3*board[38]+board[39];
+     mobindex[5]=2187*board[40]+729*board[41]+243*board[42]+81*board[43]+27*board[44]+9*board[45]+3*board[46]+board[47];
+     mobindex[6]=2187*board[48]+729*board[49]+243*board[50]+81*board[51]+27*board[52]+9*board[53]+3*board[54]+board[55];
+     mobindex[7]=2187*board[56]+729*board[57]+243*board[58]+81*board[59]+27*board[60]+9*board[61]+3*board[62]+board[63];
+     mobindex[8]=2187*board[0]+729*board[8]+243*board[16]+81*board[24]+27*board[32]+9*board[40]+3*board[48]+board[56];
+     mobindex[9]=2187*board[1]+729*board[9]+243*board[17]+81*board[25]+27*board[33]+9*board[41]+3*board[49]+board[57];
+     mobindex[10]=2187*board[2]+729*board[10]+243*board[18]+81*board[26]+27*board[34]+9*board[42]+3*board[50]+board[58];
+     mobindex[11]=2187*board[3]+729*board[11]+243*board[19]+81*board[27]+27*board[35]+9*board[43]+3*board[51]+board[59];
+     mobindex[12]=2187*board[4]+729*board[12]+243*board[20]+81*board[28]+27*board[36]+9*board[44]+3*board[52]+board[60];
+     mobindex[13]=2187*board[5]+729*board[13]+243*board[21]+81*board[29]+27*board[37]+9*board[45]+3*board[53]+board[61];
+     mobindex[14]=2187*board[6]+729*board[14]+243*board[22]+81*board[30]+27*board[38]+9*board[46]+3*board[54]+board[62];
+     mobindex[15]=2187*board[7]+729*board[15]+243*board[23]+81*board[31]+27*board[39]+9*board[47]+3*board[55]+board[63];
+     mobindex[16]=9*board[40]+3*board[49]+board[58];
+     mobindex[17]=27*board[32]+9*board[41]+3*board[50]+board[59];
+     mobindex[18]=81*board[24]+27*board[33]+9*board[42]+3*board[51]+board[60];
+     mobindex[19]=243*board[16]+81*board[25]+27*board[34]+9*board[43]+3*board[52]+board[61];
+     mobindex[20]=729*board[8]+243*board[17]+81*board[26]+27*board[35]+9*board[44]+3*board[53]+board[62];
+     mobindex[21]=2187*board[0]+729*board[9]+243*board[18]+81*board[27]+27*board[36]+9*board[45]+3*board[54]+board[63];
+     mobindex[22]=729*board[1]+243*board[10]+81*board[19]+27*board[28]+9*board[37]+3*board[46]+board[55];
+     mobindex[23]=243*board[2]+81*board[11]+27*board[20]+9*board[29]+3*board[38]+board[47];
+     mobindex[24]=81*board[3]+27*board[12]+9*board[21]+3*board[30]+board[39];
+     mobindex[25]=27*board[4]+9*board[13]+3*board[22]+board[31];
+     mobindex[26]=9*board[5]+3*board[14]+board[23];
+     mobindex[27]=9*board[16]+3*board[9]+board[2];
+     mobindex[28]=27*board[24]+9*board[17]+3*board[10]+board[3];
+     mobindex[29]=81*board[32]+27*board[25]+9*board[18]+3*board[11]+board[4];
+     mobindex[30]=243*board[40]+81*board[33]+27*board[26]+9*board[19]+3*board[12]+board[5];
+     mobindex[31]=729*board[48]+243*board[41]+81*board[34]+27*board[27]+9*board[20]+3*board[13]+board[6];
+     mobindex[32]=2187*board[56]+729*board[49]+243*board[42]+81*board[35]+27*board[28]+9*board[21]+3*board[14]+board[7];
+     mobindex[33]=729*board[57]+243*board[50]+81*board[43]+27*board[36]+9*board[29]+3*board[22]+board[15];
+     mobindex[34]=243*board[58]+81*board[51]+27*board[44]+9*board[37]+3*board[30]+board[23];
+     mobindex[35]=81*board[59]+27*board[52]+9*board[45]+3*board[38]+board[31];
+     mobindex[36]=27*board[60]+9*board[53]+3*board[46]+board[39];
+     mobindex[37]=9*board[61]+3*board[54]+board[47];
+}
+
+//compute mobility: number of legal moves
+int mobility(int player){
+    bool mobboard[64]={};
+    int i;
+    int index;
+    
+    player--;
+    
+    //horizontal ---------------------------------------------------------------
+    
+    index=mobindex[0];
+    if(mobtable[index][player][0]) mobboard[0] = true;
+    if(mobtable[index][player][1]) mobboard[1] = true;
+    if(mobtable[index][player][2]) mobboard[2] = true;
+    if(mobtable[index][player][3]) mobboard[3] = true;
+    if(mobtable[index][player][4]) mobboard[4] = true;
+    if(mobtable[index][player][5]) mobboard[5] = true;
+    if(mobtable[index][player][6]) mobboard[6] = true;
+    if(mobtable[index][player][7]) mobboard[7] = true;
+    
+    index=mobindex[1];
+    if(mobtable[index][player][0]) mobboard[8] = true;
+    if(mobtable[index][player][1]) mobboard[9] = true;
+    if(mobtable[index][player][2]) mobboard[10] = true;
+    if(mobtable[index][player][3]) mobboard[11] = true;
+    if(mobtable[index][player][4]) mobboard[12] = true;
+    if(mobtable[index][player][5]) mobboard[13] = true;
+    if(mobtable[index][player][6]) mobboard[14] = true;
+    if(mobtable[index][player][7]) mobboard[15] = true;
+    
+    index=mobindex[2];
+    if(mobtable[index][player][0]) mobboard[16] = true;
+    if(mobtable[index][player][1]) mobboard[17] = true;
+    if(mobtable[index][player][2]) mobboard[18] = true;
+    if(mobtable[index][player][3]) mobboard[19] = true;
+    if(mobtable[index][player][4]) mobboard[20] = true;
+    if(mobtable[index][player][5]) mobboard[21] = true;
+    if(mobtable[index][player][6]) mobboard[22] = true;
+    if(mobtable[index][player][7]) mobboard[23] = true;
+    
+    index=mobindex[3];
+    if(mobtable[index][player][0]) mobboard[24] = true;
+    if(mobtable[index][player][1]) mobboard[25] = true;
+    if(mobtable[index][player][2]) mobboard[26] = true;
+    if(mobtable[index][player][3]) mobboard[27] = true;
+    if(mobtable[index][player][4]) mobboard[28] = true;
+    if(mobtable[index][player][5]) mobboard[29] = true;
+    if(mobtable[index][player][6]) mobboard[30] = true;
+    if(mobtable[index][player][7]) mobboard[31] = true;
+    
+    index=mobindex[4];
+    if(mobtable[index][player][0]) mobboard[32] = true;
+    if(mobtable[index][player][1]) mobboard[33] = true;
+    if(mobtable[index][player][2]) mobboard[34] = true;
+    if(mobtable[index][player][3]) mobboard[35] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[37] = true;
+    if(mobtable[index][player][6]) mobboard[38] = true;
+    if(mobtable[index][player][7]) mobboard[39] = true;
+    
+    index=mobindex[5];
+    if(mobtable[index][player][0]) mobboard[40] = true;
+    if(mobtable[index][player][1]) mobboard[41] = true;
+    if(mobtable[index][player][2]) mobboard[42] = true;
+    if(mobtable[index][player][3]) mobboard[43] = true;
+    if(mobtable[index][player][4]) mobboard[44] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[46] = true;
+    if(mobtable[index][player][7]) mobboard[47] = true;
+    
+    index=mobindex[6];
+    if(mobtable[index][player][0]) mobboard[48] = true;
+    if(mobtable[index][player][1]) mobboard[49] = true;
+    if(mobtable[index][player][2]) mobboard[50] = true;
+    if(mobtable[index][player][3]) mobboard[51] = true;
+    if(mobtable[index][player][4]) mobboard[52] = true;
+    if(mobtable[index][player][5]) mobboard[53] = true;
+    if(mobtable[index][player][6]) mobboard[54] = true;
+    if(mobtable[index][player][7]) mobboard[55] = true;
+    
+    index=mobindex[7];
+    if(mobtable[index][player][0]) mobboard[56] = true;
+    if(mobtable[index][player][1]) mobboard[57] = true;
+    if(mobtable[index][player][2]) mobboard[58] = true;
+    if(mobtable[index][player][3]) mobboard[59] = true;
+    if(mobtable[index][player][4]) mobboard[60] = true;
+    if(mobtable[index][player][5]) mobboard[61] = true;
+    if(mobtable[index][player][6]) mobboard[62] = true;
+    if(mobtable[index][player][7]) mobboard[63] = true;
+    
+    //vertical -----------------------------------------------------------------
+    
+    index=mobindex[8];
+    if(mobtable[index][player][0]) mobboard[0] = true;
+    if(mobtable[index][player][1]) mobboard[8] = true;
+    if(mobtable[index][player][2]) mobboard[16] = true;
+    if(mobtable[index][player][3]) mobboard[24] = true;
+    if(mobtable[index][player][4]) mobboard[32] = true;
+    if(mobtable[index][player][5]) mobboard[40] = true;
+    if(mobtable[index][player][6]) mobboard[48] = true;
+    if(mobtable[index][player][7]) mobboard[56] = true;
+    
+    index=mobindex[9];
+    if(mobtable[index][player][0]) mobboard[1] = true;
+    if(mobtable[index][player][1]) mobboard[9] = true;
+    if(mobtable[index][player][2]) mobboard[17] = true;
+    if(mobtable[index][player][3]) mobboard[25] = true;
+    if(mobtable[index][player][4]) mobboard[33] = true;
+    if(mobtable[index][player][5]) mobboard[41] = true;
+    if(mobtable[index][player][6]) mobboard[49] = true;
+    if(mobtable[index][player][7]) mobboard[57] = true;
+    
+    index=mobindex[10];
+    if(mobtable[index][player][0]) mobboard[2] = true;
+    if(mobtable[index][player][1]) mobboard[10] = true;
+    if(mobtable[index][player][2]) mobboard[18] = true;
+    if(mobtable[index][player][3]) mobboard[26] = true;
+    if(mobtable[index][player][4]) mobboard[34] = true;
+    if(mobtable[index][player][5]) mobboard[42] = true;
+    if(mobtable[index][player][6]) mobboard[50] = true;
+    if(mobtable[index][player][7]) mobboard[58] = true;
+    
+    index=mobindex[11];
+    if(mobtable[index][player][0]) mobboard[3] = true;
+    if(mobtable[index][player][1]) mobboard[11] = true;
+    if(mobtable[index][player][2]) mobboard[19] = true;
+    if(mobtable[index][player][3]) mobboard[27] = true;
+    if(mobtable[index][player][4]) mobboard[35] = true;
+    if(mobtable[index][player][5]) mobboard[43] = true;
+    if(mobtable[index][player][6]) mobboard[51] = true;
+    if(mobtable[index][player][7]) mobboard[59] = true;
+    
+    index=mobindex[12];
+    if(mobtable[index][player][0]) mobboard[4] = true;
+    if(mobtable[index][player][1]) mobboard[12] = true;
+    if(mobtable[index][player][2]) mobboard[20] = true;
+    if(mobtable[index][player][3]) mobboard[28] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[44] = true;
+    if(mobtable[index][player][6]) mobboard[52] = true;
+    if(mobtable[index][player][7]) mobboard[60] = true;
+    
+    index=mobindex[13];
+    if(mobtable[index][player][0]) mobboard[5] = true;
+    if(mobtable[index][player][1]) mobboard[13] = true;
+    if(mobtable[index][player][2]) mobboard[21] = true;
+    if(mobtable[index][player][3]) mobboard[29] = true;
+    if(mobtable[index][player][4]) mobboard[37] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[53] = true;
+    if(mobtable[index][player][7]) mobboard[61] = true;
+    
+    index=mobindex[14];
+    if(mobtable[index][player][0]) mobboard[6] = true;
+    if(mobtable[index][player][1]) mobboard[14] = true;
+    if(mobtable[index][player][2]) mobboard[22] = true;
+    if(mobtable[index][player][3]) mobboard[30] = true;
+    if(mobtable[index][player][4]) mobboard[38] = true;
+    if(mobtable[index][player][5]) mobboard[46] = true;
+    if(mobtable[index][player][6]) mobboard[54] = true;
+    if(mobtable[index][player][7]) mobboard[62] = true;
+    
+    index=mobindex[15];
+    if(mobtable[index][player][0]) mobboard[7] = true;
+    if(mobtable[index][player][1]) mobboard[15] = true;
+    if(mobtable[index][player][2]) mobboard[23] = true;
+    if(mobtable[index][player][3]) mobboard[31] = true;
+    if(mobtable[index][player][4]) mobboard[39] = true;
+    if(mobtable[index][player][5]) mobboard[47] = true;
+    if(mobtable[index][player][6]) mobboard[55] = true;
+    if(mobtable[index][player][7]) mobboard[63] = true;
+    
+    //diagonal \ ---------------------------------------------------------------
+    
+    //one
+    index=mobindex[16];
+    if(mobtable[index][player][5]) mobboard[40] = true;
+    //49 cannot flip
+    if(mobtable[index][player][7]) mobboard[58] = true;
+    
+    //two
+    index=mobindex[17];
+    if(mobtable[index][player][4]) mobboard[32] = true;
+    if(mobtable[index][player][5]) mobboard[41] = true;
+    if(mobtable[index][player][6]) mobboard[50] = true;
+    if(mobtable[index][player][7]) mobboard[59] = true;
+    
+    //three
+    index=mobindex[18];
+    if(mobtable[index][player][3]) mobboard[24] = true;
+    if(mobtable[index][player][4]) mobboard[33] = true;
+    if(mobtable[index][player][5]) mobboard[42] = true;
+    if(mobtable[index][player][6]) mobboard[51] = true;
+    if(mobtable[index][player][7]) mobboard[60] = true;
+    
+    //four
+    index=mobindex[19];
+    if(mobtable[index][player][2]) mobboard[16] = true;
+    if(mobtable[index][player][3]) mobboard[25] = true;
+    if(mobtable[index][player][4]) mobboard[34] = true;
+    if(mobtable[index][player][5]) mobboard[43] = true;
+    if(mobtable[index][player][6]) mobboard[52] = true;
+    if(mobtable[index][player][7]) mobboard[61] = true;
+    
+    //five
+    index=mobindex[20];
+    if(mobtable[index][player][1]) mobboard[8] = true;
+    if(mobtable[index][player][2]) mobboard[17] = true;
+    if(mobtable[index][player][3]) mobboard[26] = true;
+    if(mobtable[index][player][4]) mobboard[35] = true;
+    if(mobtable[index][player][5]) mobboard[44] = true;
+    if(mobtable[index][player][6]) mobboard[53] = true;
+    if(mobtable[index][player][7]) mobboard[62] = true;
+    
+    //six
+    index=mobindex[21];
+    if(mobtable[index][player][0]) mobboard[0] = true;
+    if(mobtable[index][player][1]) mobboard[9] = true;
+    if(mobtable[index][player][2]) mobboard[18] = true;
+    if(mobtable[index][player][3]) mobboard[27] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[54] = true;
+    if(mobtable[index][player][7]) mobboard[63] = true;
+    
+    //seven
+    index=mobindex[22];
+    if(mobtable[index][player][1]) mobboard[1] = true;
+    if(mobtable[index][player][2]) mobboard[10] = true;
+    if(mobtable[index][player][3]) mobboard[19] = true;
+    if(mobtable[index][player][4]) mobboard[28] = true;
+    if(mobtable[index][player][5]) mobboard[37] = true;
+    if(mobtable[index][player][6]) mobboard[46] = true;
+    if(mobtable[index][player][7]) mobboard[55] = true;
+    
+    //eight
+    index=mobindex[23];
+    if(mobtable[index][player][2]) mobboard[2] = true;
+    if(mobtable[index][player][3]) mobboard[11] = true;
+    if(mobtable[index][player][4]) mobboard[20] = true;
+    if(mobtable[index][player][5]) mobboard[29] = true;
+    if(mobtable[index][player][6]) mobboard[38] = true;
+    if(mobtable[index][player][7]) mobboard[47] = true;
+    
+    //nine
+    index=mobindex[24];
+    if(mobtable[index][player][3]) mobboard[3] = true;
+    if(mobtable[index][player][4]) mobboard[12] = true;
+    if(mobtable[index][player][5]) mobboard[21] = true;
+    if(mobtable[index][player][6]) mobboard[30] = true;
+    if(mobtable[index][player][7]) mobboard[39] = true;
+    
+    //ten
+    index=mobindex[25];
+    if(mobtable[index][player][4]) mobboard[4] = true;
+    if(mobtable[index][player][5]) mobboard[13] = true;
+    if(mobtable[index][player][6]) mobboard[22] = true;
+    if(mobtable[index][player][7]) mobboard[31] = true;
+    
+    //eleven
+    index=mobindex[26];
+    if(mobtable[index][player][5]) mobboard[5] = true;
+    //14 cannot flip
+    if(mobtable[index][player][7]) mobboard[23] = true;
+
+    //diagonal / ---------------------------------------------------------------
+    
+    //one
+    index=mobindex[27];
+    if(mobtable[index][player][5]) mobboard[16] = true;
+    //9 cannot flip
+    if(mobtable[index][player][7]) mobboard[2] = true;
+    
+    //two
+    index=mobindex[28];
+    if(mobtable[index][player][4]) mobboard[24] = true;
+    if(mobtable[index][player][5]) mobboard[17] = true;
+    if(mobtable[index][player][6]) mobboard[10] = true;
+    if(mobtable[index][player][7]) mobboard[3] = true;
+    
+    //three
+    index=mobindex[29];
+    if(mobtable[index][player][3]) mobboard[32] = true;
+    if(mobtable[index][player][4]) mobboard[25] = true;
+    if(mobtable[index][player][5]) mobboard[18] = true;
+    if(mobtable[index][player][6]) mobboard[11] = true;
+    if(mobtable[index][player][7]) mobboard[4] = true;
+    
+    //four
+    index=mobindex[30];
+    if(mobtable[index][player][2]) mobboard[40] = true;
+    if(mobtable[index][player][3]) mobboard[33] = true;
+    if(mobtable[index][player][4]) mobboard[26] = true;
+    if(mobtable[index][player][5]) mobboard[19] = true;
+    if(mobtable[index][player][6]) mobboard[12] = true;
+    if(mobtable[index][player][7]) mobboard[5] = true;
+    
+    //five
+    index=mobindex[31];
+    if(mobtable[index][player][1]) mobboard[48] = true;
+    if(mobtable[index][player][2]) mobboard[41] = true;
+    if(mobtable[index][player][3]) mobboard[34] = true;
+    if(mobtable[index][player][4]) mobboard[27] = true;
+    if(mobtable[index][player][5]) mobboard[20] = true;
+    if(mobtable[index][player][6]) mobboard[13] = true;
+    if(mobtable[index][player][7]) mobboard[6] = true;
+    
+    //six
+    index=mobindex[32];
+    if(mobtable[index][player][0]) mobboard[56] = true;
+    if(mobtable[index][player][1]) mobboard[49] = true;
+    if(mobtable[index][player][2]) mobboard[42] = true;
+    if(mobtable[index][player][3]) mobboard[35] = true;
+    if(mobtable[index][player][4]) mobboard[28] = true;
+    if(mobtable[index][player][5]) mobboard[21] = true;
+    if(mobtable[index][player][6]) mobboard[14] = true;
+    if(mobtable[index][player][7]) mobboard[7] = true;
+    
+    //seven
+    index=mobindex[33];
+    if(mobtable[index][player][1]) mobboard[57] = true;
+    if(mobtable[index][player][2]) mobboard[50] = true;
+    if(mobtable[index][player][3]) mobboard[43] = true;
+    if(mobtable[index][player][4]) mobboard[36] = true;
+    if(mobtable[index][player][5]) mobboard[29] = true;
+    if(mobtable[index][player][6]) mobboard[22] = true;
+    if(mobtable[index][player][7]) mobboard[15] = true;
+    
+    //eight
+    index=mobindex[34];
+    if(mobtable[index][player][2]) mobboard[58] = true;
+    if(mobtable[index][player][3]) mobboard[51] = true;
+    if(mobtable[index][player][4]) mobboard[44] = true;
+    if(mobtable[index][player][5]) mobboard[37] = true;
+    if(mobtable[index][player][6]) mobboard[30] = true;
+    if(mobtable[index][player][7]) mobboard[23] = true;
+    
+    //nine
+    index=mobindex[35];
+    if(mobtable[index][player][3]) mobboard[59] = true;
+    if(mobtable[index][player][4]) mobboard[52] = true;
+    if(mobtable[index][player][5]) mobboard[45] = true;
+    if(mobtable[index][player][6]) mobboard[38] = true;
+    if(mobtable[index][player][7]) mobboard[31] = true;
+    
+    //ten
+    index=mobindex[36];
+    if(mobtable[index][player][4]) mobboard[60] = true;
+    if(mobtable[index][player][5]) mobboard[53] = true;
+    if(mobtable[index][player][6]) mobboard[46] = true;
+    if(mobtable[index][player][7]) mobboard[39] = true;
+    
+    //eleven
+    index=mobindex[37];
+    if(mobtable[index][player][5]) mobboard[61] = true;
+    //54 cannot flip
+    if(mobtable[index][player][7]) mobboard[47] = true;    
+    
+    //summation --------------------------------------------
+    
+    index=0;
+    for(i=0;i<64;i++){
+                      if(mobboard[i]) index++;
+                      }
+    return index;
+    
+}
+
+//return potential mobility difference (player1-player2)
+//potential mobility of player 1 = no. of player 2's frontier disks
+//= no. of player 2's disks adjacent to empty squares (excluding edges)
+int pmobility(int board[64]){
+    int pmobility=0;
+    int position=8; //start at 8
+    
+    qlp:
+    position++;
+    if(position==55) return pmobility;
+    if(position%8==7) position+=2;
+    
+    if(board[position]==1){
+                           //for player 1's disks
+                           if(!board[position-9]){pmobility--; goto qlp;} //upleft
+                           if(!board[position-8]){pmobility--; goto qlp;} //up
+                           if(!board[position-7]){pmobility--; goto qlp;} //upright
+                           if(!board[position-1]){pmobility--; goto qlp;} //left
+                           if(!board[position+1]){pmobility--; goto qlp;} //right
+                           if(!board[position+7]){pmobility--; goto qlp;} //downleft
+                           if(!board[position+8]){pmobility--; goto qlp;} //down
+                           if(!board[position+9]){pmobility--; goto qlp;} //downright
+                           }
+    if(board[position]==2){
+                           //for player 2's disks
+                           if(!board[position-9]){pmobility++; goto qlp;} //upleft
+                           if(!board[position-8]){pmobility++; goto qlp;} //up
+                           if(!board[position-7]){pmobility++; goto qlp;} //upright
+                           if(!board[position-1]){pmobility++; goto qlp;} //left
+                           if(!board[position+1]){pmobility++; goto qlp;} //right
+                           if(!board[position+7]){pmobility++; goto qlp;} //downleft
+                           if(!board[position+8]){pmobility++; goto qlp;} //down
+                           if(!board[position+9]){pmobility++; goto qlp;} //downright
+                           }
+    goto qlp;
+}
+
+//combines function corner, xsquare and csquare!
+int triplesq(int board[64],int corner,int xsquare,int csquare){
+    int value=0;
+    
+    //upleft corner
+    if(board[0]==0){
+                    if(board[9]==1) value-=xsquare;
+                    if(board[9]==2) value+=xsquare;
+                    if(board[1]==1) value-=csquare;
+                    if(board[1]==2) value+=csquare;
+                    if(board[8]==1) value-=csquare;
+                    if(board[8]==2) value+=csquare;
+                    }
+    else if(board[0]==1) value+=corner;
+    else value-=corner;
+    
+    //upright corner
+    if(board[7]==0){
+                    if(board[14]==1) value-=xsquare;
+                    if(board[14]==2) value+=xsquare;
+                    if(board[6]==1) value-=csquare;
+                    if(board[6]==2) value+=csquare;
+                    if(board[15]==1) value-=csquare;
+                    if(board[15]==2) value+=csquare;
+                    }
+    else if(board[7]==1) value+=corner;
+    else value-=corner;
+    
+    //downleft corner
+    if(board[56]==0){
+                    if(board[49]==1) value-=xsquare;
+                    if(board[49]==2) value+=xsquare;
+                    if(board[48]==1) value-=csquare;
+                    if(board[48]==2) value+=csquare;
+                    if(board[57]==1) value-=csquare;
+                    if(board[57]==2) value+=csquare;
+                    }
+    else if(board[56]==1) value+=corner;
+    else value-=corner;
+    
+    //downright corner
+    if(board[63]==0){
+                    if(board[54]==1) value-=xsquare;
+                    if(board[54]==2) value+=xsquare;
+                    if(board[55]==1) value-=csquare;
+                    if(board[55]==2) value+=csquare;
+                    if(board[62]==1) value-=csquare;
+                    if(board[62]==2) value+=csquare;
+                    }
+    else if(board[63]==1) value+=corner;
+    else value-=corner;
+    
+    //if new csquare - counts -xxxxxx- only once
+    if(wnew==1){
+                if(mobindex[0]==1092) value+=csquare;
+                if(mobindex[0]==2184) value-=csquare;
+                if(mobindex[7]==1092) value+=csquare;
+                if(mobindex[7]==2184) value-=csquare;
+                if(mobindex[8]==1092) value+=csquare;
+                if(mobindex[8]==2184) value-=csquare;
+                if(mobindex[15]==1092) value+=csquare;
+                if(mobindex[15]==2184) value-=csquare;
+                }
+    
+    return value;
 }
 
 //compute values for edge configurations

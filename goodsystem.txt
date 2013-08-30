@@ -1,0 +1,4 @@
+rename comset to Profile and use it everywhere
+merge 3 save functions together
+merge 3 wicked functions together
+merge input to main game

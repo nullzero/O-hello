@@ -1,13 +1,8 @@
 URGENT>>>
-* polish set
-  - texture
-  - weight
 * polish load/save
   - prompt
   - method
 * make help each variable
-* polish undo/redo ?
-  - correct new description
 
 * correct 6 scanfs
 * check correctness / awkwardness / blah blah (Oak only)

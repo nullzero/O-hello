@@ -633,3 +633,19 @@ date: Aug 28, 2013 lines: 3865 lines
   -- include undo,redo for the first time
 - rewrote help
 - prepared to merge three games together (broken)
+
+version 81
+date: Aug 30, 2013 lines: 4183 lines
+------------------------------------
+- moved functions concerning mobility back to main
+- changed mobtable to bool
+- put (int) to correct warning
+- polished set texture
+- polished + correct set weight
+  -- correct 'weightInitialize' bug
+- corrected 'undo' bug
+- improved 'new' description
+- corrected load/save bug
+- delete settings menu
+- changed command 'help variable' to 'help var'
+*still left load/save and help var unpolished

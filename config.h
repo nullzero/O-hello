@@ -8,7 +8,7 @@
 #include <functional>
 
 //constant parameters
-const int weightChoice[][100]={
+const int weightChoice[][19]={
     {1,100,0,1000,0,0,0,0,55,1,0,0,1000,0,0,0,0,0,10000},
     {1,100,200,4000,1000,1000,0,0,55,1,100,50,250,50,50,0,0,0,50000},
     {-1,40,100,600,800,140,250,100,45,2,60,40,200,800,100,250,100,1,1000000}
@@ -159,46 +159,61 @@ struct Property{
 				v_float = std::stof(a);
 				break;
             default:
-                alert("invalid. can't set with this method.");
+                alert("invalid. can't set value directly.");
                 return false;
 		}
         return true;
 	}
 	
-	bool scan(){
-        if(func) return func();
-        alert("input value");
+	bool scan(bool suppressFunc=false){
+        if((not suppressFunc) and func) return func();
 		std::string inp;
 		switch(type){
 			case Int:
+                alert("input value (integer)");
 				v_int = uget(int)();
 				break;
 			
 			case Bool:
+                alert("input value (on/off)");
                 inp = uget(sline)([](std::string x){ return x == "on" or x == "off"; }, "invalid. input value again.");
 				v_bool = (inp == "on");
 				break;
 			
 			case Float:
+                alert("input value (real number)");
 				v_float = uget(float)();
 				break;
 			
 			case Vint:
-				printf("enter %d integers\n", num);
-				for(int i = 0; i < num; ++i) v_vint[i] = uget(int)();
+            {
+				printf("\nenter %d integers\n\n", num);
+                vint vint_tmp;
+                while(int(vint_tmp.size()) < num){
+                    auto vec = getl();
+                    for(auto ele : vec) vint_tmp.push_back(std::stoi(ele));
+                    if(int(vint_tmp.size()) > num){
+                        printf("\ntoo many parameters. input again.\n");
+                        return false;
+                    }
+                }
+				v_vint = vint_tmp;
 				break;
-			
+			}
 			case Texture:
-				printf("row = %d, column = %d\n", row, column);
-				texture inp;
+            {
+                printf("\ninput value (row = %d, column = %d)\n\n", row, column);
+				texture texture_tmp;
 				for(int i = 0; i < row; ++i){
-					inp.push_back(uget(sline)());
-					if(int(inp.back().size()) != column){
+					texture_tmp.push_back(uget(sline)());
+					if(int(texture_tmp.back().size()) != column){
 						alert("column has invalid length!");
 						return false;
 					}
 				}
-				v_texture = inp;
+				v_texture = texture_tmp;
+                break;
+            }
 		}
 		return true;
 	}
@@ -266,6 +281,11 @@ bool customweight();
 
 std::map<std::string,Property> setting, dSetting;
 
+void weightInitialize(){
+	weightRaw = setting["weight"].get_vint();
+	nickname();
+}
+
 void initConfig(){
 	setting["black"].type = Property::Texture;
 	{
@@ -276,7 +296,6 @@ void initConfig(){
  		setting["black"].row = SIZEOF(tmp);
 		setting["black"].set(tmp);
 		setting["black"].desc = "black disk appearance";
-        setting["black"].desc = "enter string with row and column by ...da.d.a";
 	}
 	
 	setting["white"].type = Property::Texture;
@@ -346,13 +365,13 @@ void initConfig(){
 	
 	setting["weight"].type = Property::Vint;
 	{
-		int vi[] = {-1, 40, 100, 600, 800, 140, 250, 100, 45, 2, 60, 40, 200, 800, 100, 250, 100, 1, 1000000};
-		setting["weight"].num = SIZEOF(vi);
-		setting["weight"].set(vi);
+        setting["weight"].num = SIZEOF(weightChoice[2]);
+		setting["weight"].set((int*)weightChoice[2]);
         setting["weight"].desc = "weights of evaluation function";
         setting["weight"].func = customweight;
 	}
 	
+    weightInitialize();
 	dSetting = setting;
 	diskWidth = setting["black"].column;
 	diskHeight = setting["black"].row;
@@ -360,34 +379,21 @@ void initConfig(){
 	middleHeight = (diskHeight - 1) / 2;
 }
 
-void weightInitialize(){
-	weightRaw = setting["weight"].get_vint();
-	nickname();
-}
-
 bool customweight(){
-	clrscr(); //clear screen
-	printf("\n");
-	printf("current weights:\n\n ");
-	setting["weight"].show();
-	printf("\n\n\n");
-	printf("choose evaluation function weights:\n");
-	printf("-----------------------------------\n\n");
+	alert("CHOOSE EVALUATION FUNCTION WEIGHTS");
 	printf("0. customize weights\n\n");
 	for(int i = 0; i < weightChoiceNum; i++){
 		printf("%d. %s\n\n", i + 1, weightChoiceName[i]);
 		printf("  ");
-		for(int j = 0; j < int(setting["weight"].get_vint().size()); j++) printf(" %d", weightChoice[i][j]); // TODO
+		for(int j = 0; j < int(setting["weight"].get_vint().size()); j++) printf(" %d", weightChoice[i][j]);
 		printf("\n\n");
 	}
-	int input = uget(int)([](int x){ return x >= 0 and x <= weightChoiceNum; }, "invalid. input again");
+	int input = uget(int)([](int x){ return x >= 0 and x <= weightChoiceNum; }, "invalid. choose again.");
 	if(input != 0){
-		setting["weight"].set(weightChoice[input - 1]);
+		setting["weight"].set((int*)weightChoice[input - 1]);
 	}else{
-		printf("\nenter evaluation function weights:\n\n");
-		setting["weight"].scan();
+		while(not setting["weight"].scan(true));
 	}
-	printf("\nsuccessfully set weights\n");
-	presstogo();
+    weightInitialize();
     return true;
 }

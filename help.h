@@ -1,12 +1,13 @@
 #include "utility.h"
 #include "config.h"
 
-bool commandHelp(texture l){
+bool commandHelp(texture l = texture()){
 	if(l.empty()){
 		printf(R"(
 Type 'help' to see this list.
 Type 'help <command>' to find out more about COMMAND.
-Type 'help variable' to find out more about variables.
+Type 'help var' to find out more about variables.
+Type 'help var <variable>' to find out more about VARIABLE.
 
 M = available in main menu
 G = available in-game
@@ -96,9 +97,9 @@ quit: quit
         printf(R"(
 new: new
     Available in-game and on O-hello's turns.
-    Restart the game using current settings. If the game is loaded from file,
-    the game will be reloaded. Otherwise, the game will restart from the
-    initial board but with same settings.
+    Restart the game using current settings and delete undo data. If the game
+    was loaded from file, the game will be reloaded. Otherwise, the game will
+    restart from the initial board.
 
 )");
         return true;
@@ -119,8 +120,8 @@ undo: undo [<number>]
       undo all
     Available in-game.
     Undo human's moves (excluding passes) for NUMBER times. If not specified,
-    NUMBER is set to 1. 'undo all' restarts the game in the same manner as the
-    command 'new'.
+    NUMBER is set to 1. 'undo all' undoes every move since the beginning of the
+    game.
 
 )");
         return true;
@@ -172,7 +173,7 @@ set: set <variable> [<value>]
     Set VARIABLE to have the value VALUE. Some values cannot be assigned
     directly. In such cases, 'set <variable>' must be used instead, and you
     will be asked to input VALUE later.
-    Type 'help variable' to find out more about variables.
+    Type 'help var' to find out more about variables.
 
 )");
         return true;
@@ -184,7 +185,7 @@ show: show <variable>
     Available in main menu and in-game.
     Display the current value of VARIABLE. 'show all' displays current values
     of all variables.
-    Type 'help variable' to find out more about variables.
+    Type 'help var' to find out more about variables.
 
 )");
         return true;
@@ -195,15 +196,17 @@ reset: reset <variable>
        reset all
     Available in main menu and in-game.
     Reset VARIABLE to its default value. 'reset all' resets all variables.
-    Type 'help variable' to find out more about variables.
+    Type 'help var' to find out more about variables.
 
 )");
         return true;
     }
     
-    if(x == "variable" and l.empty()){
+    if(x == "var" and l.empty()){
         std::string typeName[] = {"int", "bool", "float", "vint", "texture"};
         printf(R"(
+Type 'help var <variable>' to find out more about VARIABLE.
+
 int     : value = integer
 bool    : value = on, off
 float   : value = real number
