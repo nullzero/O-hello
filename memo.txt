@@ -1,10 +1,9 @@
 URGENT>>>
 * polish load/save
-  - prompt
   - method
 * make help each variable
 
-* correct 6 scanfs
+* correct 4 scanfs
 * check correctness / awkwardness / blah blah (Oak only)
 * invent command set, etc. and organize commands/settings
   - make command, get rid of setting menu

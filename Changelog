@@ -649,3 +649,9 @@ date: Aug 30, 2013 lines: 4183 lines
 - delete settings menu
 - changed command 'help variable' to 'help var'
 *still left load/save and help var unpolished
+
+version 82
+date: Aug 30, 2013 lines: 4209 lines
+------------------------------------
+- corrected the way load/save syntax works
+*still need to improve read/write system

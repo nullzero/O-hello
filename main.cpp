@@ -1,7 +1,7 @@
 // project O-hello
 
 //general info
-const char __version__[] = "81";
+const char __version__[] = "82";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
 const char __date__[] = "August 30, 2013";
 const char __language__[] = "C++";
@@ -42,6 +42,12 @@ enum COLOR {BC, XC, OC};
 enum INPUT_MODE {MENUMODE, PLAYMODE};
 const int UNINIT = -1;
 const int LARGE = 2147483647;
+
+char UNIVERSALSTRING[100];
+
+void setUstring(const char* name){
+    strcpy(UNIVERSALSTRING, name);
+}
 
 void init(){
 	srand(time(NULL));
@@ -850,21 +856,19 @@ int human(int board[64],int no[2],int player){
 //save engine of human vs human
 void humansave(int board[64],int player){
      char filename[100];
-     int i;
-     printf("\nfile name (no extension): ");
-     scanf("%s",filename);
-     save=fopen(strcat(filename,".ohl"),"w");
+     strcpy(filename, UNIVERSALSTRING);
+     save=fopen(strcat(filename, ".ohl"), "w");
      //print myConf.randOn
      fprintf(save,"%d",setting["rand"].get_bool());
      //print board
-     for(i=0;i<64;i++) fprintf(save," %d",board[i]);
+     for(int i = 0; i < 64; i++) fprintf(save," %d",board[i]);
      //print player
      fprintf(save," %d",player);
      //print loadmode
      fprintf(save," 1");
      fclose(save);
-     printf("\ngame saved in %s successfully!\n",filename);
-     presstogo();
+     printf("\ngame saved in %s",filename);
+     getch();
 }
 
 //human vs computer,computer vs human
@@ -1023,14 +1027,12 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
 //save engine of human vs computer,computer vs human
 void comhumansave(int board[64],int player,int complayer,int mode,int depth,int depthperfect,float times){
      char filename[100];
-     int i;
-     printf("\nfile name (no extension): ");
-     scanf("%s",filename);
+     strcpy(filename, UNIVERSALSTRING);
      save=fopen(strcat(filename,".ohl"),"w");
      //print myConf.randOn
      fprintf(save,"%d",setting["rand"].get_bool());
      //print board
-     for(i=0;i<64;i++) fprintf(save," %d",board[i]);
+     for(int i = 0; i < 64; i++) fprintf(save," %d",board[i]);
      //print player
      fprintf(save," %d",player);
      //print loadmode
@@ -1038,11 +1040,11 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
      //print mode
      fprintf(save," %d",mode);
      //print depth or times
-     if(mode==1) fprintf(save," %d %d",depth,depthperfect);
-     if(mode==2) fprintf(save," %f",times);
+     if(mode == 1) fprintf(save," %d %d",depth,depthperfect);
+     if(mode == 2) fprintf(save," %f",times);
      fclose(save);
-     printf("\ngame saved in %s successfully!\n\n",filename);
-     presstogo();
+     printf("\ngame saved in %s",filename);
+     getch();
 }
 
 //computer vs computer
@@ -1137,8 +1139,20 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
 void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]){
      char filename[100];
      int i;
-     printf("\nfile name (no extension): ");
-     scanf("%s",filename);
+     alert("input file name (no extension)");
+     texture vec;
+     do{
+         do{
+             vec = getl();
+         }while(vec.empty());
+         auto option = vec.read();
+         if(not vec.empty()){
+             alert("too many parameters");
+             continue;
+         }
+         setUstring(option.c_str());
+     }while(false);
+     strcpy(filename, UNIVERSALSTRING);
      save=fopen(strcat(filename,".ohl"),"w");
      //print myConf.randOn
      fprintf(save,"%d",setting["rand"].get_bool());
@@ -1156,8 +1170,8 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
                        if(doublemode[i]==2) fprintf(save," %f",doubletimes[i]);
                        }
      fclose(save);
-     printf("\ngame saved in %s successfully!\n\n",filename);
-     presstogo();
+     printf("\ngame saved in %s",filename);
+     getch();
 }
 
 //set weight for weight test
@@ -1355,9 +1369,21 @@ int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData
         }
 		else return -3; //-3 means new
 	}
-	if(option == "save" and vec.empty()){
-		return -999; //-999 means save
-	}
+	if(option == "save"){
+        if(vec.empty()){
+            alert("input file name (no extension)");
+            vec = getl();
+        }
+        option = vec.read();
+        if(not vec.empty()){
+            alert("too many parameters");
+            goto loop1;
+        }
+        else{
+            setUstring(option.c_str());
+            return -999; //-999 means save
+        }
+    }
 	if(option == "undo"){
         int step = -1;
         if(not vec.empty()){
