@@ -655,3 +655,16 @@ date: Aug 30, 2013 lines: 4209 lines
 ------------------------------------
 - corrected the way load/save syntax works
 *still need to improve read/write system
+
+version 83
+date: Aug 30, 2013 lines: 4342 lines
+------------------------------------
+- corrected load bool value bug
+- improved load system
+  -- created separate function
+  -- added saveNumber
+  -- added rotate,flip,move,parallel,raw
+  -- added rotatetime,fliptime
+  -- added weight
+*texture still doesn't work (needs Oak's help)
+*BUG program saves file in wrong folder when used xxx???

@@ -1,11 +1,14 @@
 // project O-hello
 
 //general info
-const char __version__[] = "82";
+const char __version__[] = "83";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
 const char __date__[] = "August 30, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
+
+//version of save file
+const int __saveNumber__ = 83;
 
 #include <cstdlib>
 #include <cstring>
@@ -32,9 +35,48 @@ const char __compiler__[] = "G++";
 #include "sharedfunc.h"
 #include "help.h"
 
-#define CORRUPTION(x) {alert((boost::format("\n%1% is corrupted") % filename).str());\
+#define CORRUPTION(x) {printf("\n\n%s is corrupted\n\n", filename);\
         fclose(save);\
 		return false;}
+
+#define INCOMPATIBLE(x) {printf("\n%s has incompatible save number\n\n", filename);\
+        fclose(save);\
+        return false;}
+
+/*
+        saveNumber
+        [black]
+        [white]
+        rotate
+        rotatetime
+        flip
+        fliptime
+        [fliplook]
+        move
+        [movelook]
+        rand
+        parallel
+        raw
+        weight
+        
+        * texture doesn't work
+*/
+/*
+        texture prototype
+        for(int i = 0; i < diskHeight; i++) for(int j = 0; j < diskWidth; j++) fprintf(save, " %d", setting["black"].get_texture()[i][j]);\
+*/
+#define PRINTSETTING(x) {\
+        fprintf(save, "%d", __saveNumber__);\
+        fprintf(save, " %d", setting["rotate"].get_bool());\
+        fprintf(save, " %d", setting["rotatetime"].get_int());\
+        fprintf(save, " %d", setting["flip"].get_bool());\
+        fprintf(save, " %.2f", setting["fliptime"].get_float());\
+        fprintf(save, " %d", setting["move"].get_bool());\
+        fprintf(save, " %d", setting["rand"].get_bool());\
+        fprintf(save, " %d", setting["parallel"].get_bool());\
+        fprintf(save, " %d", setting["raw"].get_bool());\
+        for(int i = 0; i < weightNum; i++) fprintf(save, " %d", setting["weight"].get_vint()[i]);\
+}
 
 const int EXIT = 555;
 const int MAXN = 8;
@@ -507,7 +549,6 @@ comset comsettings(){
 bool load(const char* filename2){
     char filename[100] = {};
     strcpy(filename, filename2);
-    int prerand;
     int board[64];
     int no[2];
     int player;
@@ -530,16 +571,108 @@ bool load(const char* filename2){
     
     save = fopen(strcat(filename, ".ohl"), "r");
     if(save == NULL){
-		alert((boost::format("can't open %1% or file doesn't exist") % filename).str()); 
+		alert((boost::format("%1% can't be opened or doesn't exist") % filename).str()); 
 		return false;
 	}
-    alert((boost::format("opening %1%") % filename).str()); 
-    //get myConf.randOn
-    prerand = -1;
-    fscanf(save, "%d", &prerand);
-    if(prerand != 0 and prerand != 1) CORRUPTION();
-    setting["rand"].set(prerand);
-    printf("value randon = %d", setting["rand"].get_bool());
+    printf("\nopening %s\n", filename);
+    
+    //GET SETTINGS>>>>>>
+    
+    int tmp;
+    float tmpFloat;
+    /*
+    texture prototype
+    char tmpTexture[diskHeight][diskWidth];
+    */
+    
+    //get saveNumber
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp != __saveNumber__) INCOMPATIBLE();
+    printf("\nvalue saveNumber = %d", __saveNumber__);
+    
+    /*
+    texture prototype (DOESN'T WORK)
+    //get black
+    printf("\nvalue black =");
+    for(int i = 0; i < diskHeight; i++){
+        for(int j = 0; j < diskWidth; j++){
+            fscanf(save, "%d", &tmpTexture[i][j]);
+            printf(" %d", tmpTexture[i][j]);    
+        }
+
+    }
+    setting["black"].set(tmpTexture);
+    */
+    
+    //get rotate
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp != 0 and tmp != 1) CORRUPTION();
+    setting["rotate"].set((bool)tmp);
+    printf("\nvalue rotate = %d", setting["rotate"].get_bool());
+
+    //get rotatetime
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp <= 0) CORRUPTION();
+    setting["rotatetime"].set(tmp);
+    printf("\nvalue rotatetime = %d", setting["rotatetime"].get_int());
+    
+    //get flip
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp != 0 and tmp != 1) CORRUPTION();
+    setting["flip"].set((bool)tmp);
+    printf("\nvalue flip = %d", setting["flip"].get_bool());
+    
+    //get fliptime
+    tmpFloat = -1;
+    fscanf(save, "%f", &tmpFloat);
+    if(tmpFloat <= 0) CORRUPTION();
+    setting["fliptime"].set(tmpFloat);
+    printf("\nvalue fliptime = %.2f", setting["fliptime"].get_float());
+    
+    //get move
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp != 0 and tmp != 1) CORRUPTION();
+    setting["move"].set((bool)tmp);
+    printf("\nvalue move = %d", setting["move"].get_bool());
+    
+    //get rand
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp != 0 and tmp != 1) CORRUPTION();
+    setting["rand"].set((bool)tmp);
+    printf("\nvalue rand = %d", setting["rand"].get_bool());
+    
+    //get parallel
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp != 0 and tmp != 1) CORRUPTION();
+    setting["parallel"].set((bool)tmp);
+    printf("\nvalue parallel = %d", setting["parallel"].get_bool());
+    
+    //get raw
+    tmp = -1;
+    fscanf(save, "%d", &tmp);
+    if(tmp != 0 and tmp != 1) CORRUPTION();
+    setting["raw"].set((bool)tmp);
+    printf("\nvalue raw = %d", setting["raw"].get_bool());
+    
+    //get weight
+    int tmpWeight[weightNum];
+    printf("\nvalue weight =");
+    for(int i = 0; i < weightNum; i++){
+        fscanf(save, "%d", &tmpWeight[i]);
+        printf(" %d", tmpWeight[i]);
+    }
+    setting["weight"].set(tmpWeight);
+    weightInitialize();
+    
+    //>>>>>>>>>>>>>>>>>>
+    
     //get board[64] (along with no[2])
     printf("\nvalue board = ");
     no[0] = 0;
@@ -858,8 +991,8 @@ void humansave(int board[64],int player){
      char filename[100];
      strcpy(filename, UNIVERSALSTRING);
      save=fopen(strcat(filename, ".ohl"), "w");
-     //print myConf.randOn
-     fprintf(save,"%d",setting["rand"].get_bool());
+     //print settings
+     PRINTSETTING();
      //print board
      for(int i = 0; i < 64; i++) fprintf(save," %d",board[i]);
      //print player
@@ -1029,8 +1162,8 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
      char filename[100];
      strcpy(filename, UNIVERSALSTRING);
      save=fopen(strcat(filename,".ohl"),"w");
-     //print myConf.randOn
-     fprintf(save,"%d",setting["rand"].get_bool());
+     //print settings
+     PRINTSETTING();
      //print board
      for(int i = 0; i < 64; i++) fprintf(save," %d",board[i]);
      //print player
@@ -1154,8 +1287,8 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
      }while(false);
      strcpy(filename, UNIVERSALSTRING);
      save=fopen(strcat(filename,".ohl"),"w");
-     //print myConf.randOn
-     fprintf(save,"%d",setting["rand"].get_bool());
+     //print settings
+     PRINTSETTING();
      //print board
      for(i=0;i<64;i++) fprintf(save," %d",board[i]);
      //print player

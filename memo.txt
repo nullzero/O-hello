@@ -1,21 +1,18 @@
 URGENT>>>
+* BUG!! program saves file in wrong folder (bug in xxx but not in zzz?????) (Oak)
 * polish load/save
-  - method
+  - texture doesn't work??? (need Oak's help)
 * make help each variable
 
 * correct 4 scanfs
+* solve graphic problem (off screen)
 * check correctness / awkwardness / blah blah (Oak only)
-* invent command set, etc. and organize commands/settings
-  - make command, get rid of setting menu
-    -- lambda function? (Oak)
-  - reinvent save system / save setting system
 * combine comhuman + human + … together (Oak only)
  - swap player by index
 * write timer (sleep then wake up) (Oak)
   - use rotate graphic accordingly
   - rewrite tsearch accordingly
     -- 2,4,6,8,10,...
-* solve graphic problem (off screen)
 * IMPLEMENT PARITY
 ** continue to optimize/organize
 ** compatible with windows
