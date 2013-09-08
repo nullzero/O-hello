@@ -1,4 +1,5 @@
 URGENT>>>
+* BUG!! weight test must use getl() system to work correctly (Oak)
 * BUG!! program saves file in wrong folder (bug in xxx but not in zzz?????) (Oak)
 * polish load/save
   - texture doesn't work??? (need Oak's help)

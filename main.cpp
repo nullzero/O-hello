@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "83";
+const char __version__[] = "84";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "August 30, 2013";
+const char __date__[] = "September 1, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -598,9 +598,8 @@ bool load(const char* filename2){
     for(int i = 0; i < diskHeight; i++){
         for(int j = 0; j < diskWidth; j++){
             fscanf(save, "%d", &tmpTexture[i][j]);
-            printf(" %d", tmpTexture[i][j]);    
+            printf(" %d", tmpTexture[i][j]);
         }
-
     }
     setting["black"].set(tmpTexture);
     */
@@ -1325,9 +1324,8 @@ void weighttest(){
 	float score1, score2;
 
 	printf("\nWEIGHT TEST SYTEM (FOR TECHNICAL USE)\n\n");
-	printf("current weights are:\n");
+	printf("current weights:");
 	setting["weight"].show();
-	printf("\n\n");
 	printf("parameters: mode, depth/time, [weights]\n");
 	printf("mode      : 0 = random, 1 = fsearch, 2 = tsearch\n");
 	printf("for mode 1: input depth, depthperfect\n");
@@ -1336,16 +1334,18 @@ void weighttest(){
 	for(int i = 0; i <= 1; i++){
 		printf("\nenter computer %d parameters:\n\n", i + 1);
 		//parameters = mode depth/time [weights]
+        //BUG!!! must use getl();
 		doublemode[i] = uget(int)([](int x){ return 0 <= x and x <= 2; }, "invalid: mode must be between 0 and 2");
 		if(doublemode[i] == 1){
-			doubledepth[i] = uget(int)([](int x){ return x <= 1; }, "invalid: depth must more than 0");
-			doubledepthperfect[i] = uget(int)([](int x){ return x <= 1; }, "invalid: depthperfect must more than 0");
+			doubledepth[i] = uget(int)([](int x){ return x <= 1; }, "invalid: depth must be more than 0");
+			doubledepthperfect[i] = uget(int)([](int x){ return x <= 1; }, "invalid: depthperfect must be more than 0");
 		}else if(doublemode[i] == 2){
-			doubletimes[i] = uget(float)([](float x){ return x >= 0; }, "invalid: doubletimes must more than 0");
+			doubletimes[i] = uget(float)([](float x){ return x >= 0; }, "invalid: time must be more than 0");
 		}
 		if(doublemode[i]!= 0){
 			for(int j = 0; j < int(setting["weight"].get_vint().size()); j++)
-				scanf("%d",&doubleweight[i][j]); // TODO
+				//scanf("%d",&doubleweight[i][j]); // TODO
+                doubleweight[i][j] = uget(int)();
 		}
 	}
 	printf("\n");
@@ -1355,8 +1355,8 @@ void weighttest(){
 	printf("twoway    : 0 = com 1 as black, 1 = com 1 as black and white\n\n");
 	printf("enter test parameters:\n\n");
 	//parameters = numgame numrand twoway
-
-	int numgame = uget(int)([](int x){ return x >= 1; }, "invalid: numgame must not less than 1"); // number of game to play
+    //BUG!!! must use getl();
+	int numgame = uget(int)([](int x){ return x >= 1; }, "invalid: numgame must not be less than 1"); // number of game to play
 	int numrand = uget(int)([](int x){ return 0 <= x and x <= 60; }, "invalid: numrand must be between 0 and 60"); //number of random first moves
 	int twoway =  uget(int)([](int x){ return x == 1 or x == 2; }, "invalid: twoway must be 1 or 2");
 	//0 = computer 1 plays first only, 1 = computer 1,2 plays first

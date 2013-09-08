@@ -668,3 +668,9 @@ date: Aug 30, 2013 lines: 4342 lines
   -- added weight
 *texture still doesn't work (needs Oak's help)
 *BUG program saves file in wrong folder when used xxx???
+
+version 84
+date: Sep 1, 2013 lines: 4342 lines
+-----------------------------------
+- corrected some wordings
+*identified weighttest input bug
