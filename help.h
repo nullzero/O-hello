@@ -66,11 +66,11 @@ load: load <filename>
     if(x == "help" and l.empty()){
         printf(R"(
 help: help [<command>]
-      help variable
+      help var [<variable>]
     Available in main menu and in-game.
     Display helpful information about commands. If COMMAND is specified,
-    display information about the command COMMAND. 'help variable' displays
-    information about variables in the program.
+    display information about COMMAND. 'help var' displays information about
+    variables. If VARIABLE is specified, display information about VARIABLE.
 
 )");
         return true;
@@ -97,9 +97,9 @@ quit: quit
         printf(R"(
 new: new
     Available in-game and on O-hello's turns.
-    Restart the game using current settings and delete undo data. If the game
+    Restart the game using current settings and reset undo data. If the game
     was loaded from file, the game will be reloaded. Otherwise, the game will
-    restart from the initial board.
+    restart from the initial board postition.
 
 )");
         return true;
@@ -201,10 +201,10 @@ reset: reset <variable>
 )");
         return true;
     }
-    
-    if(x == "var" and l.empty()){
-        std::string typeName[] = {"int", "bool", "float", "vint", "texture"};
-        printf(R"(
+    if(x == "var"){
+        if(l.empty()){
+            std::string typeName[] = {"int", "bool", "float", "vint", "texture"};
+            printf(R"(
 Type 'help var <variable>' to find out more about VARIABLE.
 
 int     : value = integer
@@ -214,12 +214,185 @@ vint    : value = multiple integers
 texture : value = row x column characters
 
 )");
-        printf("%10s %7s   %s\n", "VARIABLE", "TYPE", "DESCRIPTION");
-        for(auto var : setting){
-            printf("%10s %7s - %s\n", var.first.c_str(), typeName[var.second.type].c_str(), var.second.desc.c_str());
+            printf("%10s %7s   %s\n", "VARIABLE", "TYPE", "DESCRIPTION");
+            for(auto var : setting){
+                printf("%10s %7s - %s\n", var.first.c_str(), typeName[var.second.type].c_str(), var.second.desc.c_str());
+            }
+            printf("\n");
+            return true;
         }
-        printf("\n");
-        return true;
+        x = l.read();
+        if(x == "black" and l.empty()){
+            printf(R"(
+variable: black
+type    : texture
+    Appearance of black disk. Black always goes first in Othello.
+    See also 'white'
+
+)");
+            return true;
+        }
+        if(x == "white" and l.empty()){
+            printf(R"(
+variable: white
+type    : texture
+    Appearance of white disk. White always goes second in Othello.
+    See also 'black'
+
+)");
+            return true;
+        }
+        if(x == "rotate" and l.empty()){
+            printf(R"(
+variable: rotate
+type    : bool
+    Enable (on) or disable (off) the rotation effect. Rotation effect is
+    displayed when O-hello is thinking and is displayed every ROTATETIME nodes.
+    See also 'rotatetime'
+
+)");
+            return true;
+        }
+        if(x == "rotatetime" and l.empty()){
+            printf(R"(
+variable: rotatetime
+type    : int
+    The number of nodes between each display of rotation effect. Rotation effect
+    is displayed when O-hello is thinking and can be enabled or disabled
+    according to value of ROTATE.
+    See also 'rotate'
+
+)");
+            return true;
+        }
+        if(x == "flip" and l.empty()){
+            printf(R"(
+variable: flip
+type    : bool
+    Enable (on) or diable (off) disk flipping display. Each frame of disk
+    flipping is FLIPTIME second(s) apart and appearance is according to value
+    of FLIPLOOK.
+    See also 'fliptime', 'fliplook'
+
+)");
+            return true;
+        }
+        if(x == "fliptime" and l.empty()){
+            printf(R"(
+variable: fliptime
+type    : float
+    The amount of time (sec) between each frame of disk flipping. Disk flipping
+    display can be enabled or disabled according to value of FLIP and appearance
+    is according to value of FLIPLOOK.
+    See also 'flip', 'fliplook'
+
+)");
+            return true;
+        }
+        if(x == "fliplook" and l.empty()){
+            printf(R"(
+variable: fliplook
+type    : texture
+    Appearance of flipping disk. Disk flipping display can be enabled or
+    disabled according to value of FLIP and each frame of disk flipping is
+    FLIPTIME second(s) apart.
+    See also 'flip', 'fliptime'
+
+)");
+            return true;
+        }
+        if(x == "move" and l.empty()){
+            printf(R"(
+variable: move
+type    : bool
+    Enable (on) or disable (off) valid move display for current player.
+    Appearance of valid move indicator is according to value of MOVELOOK.
+    See also 'movelook'
+
+)");
+            return true;
+        }
+        if(x == "movelook" and l.empty()){
+            printf(R"(
+variable: movelook
+type    : texture
+    Appearance of valid move indicator. Valid move display can be enabled or
+    disabled according to value of MOVE.
+    See also 'move'
+
+)");
+            return true;
+        }
+        if(x == "rand" and l.empty()){
+            printf(R"(
+variable: rand
+type    : bool
+    If there is more than one move that O-hello finds equally good, ON will
+    select one of these moves at random, while OFF will select the first move.
+    Currently, this effect can only be seen in the opening moves. This is
+    because the current mechanism of search functions can only find one move
+    with the best score.
+    See also 'parallel'
+
+)");
+            return true;
+        }
+        if(x == "parallel" and l.empty()){
+            printf(R"(
+variable: parallel
+type    : bool
+    Allow (on) or not allow (off) O-hello to play the parallel opening.
+    If ON, O-hello can play diagonal, perpendicular, and parallel opening.
+    If OFF, O-hello can play only diagonal and perpendicular opening.
+    O-hello considers all openings equally good.
+    See also 'rand'
+
+)");
+            return true;
+        }
+        if(x == "raw" and l.empty()){
+            printf(R"(
+variable: raw
+type    : bool
+    Use RAW MODE (on) or DEFAULT MODE (off) to configure O-hello levels.
+    In RAW MODE, user can select between mode 0 (random), 1 (fsearch), and 2
+    (tsearch), and can input any value for depth and depthperfect. RAW MODE is
+    more flexible than DEFAULT mode.
+    In DEFAULT MODE, user can select between only mode 1 (fsearch) and 2
+    (tsearch), and has to choose from specific values of depth and depthperfect.
+    DEFAULT MODE is more user-friendly than raw mode.
+
+)");
+            return true;
+        }
+        if(x == "weight" and l.empty()){
+            printf(R"(
+variable: weight
+type    : vint
+    Weights of the evaluation function. Each component is as follows:
+    wd   - disk difference
+    wm   - mobiltiy difference
+    wp   - potential mobility difference
+    wc   - corner difference
+    wxx  - x square difference (adjacent to empty corner)
+    wcc  - c square difference (adjacent to empty corner)
+    we   - edge configuration
+    ws   - stable disk difference
+    wcut - cutoff (no. of disks in board) for using end-game weights
+    wd1  - \
+    wm1  - |
+    wp1  - |
+    wc1  - | end-game counterparts
+    wxx1 - |
+    wcc1 - |
+    we1  - |
+    ws1  - /
+    wnew - use (1) or not use (0) new csquare
+    wf   - final disk difference (game ends)
+
+)");
+            return true;
+        }
     }
     return false;
 }

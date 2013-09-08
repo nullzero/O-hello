@@ -1,11 +1,9 @@
 URGENT>>>
-* BUG!! weight test must use getl() system to work correctly (Oak)
 * BUG!! program saves file in wrong folder (bug in xxx but not in zzz?????) (Oak)
 * polish load/save
   - texture doesn't work??? (need Oak's help)
-* make help each variable
 
-* correct 4 scanfs
+* NEWLINE BACKSPACE BUG
 * solve graphic problem (off screen)
 * check correctness / awkwardness / blah blah (Oak only)
 * combine comhuman + human + … together (Oak only)

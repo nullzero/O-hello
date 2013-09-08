@@ -145,8 +145,12 @@ struct Property{
 	bool set(std::string a){
 		switch(type){
 			case Int:
-				v_int = std::stoi(a);
-				break;
+                if(std::stoi(a) <= 0){
+                    alert("invalid. value must be more than 0.");
+                    return false;
+                }
+                v_int = std::stoi(a);
+                break;
 			case Bool:
 				if(a == "on") v_bool = true;
 				else if(a == "off") v_bool = false;
@@ -156,7 +160,11 @@ struct Property{
                 }
 				break;
 			case Float:
-				v_float = std::stof(a);
+                if(std::stof(a) <= 0){
+                    alert("invalid. value must be more than 0.");
+                    return false;
+                }
+                v_float = std::stof(a);
 				break;
             default:
                 alert("invalid. can't set value directly.");
@@ -171,18 +179,18 @@ struct Property{
 		switch(type){
 			case Int:
                 alert("input value (integer)");
-				v_int = uget(int)();
+				v_int = uget(int)([](int x){ return x > 0; }, "value must be more than 0. input value again.");
 				break;
 			
 			case Bool:
                 alert("input value (on/off)");
-                inp = uget(sline)([](std::string x){ return x == "on" or x == "off"; }, "invalid. input value again.");
+                inp = uget(sline)([](std::string x){ return x == "on" or x == "off"; }, "value must be on/off. input value again.");
 				v_bool = (inp == "on");
 				break;
 			
 			case Float:
                 alert("input value (real number)");
-				v_float = uget(float)();
+				v_float = uget(float)([](float x){ return x > 0; }, "value must be more than 0. input value again.");
 				break;
 			
 			case Vint:
@@ -338,7 +346,7 @@ void initConfig(){
 	
 	setting["move"].type = Property::Bool;
 	setting["move"].set(true);
-    setting["move"].desc = "display legal moves";
+    setting["move"].desc = "display valid moves";
 	
 	setting["movelook"].type = Property::Texture;
 	{
@@ -348,7 +356,7 @@ void initConfig(){
 		setting["movelook"].column = tmp[0].size();
 		setting["movelook"].row = SIZEOF(tmp);
 		setting["movelook"].set(tmp);
-        setting["movelook"].desc = "legal move appearance";
+        setting["movelook"].desc = "valid move appearance";
 	}
 	
 	setting["rand"].type = Property::Bool;

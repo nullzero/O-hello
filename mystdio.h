@@ -119,7 +119,7 @@ public:
     			printf("\n%s\n\n", warn.c_str());
     			printf(">>> %s", prompt.c_str());
        			std::getline(std::cin, x);
-                data = std::stoi(x);
+                data = std::stof(x);
        		}
         }
    		return data;

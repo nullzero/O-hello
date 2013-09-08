@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "84";
+const char __version__[] = "85";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "September 1, 2013";
+const char __date__[] = "September 8, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -62,7 +62,7 @@ const int __saveNumber__ = 83;
         * texture doesn't work
 */
 /*
-        texture prototype
+        texture prototype -- this part works
         for(int i = 0; i < diskHeight; i++) for(int j = 0; j < diskWidth; j++) fprintf(save, " %d", setting["black"].get_texture()[i][j]);\
 */
 #define PRINTSETTING(x) {\
@@ -453,27 +453,51 @@ comset comsettings(){
 		
 		pack.mode = uget(int)([](int x){ return 0 <= x and x <= 2; }, "invalid: mode must be between 0 and 2");
 		
-		setdetail:
 		if(pack.mode == 1){
-			printf("\ninput search depth and depthperfect: ");
-			scanf("%d", &pack.depth);
-			if(pack.depth < 1){
-				printf("\ninvalid depth!\n");
-				goto setdetail;
-			}
-			scanf("%d", &pack.depthperfect);
-			if(pack.depthperfect < 1){
-				printf("\ninvalid depthperfect!\n");
-				goto setdetail;
-			}
+			printf("\ninput search depth and depthperfect\n\n");
+            texture inp;
+            while(true){
+                inp = getl();
+                //depth
+                int x = std::stoi(inp.read());
+                if(x <= 0){
+                    alert("depth must be more than 0. input again.");
+                    continue;
+                }
+                pack.depth = x;
+                //depthperfect
+                if(inp.empty()) inp = getl();
+                x = std::stoi(inp.read());
+                if(x <= 0){
+                    alert("depthperfect must be more than 0. input again.");
+                    continue;
+                }
+                pack.depthperfect = x;
+                if(not inp.empty()){
+                    alert("too many parameters. input again.");
+                    continue;
+                }
+                break;
+            }
 		}else if(pack.mode == 2){
 		    printf("\nTHIS MODE IS UNDER DEVELOPMENT -- USE WITH CARE");
-		    printf("\n\ninput time limit (sec): ");
-		    scanf("%f", &pack.times);
-		    if(pack.times <= 0){
-				printf("\ninvalid time\n");
-				goto setdetail;
-			}
+		    printf("\n\ninput time limit (sec)\n\n");
+            texture inp;
+            while(true){
+                inp = getl();
+                //time
+                float y = std::stof(inp.read());
+                if(y <= 0){
+                    alert("time must be more than 0. input again.");
+                    continue;
+                }
+                pack.times = y;
+                if(not inp.empty()){
+                    alert("too many parameters. input again.");
+                    continue;
+                }
+                break;
+            }
 		}
 	}else{
 		// new interface
@@ -536,8 +560,24 @@ comset comsettings(){
 				goto newsetdepth;
 			}
 		}else{
-		    printf("\nTHIS MODE IS UNDER DEVELOPMENT -- USE WITH CARE\n\n");
-		    pack.times = uget(float)([](int x){ return x > 0; }, "invalid: time must be more than 0", "input time limit (sec)");
+		    printf("\nTHIS MODE IS UNDER DEVELOPMENT -- USE WITH CARE");
+		    printf("\n\ninput time limit (sec)\n\n");
+            texture inp;
+            while(true){
+                inp = getl();
+                //time
+                float y = std::stof(inp.read());
+                if(y <= 0){
+                    alert("time must be more than 0. input again.");
+                    continue;
+                }
+                pack.times = y;
+                if(not inp.empty()){
+                    alert("too many parameters. input again.");
+                    continue;
+                }
+                break;
+            }
 		}
 	}
 	return pack;
@@ -581,7 +621,7 @@ bool load(const char* filename2){
     int tmp;
     float tmpFloat;
     /*
-    texture prototype
+    texture prototype -- DOESN'T WORK
     char tmpTexture[diskHeight][diskWidth];
     */
     
@@ -592,7 +632,7 @@ bool load(const char* filename2){
     printf("\nvalue saveNumber = %d", __saveNumber__);
     
     /*
-    texture prototype (DOESN'T WORK)
+    texture prototype -- DOESN'T WORK
     //get black
     printf("\nvalue black =");
     for(int i = 0; i < diskHeight; i++){
@@ -829,11 +869,11 @@ A move consists of placing a new disk on an empty square, and flipping every
 opponent's disk or row of opponent's disks that is between the new disk and one
 of the player's disks in any direction: horizontal, vertical or diagonal.
 
-A move is legal if it flips at least one opponent's disk. A player with no legal
-moves must pass his turn. On the contrary, a player with a legal move cannot
+A move is valid if it flips at least one opponent's disk. A player with no valid
+moves must pass his turn. On the contrary, a player with a valid move cannot
 pass his turn.
 
-The game ends when no one has a legal move. The winner is the player with a
+The game ends when no one has a valid move. The winner is the player with a
 larger number of disks, with a draw possible if both numbers are the same. The
 remaining empty squares, if any, are usually awarded to the winner.
 
@@ -929,7 +969,7 @@ int human(int board[64],int no[2],int player){
                       flips=flip(board,position,player); //flip!
                       //if nothing is flipped
                       if(flips.num==0){
-                                       printf("\nillegal move!\n\n");
+                                       printf("\ninvalid move!\n\n");
                                        goto loop1;
                                        }
                       //show flip animation
@@ -1095,7 +1135,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                            flips=flip(board,position,player); //flip!
                            //if nothing is flipped
                            if(flips.num==0){
-                                            alert("illegal move!");
+                                            alert("invalid move!");
                                             goto loop1;
                                             }
                            //show flip animation
@@ -1322,47 +1362,113 @@ void weighttest(){
 	int doubleweight[2][100]; //weights for 2 players
 	triad result;
 	float score1, score2;
+    int numgame, numrand, twoway;
 
 	printf("\nWEIGHT TEST SYTEM (FOR TECHNICAL USE)\n\n");
 	printf("current weights:");
 	setting["weight"].show();
 	printf("parameters: mode, depth/time, [weights]\n");
 	printf("mode      : 0 = random, 1 = fsearch, 2 = tsearch\n");
-	printf("for mode 1: input depth, depthperfect\n");
-	printf("for mode 2: input time\n");
+	printf("for mode 1: input depth, depthperfect, [weights]\n");
+	printf("for mode 2: input time, [weights]\n");
 
+    texture inp;
+    
 	for(int i = 0; i <= 1; i++){
 		printf("\nenter computer %d parameters:\n\n", i + 1);
 		//parameters = mode depth/time [weights]
-        //BUG!!! must use getl();
-		doublemode[i] = uget(int)([](int x){ return 0 <= x and x <= 2; }, "invalid: mode must be between 0 and 2");
+        while(true){
+        //mode
+        inp = getl();
+        int x = std::stoi(inp.read());
+        if(x < 0 or x > 2){
+            alert("mode must be between 0 and 2. input parameters again.");
+            continue;
+        }
+        doublemode[i] = x;
 		if(doublemode[i] == 1){
-			doubledepth[i] = uget(int)([](int x){ return x <= 1; }, "invalid: depth must be more than 0");
-			doubledepthperfect[i] = uget(int)([](int x){ return x <= 1; }, "invalid: depthperfect must be more than 0");
+            //depth
+            if(inp.empty()) inp = getl();
+            x = std::stoi(inp.read());
+            if(x <= 0){
+                alert("depth must be more than 0. input parameters again.");
+                continue;
+            }
+			doubledepth[i] = x;
+            //depthperfect
+            if(inp.empty()) inp = getl();
+            x = std::stoi(inp.read());
+            if(x <= 0){
+                alert("depthperfect must be more than 0. input parameters again.");
+                continue;
+            }
+            doubledepthperfect[i] = x;
 		}else if(doublemode[i] == 2){
-			doubletimes[i] = uget(float)([](float x){ return x >= 0; }, "invalid: time must be more than 0");
+            //time
+            if(inp.empty()) inp = getl();
+            float y = std::stof(inp.read());
+            if(y <= 0){
+                alert("time must be more than 0. input parameters again.");
+                continue;
+            }
+            doubletimes[i] = y;
 		}
-		if(doublemode[i]!= 0){
-			for(int j = 0; j < int(setting["weight"].get_vint().size()); j++)
-				//scanf("%d",&doubleweight[i][j]); // TODO
-                doubleweight[i][j] = uget(int)();
+		if(doublemode[i] != 0){
+			for(int j = 0; j < int(setting["weight"].get_vint().size()); j++){
+                //weights
+				if(inp.empty()) inp = getl();
+                x = std::stoi(inp.read());
+                doubleweight[i][j] = x;
+            }
 		}
+        if(not inp.empty()){
+            alert("too many parameters. input paramters again.");
+            continue;
+        }
+        break;
+        }
 	}
 	printf("\n");
 	printf("parameters: numgame, numrand, twoway\n");
 	printf("numgame   : no. of test games\n");
 	printf("numrand   : no. of random moves at beginning of game\n");
-	printf("twoway    : 0 = com 1 as black, 1 = com 1 as black and white\n\n");
+	printf("twoway    : switch role of computers (1) or not (0)\n\n");
 	printf("enter test parameters:\n\n");
 	//parameters = numgame numrand twoway
-    //BUG!!! must use getl();
-	int numgame = uget(int)([](int x){ return x >= 1; }, "invalid: numgame must not be less than 1"); // number of game to play
-	int numrand = uget(int)([](int x){ return 0 <= x and x <= 60; }, "invalid: numrand must be between 0 and 60"); //number of random first moves
-	int twoway =  uget(int)([](int x){ return x == 1 or x == 2; }, "invalid: twoway must be 1 or 2");
-	//0 = computer 1 plays first only, 1 = computer 1,2 plays first
+    while(true){
+        //numgame
+        inp = getl();
+        int x = std::stoi(inp.read());
+        if( x <= 0){
+            alert("numgame must be more than 0. input parameters again.");
+            continue;
+        }
+        numgame = x;
+        //numrand
+        if(inp.empty()) inp = getl();
+        x = std::stoi(inp.read());
+        if( x < 0 or x > 60){
+            alert("numrand must be between 0 and 60. input parameters again.");
+            continue;
+        }
+        numrand = x;
+        //twoway
+        if(inp.empty()) inp = getl();
+        x = std::stoi(inp.read());
+        if( x != 0 and x != 1){
+            alert("twoway must be 0 or 1. input parameters again.");
+            continue;
+        }
+        twoway = x;
+        if(not inp.empty()){
+            alert("too many parameters. input parameters again.");
+            continue;
+        }
+        break;
+    }
 
 	//computer 1 vs computer 2
-	printf("\noutput : ");
+	printf("\noutput  : ");
 	result=gamefortest(doublemode,doubledepth,doubledepthperfect,doubletimes,doubleweight,numgame,numrand);
 	printf("%d %d %d",result.win,result.lose,result.draw);
 
@@ -1375,10 +1481,10 @@ void weighttest(){
 		printf("\ncom 2 won %.1f/%d games = %.2f%c",score2,numgame,100*score2/numgame,37);
 	}
 
-	//computer 2 vs computer 1 (only if twoway=1)
+	//computer 2 vs computer 1 (only if twoway == 1)
 
 	if(twoway == 1){
-		printf("\noutput2: ");
+		printf("\noutput 2: ");
 		std::swap(doublemode[0], doublemode[1]);
 		std::swap(doubledepth[0], doubledepth[1]);
 		std::swap(doubledepthperfect[0], doubledepthperfect[1]);
@@ -1735,7 +1841,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
     node=0; //reset node
     moves=move(board,player); //get move list
 
-    //if only one legal move -- no need to search
+    //if only one valid move -- no need to search
     if(moves.num==1){position=moves.board[0]; depthwant=0; enginestate=1; goto finish;}
 
     //for starting position -- no need to search
@@ -1793,7 +1899,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
                        //set extreme value
                        alpha = -LARGE;
                        beta = LARGE;   
-                       //get score for all legal moves
+                       //get score for all valid moves
                        for(k=0;k<moves.num;k++){
                                                 position=moves.board[k];
                                                 flips=flip(board,position,player); //flip!
@@ -1831,7 +1937,7 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
     //set extreme value
     alpha = -LARGE;
     beta = LARGE;          
-    //get score for all legal moves
+    //get score for all valid moves
     for(k=0;k<moves.num;k++){
                              position=moves.board[k];
                              flips=flip(board,position,player); //flip!
@@ -1972,7 +2078,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
     node=0; //reset node
     moves=move(board,player); //get move list
 
-    //if only one legal move -- no need to search
+    //if only one valid move -- no need to search
     if(moves.num==1){
                      position=moves.board[0];
                      depth=1;
@@ -2027,7 +2133,7 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
                                                //set extreme value
                                                alpha = - LARGE;
 											   beta = LARGE;
-                                               //get score for all legal moves
+                                               //get score for all valid moves
                                                for(k=0;k<moves.num;k++){
                                                                         position=moves.board[k];
                                                                         flips=flip(board,position,player); //flip!
@@ -2310,7 +2416,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                  //check before flip
                                                  if(board[position]==0){
                                                                         flips=flip(board,position,player); //flip!
-                                                                        //if move is legal
+                                                                        //if move is valid
                                                                         if(flips.num!=0){
 																			IsFlip = true;
                                                                                          //update no[2] (as nonew[2])
@@ -2324,7 +2430,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                                          }
                                                                         }
                                                  }
-                   //if no legal move
+                   //if no valid move
                    if(!IsFlip){
                                           //if game ends
                                           indexformob(board);
@@ -2350,7 +2456,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                         position=moveOrder[index];
                                         if(board[position]==0){
                                                                flips=flip(board,position,player); //flip!
-                                                               //if move is legal
+                                                               //if move is valid
                                                                if(flips.num!=0){
 																   IsFlip = true;
                                                                                 //update no[2] (as nonew[2])
@@ -2364,7 +2470,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                                 }
                                                                }
                                         }
-          //if no legal move
+          //if no valid move
           if(!IsFlip){
                                 //if game ends
                                 indexformob(board);
@@ -2404,7 +2510,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                  //check before flip
                                                  if(board[position]==0){
                                                                         flips=flip(board,position,player); //flip!
-                                                                        //if move is legal
+                                                                        //if move is valid
                                                                         if(flips.num!=0){
                                                                                          //increase number of moves
                                                                                          movenum++;
@@ -2421,7 +2527,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                                          }
                                                                         }
                                                  }
-                   //if no legal move (allow to return score)
+                   //if no valid move (allow to return score)
                    if(movenum==0){
                                           //if game ends
                                           indexformob(board);
@@ -2446,7 +2552,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                         position=moveOrder[index];
                                         if(board[position]==0){
                                                                flips=flip(board,position,player); //flip!
-                                                               //if move is legal
+                                                               //if move is valid
                                                                if(flips.num!=0){
                                                                                 //increase number of moves
                                                                                 movenum++;
@@ -2463,7 +2569,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                                 }
                                                                }
                                         }
-          //if no legal move (allow to return score)
+          //if no valid move (allow to return score)
           if(movenum==0){
                                 //if game ends
                                 indexformob(board);
@@ -2503,7 +2609,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
      
 	 alpha = alphaGet;
 	 beta = betaGet;
-     //get score for all legal moves
+     //get score for all valid moves
      for(k=0;k<movenum;k++){
                             position=posarray[k];
                             flips=flip(board,position,player); //flip!
@@ -2663,7 +2769,7 @@ void boarddisplay(int board[64],int playertoshowmove){
 				else{
 					//if move is to be shown (not in flipping process)
 					if(playertoshowmove != 0){
-						//if move is legal and show move is on
+						//if move is valid and show move is on
 						if(setting["move"].get_bool() and flip(board, k, playertoshowmove).num != 0) output += setting["movelook"].get_texture()[j];
 						else appendSame(output, ' ', diskWidth);
 					}else{
@@ -2802,7 +2908,7 @@ void indexformob(int board[64]){
      mobindex[37]=9*board[61]+3*board[54]+board[47];
 }
 
-//compute mobility: number of legal moves
+//compute mobility: number of valid moves
 int mobility(int player){
     bool mobboard[64]={};
     int i;
@@ -3901,7 +4007,7 @@ int stabledisk(int board[64]){
     return value;
 }
 
-//return all legal moves (as kirby)
+//return all valid moves (as kirby)
 //move.board - these moves
 //move.num - number of these moves (= function 'mobility')
 kirby move(int board[64],int player){
