@@ -4,6 +4,8 @@ URGENT>>>
   - texture doesn't work??? (need Oak's help)
 
 * NEWLINE BACKSPACE BUG
+* WRITE SEPARATE END-GAME FUNCTION
+  - implement wld search
 * solve graphic problem (off screen)
 * check correctness / awkwardness / blah blah (Oak only)
 * combine comhuman + human + … together (Oak only)
@@ -13,6 +15,7 @@ URGENT>>>
   - rewrite tsearch accordingly
     -- 2,4,6,8,10,...
 * IMPLEMENT PARITY
+* implement negascout?
 ** continue to optimize/organize
 ** compatible with windows
 ** change to bit system

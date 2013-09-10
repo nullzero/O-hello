@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "85";
+const char __version__[] = "86";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "September 8, 2013";
+const char __date__[] = "September 9, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -519,11 +519,11 @@ comset comsettings(){
 			printf(" 2  - depth 2\n");
 			printf(" 3  - depth 3\n");
 			printf(" 4  - depth 4\n");
-			printf(" 4a - depth 4  + last 10 perfect\n");
+			printf(" 4a - depth 4 + end-game 12\n");
 			printf(" 6  - depth 6\n");
-			printf(" 6a - depth 6  + last 12 perfect\n");
-			printf(" 8  - depth 8  + last 14 perfect\n");
-			printf(" 10 - depth 10 + last 16 perfect\n\n");
+			printf(" 6a - depth 6 + end-game 14\n");
+			printf(" 8  - depth 8 + end-game 16\n");
+			printf(" 10 - depth 10 + end-game 18\n\n");
 			
 			newsetdepth:
 			
@@ -542,19 +542,19 @@ comset comsettings(){
 				pack.depthperfect = 4;
 			}else if(option == "4a"){
 				pack.depth = 4;
-				pack.depthperfect = 10;
+				pack.depthperfect = 12;
 			}else if(option == "6"){
 				pack.depth = 6;
 				pack.depthperfect = 6;
 			}else if(option == "6a"){
 				pack.depth = 6;
-				pack.depthperfect = 12;
+				pack.depthperfect = 14;
 			}else if(option == "8"){
 				pack.depth = 8;
-				pack.depthperfect = 14;
+				pack.depthperfect = 16;
 			}else if(option == "10"){
 				pack.depth = 10;
-				pack.depthperfect = 16;
+				pack.depthperfect = 18;
 			}else{
 				alert("invalid selection");
 				goto newsetdepth;
@@ -989,7 +989,7 @@ int human(int board[64],int no[2],int player){
                       }
     //if player is not movable
     else if(mobility(3-player)==0){ //if opponent is not movable too
-         printf("\nno more moves can be made! game over!\n\n");
+         printf("\nno more moves can be played! game over!\n\n");
          //display result :)
          if(no[0]>no[1]){
                          printf("-------------------\n");
@@ -1154,7 +1154,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                       }
     //if player is not movable
     else if(mobility(3-player)==0){ //if opponent is not movable too
-         printf("\n\nno more moves can be made! game over!\n\n");
+         printf("\nno more moves can be played! game over!\n\n");
          //display result :)
          if(no[complayer-1]>no[2-complayer]){
                                              printf("------------------\n");
@@ -1182,11 +1182,11 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
          }
     else{ //pass turn :)
          if(player==complayer){
-                               printf("\n\nO-hello passed its turn");
+                               printf("\nO-hello passed its turn");
                                printf("\n\npress any key to continue");
                                }
          else{
-              printf("\n\nyour turn: no moves left",player);
+              printf("\nyour turn: no moves left",player);
               printf("\n\npress any key to pass turn");
               }
          getch();
@@ -1272,7 +1272,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
                       }
     //if player is not movable
     else if(mobility(3-player)==0){ //if opponent is not movable too
-         printf("\n\nno more moves can be made! game over!\n\n");
+         printf("\nno more moves can be played! game over!\n\n");
          //display result :)
          if(no[0]>no[1]){
                          printf("--------------------\n");
@@ -1299,7 +1299,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
             }while(1);
          }
     else{ //pass turn :)
-         printf("\n\nO-hello %d passed its turn\n\n",player);
+         printf("\nO-hello %d passed its turn\n\n",player);
          presstogo();
          printf("\n");
          player=3-player; //switch player

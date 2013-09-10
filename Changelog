@@ -686,3 +686,9 @@ date: Sep 8, 2013 lines: 4448 lines
 - checked validity when set variable
   -- corrected a major bug in uget float std::stoi -> std::stof
 - make help each variable!!
+
+version 86
+date: Sep 9, 2013 lines: 4448 lines
+-----------------------------------
+- changed default depthperfect from +6 to +8
+- corrected some spacing when pass turn
