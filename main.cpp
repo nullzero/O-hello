@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "86";
+const char __version__[] = "87";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "September 9, 2013";
+const char __date__[] = "September 12, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -178,9 +178,13 @@ void weighttest();
 triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2],int doubleweight[2][100],int numgame,int numrand);
 int input(int board[64],int& player,int no[2], std::vector<undoStruct>&, int&, int&);
 void shownode(int node);
+int searchDecider(int board[64], int depth, int depthperfect, int player, int no[2], int display);
 int random(int board[64],int player,int no[2],int display);
 int fsearch(int board[64],int depthwant,int player,int no[2],int display);
 int tsearch(int board[64],float times,int player,int no[2],int display);
+int endsearch(int board[64], int player, int no[2], int display);
+int endscore(int board[64], int depthleft, int player, int no[2], int alphaGet, int betaGet, int display);
+int endscore63(int board[64], int player, int no[2], int display);
 int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int betaGet,int display);
 int score63(int board[64],int player,int no[2],int display);
 void nodedisplay(int display);
@@ -1077,11 +1081,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
 											space(10);
                                             //get position
                                             if(mode==0) position=random(board,player,no,1);
-                                            if(mode==1){
-                                                        //for near-end evaluation, use depthperfect
-                                                        if(no[0]+no[1]>=64-depthperfect) position=fsearch(board,depthperfect,player,no,1);
-                                                        else position=fsearch(board,depth,player,no,1);
-                                                        }
+                                            if(mode==1) position = searchDecider(board, depth, depthperfect, player, no, 1);
                                             if(mode==2) position=tsearch(board,times,player,no,1);
                                             printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
                                             printf("\npress any other key to continue");
@@ -1244,11 +1244,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
 					  space(10);
                       //get position
                       if(doublemode[player-1]==0) position=random(board,player,no,1);
-                      if(doublemode[player-1]==1){
-                                                  //for near-end evaluation, use depthperfect
-                                                  if(no[0]+no[1]>=64-doubledepthperfect[player-1]) position=fsearch(board,doubledepthperfect[player-1],player,no,1);
-                                                  else position=fsearch(board,doubledepth[player-1],player,no,1);
-                                                  }
+                      if(doublemode[player-1]==1) position = searchDecider(board, doubledepth[player-1], doubledepthperfect[player-1], player, no, 1);
                       if(doublemode[player-1]==2) position=tsearch(board,doubletimes[player-1],player,no,1);
                       printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
                       printf("\npress any other key to continue");
@@ -1544,11 +1540,7 @@ triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2]
                                   //not random
                                   weightfortest(doubleweight,player); //set weight
                                   //get position
-                                  if(doublemode[player-1]==1){
-                                                              //for near-end evaluation, use depthperfect
-                                                              if(no[0]+no[1]>=64-doubledepthperfect[player-1]) position=fsearch(board,doubledepthperfect[player-1],player,no,0);
-                                                              else position=fsearch(board,doubledepth[player-1],player,no,0);
-                                                              }
+                                  if(doublemode[player-1]==1) position = searchDecider(board, doubledepth[player-1], doubledepthperfect[player-1], player, no, 0);
                                   if(doublemode[player-1]==2) position=tsearch(board,doubletimes[player-1],player,no,0);
                                   }
                              flips=flip(board,position,player); //flip!
@@ -1724,7 +1716,18 @@ int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData
         printf("\n\n");
         goto loop1;
 	}
-
+	if(option == "endsearch"){
+        if(not vec.empty()){
+            alert("too many parameters");
+            goto loop1;
+        }
+        printf("\nthinking");
+		space(10);
+        endsearch(board, player, no, 2);
+        printf("\n\n");
+        goto loop1;
+	}
+    
     if(option.size()!=2){
         alert("invalid command");
         goto loop1;
@@ -1757,6 +1760,13 @@ void shownode(int node){
      else if(node<1000000000) printf("%.0f Mn",floor(0.000001*node));
      else printf("%.2f Gn",0.01*floor(0.0000001*node));
      printf("  ");
+}
+
+int searchDecider(int board[64], int depth, int depthperfect, int player, int no[2], int display){
+    if(no[0] + no[1] >= 64 - depthperfect) return endsearch(board, player, no, display);
+    //if (depth +1) squares left - better search perfectly
+    else if(no[0] + no[1] >= 63 - depth) return endsearch(board, player, no ,display);
+    else return fsearch(board, depth, player, no, display);
 }
 
 //-- random,fsearch,tsearch --
@@ -2029,8 +2039,8 @@ int fsearch(int board[64],int depthwant,int player,int no[2],int display){
 		switch(enginestate){
 			case 0:
 				if(player == 1){
-					 if(bestscore >= wf) printf(": win +%d", bestscore / wf);
-					 else if(bestscore <= -wf) printf(": lose %d", bestscore / wf);
+   					 if(bestscore >= wf) printf(": win +%d", bestscore / wf);
+   					 else if(bestscore <= -wf) printf(": lose %d", bestscore / wf);
 					 else if(bestscore == 0 and perfect == 1) printf(": draw");
 					 else if(bestscore >= 0) printf(": score +%d", bestscore);
 					 else printf(": score %d", bestscore);
@@ -2281,6 +2291,534 @@ int tsearch(int board[64],float times,int player,int no[2],int display){
     return position;
 }
 
+//end-game solver
+int endsearch(int board[64], int player, int no[2], int display){
+    struct timeb time1,time2; //for 'ftime'
+    int scores[64]; //keep scores of each position
+    int bestscore = UNINIT; //best of scores[64]
+    struct kirby flips; //from function 'flip'
+    struct kirby moves; //from function 'move'
+    int position;
+    int candidate[64]; //keep positions with bestscore
+    int numcan=0; //number of candidates
+    int nonew[2]; //no[2] after a flip
+    int k;
+    int a;
+    int depthshallow; //for shallow search
+    int enginestate=0; //0=normal,1=only move,2=opening
+	int alpha, beta;
+    
+    int depthwant = 64 - no[0] - no[1];
+    
+    ftime(&time1); //get current time
+    node=0; //reset node
+    moves=move(board,player); //get move list
+
+    //if only one valid move -- no need to search
+    if(moves.num==1){position=moves.board[0]; depthwant=0; enginestate=1; goto finish;}
+
+    //for starting position -- no need to search
+    if(no[0]+no[1]==4){
+                       //if random feature is on
+                       if(setting["rand"].get_bool()) position = moves.board[rand(4)];
+                       else position=moves.board[0];
+                       depthwant=0;
+                       enginestate=2;
+                       goto finish;
+                       }
+    if(no[0]+no[1]==5){
+                       //if no parallel opening
+                       if(not setting["parallel"].get_bool()){
+                                            //recompute moves.board
+                                            if(board[19]!=0){moves.board[0]=18; moves.board[1]=34;}
+                                            if(board[26]!=0){moves.board[0]=18; moves.board[1]=20;}
+                                            if(board[37]!=0){moves.board[0]=43; moves.board[1]=45;}
+                                            if(board[44]!=0){moves.board[0]=29; moves.board[1]=45;}
+                                            if(board[20]!=0){moves.board[0]=21; moves.board[1]=37;}
+                                            if(board[29]!=0){moves.board[0]=19; moves.board[1]=21;}
+                                            if(board[34]!=0){moves.board[0]=42; moves.board[1]=44;}
+                                            if(board[43]!=0){moves.board[0]=26; moves.board[1]=42;}
+                                            
+                                            if(setting["rand"].get_bool()) position = moves.board[rand(2)];
+                                            else position=moves.board[0];
+                                            }
+                       //if allow parallel opening
+                       else{
+                            if(setting["rand"].get_bool()) position = moves.board[rand(3)];
+                            else position=moves.board[0];
+                            }
+                       
+                       depthwant=0;
+                       enginestate=2;
+                       goto finish;
+                       }
+    
+    depthshallow=depthShallow(depthwant, true);
+    enginestate=0;
+    
+    //for the shallow search------------------------------------
+    
+    if(depthshallow>0){
+                       //set extreme value
+                       alpha = -LARGE;
+                       beta = LARGE;   
+                       //get score for all valid moves
+                       for(k=0;k<moves.num;k++){
+                                                position=moves.board[k];
+                                                flips=flip(board,position,player); //flip!
+                                                //update no[2] (as nonew[2])
+                                                nonew[player-1]=no[player-1]+flips.num+1;
+                                                nonew[2-player]=no[2-player]-flips.num;
+                                                //get score
+                                                scores[k]=score(flips.board,depthshallow-1,3-player,nonew,alpha,beta,display);
+												//NO UPDATE alpha,beta IN SHALLOW SEARCH
+												/*
+                                                if(player==1){ //if player 1: max mode
+                                                               if(scores[k]>alpha) alpha=scores[k];
+                                                               }
+                                                else{ //if player 2: min mode
+                                                      if(scores[k]<beta) beta=scores[k];
+                                                      }*/
+                                                }
+                       //rearrange moves by scores from shallow search
+                       order:
+                       for(k=0;k<moves.num-1;k++){
+                                                  if((player==1 and scores[k]<scores[k+1]) or (player==2 and scores[k]>scores[k+1])){
+                                                                a=scores[k]; //switch score
+                                                                scores[k]=scores[k+1];
+                                                                scores[k+1]=a;
+                                                                a=moves.board[k]; //switch position
+                                                                moves.board[k]=moves.board[k+1];
+                                                                moves.board[k+1]=a;
+                                                                goto order;
+                                                                }
+                                                  }
+                       }
+    
+    //for the deep search---------------------------------------
+    
+    //set extreme value
+    alpha = -LARGE;
+    beta = LARGE;          
+    //get score for all valid moves
+    for(k=0;k<moves.num;k++){
+                             position=moves.board[k];
+                             flips=flip(board,position,player); //flip!
+                             //update no[2] (as nonew[2])
+                             nonew[player-1]=no[player-1]+flips.num+1;
+                             nonew[2-player]=no[2-player]-flips.num;
+                             //get score (endscore)
+                             scores[k]=endscore(flips.board,depthwant-1,3-player,nonew,alpha,beta,display);
+                             if(player==1){ //if player 1: max mode
+                                           if(scores[k]>alpha) alpha=scores[k];
+                                           }
+                             else{ //if player 2: min mode
+                                  if(scores[k]<beta) beta=scores[k];
+                                  }
+                             }
+                             
+    //---------------------------------------------------------
+    
+    //set extreme value
+    if(player==1) bestscore=-LARGE;
+    else bestscore=LARGE;
+    //determine candidates
+    for(k=0;k<moves.num;k++){
+                             position=moves.board[k];
+							 //ONLY ONE CANDIDATE
+							 /*
+                             if(scores[k]==bestscore){ //add a candidate
+                                                      numcan++;
+                                                      candidate[numcan-1]=position;
+                                                      }*/
+                             if(player==1){ //if player 1: max mode
+                                           if(scores[k]>bestscore){
+                                                                   bestscore=scores[k];
+                                                                   //be the first candidate
+                                                                   numcan=1;
+                                                                   candidate[0]=position;
+                                                                   }
+                                           }
+                             else{ //if player 2: min mode
+                                  if(scores[k]<bestscore){
+                                                          bestscore=scores[k];
+                                                          //be the first candidate
+                                                          numcan=1;
+                                                          candidate[0]=position;
+                                                          }
+                                  }
+                             }
+
+    //arrrange candidates (for same result in randoff mode)
+    order2:
+    for(k=0;k<numcan-1;k++){
+                            if(candidate[k]>candidate[k+1]){
+                                                            a=candidate[k];
+                                                            candidate[k]=candidate[k+1];
+                                                            candidate[k+1]=a;
+                                                            goto order2;
+                                                            }
+                            }
+    //if random feature is on
+    if(setting["rand"].get_bool()) position = candidate[rand(numcan)]; //random from candidates 
+    else position=candidate[0];
+
+    finish:
+    ftime(&time2); //get current time
+    if(display != 0){
+		if(display == 1){
+			backspace(18); //clear "thinking "
+			printf("O-hello decided to place a disk at ");
+		}else{
+			backspace(18); //clear "thinking "
+			printf("search result: ");
+		}
+		switch(position % 8){
+			case 0: printf("a"); break;
+			case 1: printf("b"); break;
+			case 2: printf("c"); break;
+			case 3: printf("d"); break;
+			case 4: printf("e"); break;
+			case 5: printf("f"); break;
+			case 6: printf("g"); break;
+			case 7: printf("h"); break;
+		}
+		printf("%d ", position / 8 + 1);
+		//.time = seconds, .millitm = milliseconds
+		printf("\n\n%.2f sec  ", time2.time - time1.time + 0.001 * (time2.millitm - time1.millitm));
+		shownode(node); //display node
+		printf("depth %d  ", depthwant);
+		//display score
+		switch(enginestate){
+			case 0:
+				if(player == 1){
+					 if(bestscore < 0) printf(": lose %d", bestscore);
+                     else if(bestscore > 0) printf(": win +%d", bestscore);
+					 else printf(": draw");
+				}else{
+					if(bestscore < 0) printf(": win +%d", -bestscore);
+					else if(bestscore > 0) printf(": lose %d", -bestscore);
+					else printf(": draw");
+				}
+				break;
+			case 1: printf(": only move"); break;
+			case 2: printf(": opening"); break;
+		}
+	}
+    return position;
+}
+
+int endscore(int board[64], int depthleft, int player, int no[2], int alphaGet, int betaGet, int display){
+     int candidate; //candidate score
+     struct kirby flips; //from function 'flip'
+     int position;
+     int nonew[2]; //no[2] after a flip
+     int index; //index of move order
+     int depthshallow; //for shallow search
+     int scorearray[64]; //score array (for shallow search)
+     int posarray[64]; //position array associated with score array
+     int movenum; //number of moves (dimension of score array)
+     int k;
+     int a;
+	 int alpha,beta;
+
+     //terminal node -- game ends
+     if(depthleft == 0){
+                         node++;
+                         if(node% setting["rotatetime"].get_int()==0) nodedisplay(display);
+                         if(no[0]>no[1]) return 64-2*no[1];
+                         else if(no[0]<no[1]) return 2*no[0]-64;
+                         else return 0;
+                         }
+
+     //not terminal ------------------------------------------------------------
+     
+     //1 square left -- use simplified score function to save time
+     if(depthleft == 1) return endscore63(board,player,no,display);
+     
+     //determine shallow depth
+
+	depthshallow = depthShallow(depthleft, true);
+     
+     //if no shallow search -- no record on position scores,move list, etc.
+     //===================================================================
+     if(depthshallow<=0){
+     
+     if(player==1){
+                   //if player 1: max mode
+                   alpha = alphaGet;
+				   beta = betaGet;
+				   bool IsFlip = false;
+                   for(index=0;index<60;index++){
+                                                 position=moveOrder[index];
+                                                 //check before flip
+                                                 if(board[position]==0){
+                                                                        flips=flip(board,position,player); //flip!
+                                                                        //if move is valid
+                                                                        if(flips.num!=0){
+																			IsFlip = true;
+                                                                                         //update no[2] (as nonew[2])
+                                                                                         nonew[player-1]=no[player-1]+flips.num+1;
+                                                                                         nonew[2-player]=no[2-player]-flips.num;
+                                                                                         //get score
+                                                                                         //scores is used as cmpscore
+                                                                                         candidate=endscore(flips.board,depthleft-1,3-player,nonew,alpha,beta,display);
+                                                                                         if(candidate>=beta) return candidate; //alpha-beta pruning
+                                                                                         if(candidate>alpha) alpha=candidate; //update score
+                                                                                         }
+                                                                        }
+                                                 }
+                   //if no valid move
+                   if(!IsFlip){
+                                          //if game ends
+                                          indexformob(board);
+                                          if(mobility(3-player)==0){
+                                                                          node++;
+                                                                          if(node%setting["rotatetime"].get_int()==0) nodedisplay(display);
+                                                                          if(no[0]>no[1]) return 64-2*no[1];
+                                                                          else if(no[0]<no[1]) return 2*no[0]-64;
+                                                                          else return 0;
+                                                                          }
+                                          //if pass turn
+                                          //use depthleft not depthleft-1 to preserve no. of disks
+                                          return endscore(board,depthleft,3-player,no,alphaGet,betaGet,display);
+                                          }
+                   return alpha;
+                   }
+     else{
+          //if player 2: min mode
+		 alpha = alphaGet;
+          beta = betaGet;
+		  bool IsFlip = false;
+          for(index=0;index<60;index++){
+                                        position=moveOrder[index];
+                                        if(board[position]==0){
+                                                               flips=flip(board,position,player); //flip!
+                                                               //if move is valid
+                                                               if(flips.num!=0){
+																   IsFlip = true;
+                                                                                //update no[2] (as nonew[2])
+                                                                                nonew[player-1]=no[player-1]+flips.num+1;
+                                                                                nonew[2-player]=no[2-player]-flips.num;
+                                                                                //get score
+                                                                                //scores is used as cmpscore
+                                                                                candidate=endscore(flips.board,depthleft-1,3-player,nonew,alpha,beta,display);
+                                                                                if(candidate<=alpha) return candidate; //alpha-beta pruning
+                                                                                if(candidate<beta) beta=candidate; //update score
+                                                                                }
+                                                               }
+                                        }
+          //if no valid move
+          if(!IsFlip){
+                                //if game ends
+                                indexformob(board);
+                                if(mobility(3-player)==0){
+                                                                node++;
+                                                                if(node%setting["rotatetime"].get_int()==0) nodedisplay(display);
+                                                                if(no[0]>no[1]) return 64-2*no[1];
+                                                                else if(no[0]<no[1]) return 2*no[0]-64;
+                                                                else return 0;
+                                                                }
+                                //if pass turn
+                                //use depthleft not depthleft-1 to preserve no. of disks
+                                return endscore(board,depthleft,3-player,no,alphaGet,betaGet,display);
+                                }
+          return beta;
+          }
+     
+     }
+     
+     //if shallow search first
+     //=======================
+     
+     else{
+     
+     //this part is for the shallow search (score array is used)
+     //---------------------------------------------------------
+     
+     //initialize number of moves
+     movenum=0;
+     
+     if(player==1){
+                   //if player 1: max mode
+                   alpha = - LARGE;
+				   beta = LARGE;
+                   for(index=0;index<60;index++){
+                                                 position=moveOrder[index];
+                                                 //check before flip
+                                                 if(board[position]==0){
+                                                                        flips=flip(board,position,player); //flip!
+                                                                        //if move is valid
+                                                                        if(flips.num!=0){
+                                                                                         //increase number of moves
+                                                                                         movenum++;
+                                                                                         //update no[2] (as nonew[2])
+                                                                                         nonew[player-1]=no[player-1]+flips.num+1;
+                                                                                         nonew[2-player]=no[2-player]-flips.num;
+                                                                                         //get score
+                                                                                         //scores is used as cmpscore
+                                                                                         candidate=score(flips.board,depthshallow-1,3-player,nonew,alpha,beta,display);
+                                                                                         scorearray[movenum-1]=candidate;
+                                                                                         posarray[movenum-1]=position;
+                                                                                         //[this line to return score is deleted in shallow search]
+                                                                                         //NO UPDATE ALPHA, BETA IN SHALLOW SEARCH
+                                                                                         /*if(candidate>alpha) alpha=candidate; //update score*/
+                                                                                         }
+                                                                        }
+                                                 }
+                   //if no valid move (allow to return score)
+                   if(movenum==0){
+                                          //if game ends
+                                          indexformob(board);
+                                          if(mobility(3-player)==0){
+                                                                          node++;
+                                                                          if(node%setting["rotatetime"].get_int()==0) nodedisplay(display);
+                                                                          if(no[0]>no[1]) return 64-2*no[1];
+                                                                          else if(no[0]<no[1]) return 2*no[0]-64;
+                                                                          else return 0;
+                                                                          }
+                                          //if pass turn
+                                          //use depthleft not depthleft-1 to preserve no. of disks
+                                          return endscore(board,depthleft,3-player,no,alphaGet,betaGet,display);
+                                          }
+                   //[this line to return score is deleted in shallow search]
+                   }
+     else{
+          //if player 2: min mode
+		 alpha = - LARGE;
+          beta = LARGE;
+          for(index=0;index<60;index++){
+                                        position=moveOrder[index];
+                                        if(board[position]==0){
+                                                               flips=flip(board,position,player); //flip!
+                                                               //if move is valid
+                                                               if(flips.num!=0){
+                                                                                //increase number of moves
+                                                                                movenum++;
+                                                                                //update no[2] (as nonew[2])
+                                                                                nonew[player-1]=no[player-1]+flips.num+1;
+                                                                                nonew[2-player]=no[2-player]-flips.num;
+                                                                                //get score
+                                                                                //scores is used as cmpscore
+                                                                                candidate=score(flips.board,depthshallow-1,3-player,nonew,alpha,beta,display);
+                                                                                scorearray[movenum-1]=candidate;
+                                                                                posarray[movenum-1]=position;
+                                                                                //[this line to return score is deleted in shallow search]
+                                                                                //NO UPDATE ALPHA, BETA IN SHALLOW SEARCH
+                                                                                /*if(candidate<beta) beta=candidate; //update score*/
+                                                                                }
+                                                               }
+                                        }
+          //if no valid move (allow to return score)
+          if(movenum==0){
+                                //if game ends
+                                indexformob(board);
+                                if(mobility(3-player)==0){
+                                                                node++;
+                                                                if(node%setting["rotatetime"].get_int()==0) nodedisplay(display);
+                                                                if(no[0]>no[1]) return 64-2*no[1];
+                                                                else if(no[0]<no[1]) return 2*no[0]-64;
+                                                                else return 0;
+                                                                }
+                                //if pass turn
+                                //use depthleft not depthleft-1 to preserve no. of disks
+                                return endscore(board,depthleft,3-player,no,alphaGet,betaGet,display);
+                                }
+          //[this line to return score is deleted in shallow search]
+          }
+     
+     //this part is to rearrange the score and position array from shallow search
+     //--------------------------------------------------------------------------
+     
+     order:
+     for(k=0;k<movenum-1;k++){
+                              if((player==1 and scorearray[k]<scorearray[k+1]) or (player==2 and scorearray[k]>scorearray[k+1])){
+                                            a=scorearray[k]; //switch score
+                                            scorearray[k]=scorearray[k+1];
+                                            scorearray[k+1]=a;
+                                            a=posarray[k]; //switch position
+                                            posarray[k]=posarray[k+1];
+                                            posarray[k+1]=a;
+                                            goto order;
+                                            }
+                              }
+     
+     //this part is for the deep search
+     //we use the prototype from fsearch since we already have position array
+     //----------------------------------------------------------------------
+     
+	 alpha = alphaGet;
+	 beta = betaGet;
+     //get score for all valid moves
+     for(k=0;k<movenum;k++){
+                            position=posarray[k];
+                            flips=flip(board,position,player); //flip!
+                            //update no[2] (as nonew[2])
+                            nonew[player-1]=no[player-1]+flips.num+1;
+                            nonew[2-player]=no[2-player]-flips.num;
+                            //get score
+                            candidate=endscore(flips.board,depthleft-1,3-player,nonew,alpha,beta,display);
+                            if(player==1){ //if player 1: max mode
+                                           if(candidate>=beta) return candidate; //*add alpha-beta pruning here
+                                           if(candidate>alpha) alpha=candidate;
+                                           }
+                            else{ //if player 2: min mode
+                                  if(candidate<=alpha) return candidate; //*add alpha-beta pruning here
+                                  if(candidate<beta) beta=candidate;
+                                  }
+                            }
+			if(player == 1) return alpha;
+			else return beta;
+     }
+}
+
+int endscore63(int board[64], int player, int no[2], int display){
+    node++; //this is one node exactly!
+    if(node%setting["rotatetime"].get_int()==0) nodedisplay(display);
+    
+    int flipplayer;
+    int flipnonplayer;
+    int i=0;
+    while(board[i]!=0) i++; //find the remaining square
+    flipplayer=flipnum(board,i,player);
+    if(flipplayer!=0){
+                      if(player==1){
+                                    no[0]+=flipplayer+1;
+                                    no[1]-=flipplayer;
+                                    }
+                      else{
+                           no[1]+=flipplayer+1;
+                           no[0]-=flipplayer;
+                           }
+                      if(no[0]>no[1]) return 64-2*no[1];
+                      else if(no[0]<no[1]) return 2*no[0]-64;
+                      else return 0;
+                      }
+    else{
+         //player must pass
+         flipnonplayer=flipnum(board,i,3-player);
+         if(flipnonplayer!=0){
+                              if(player==1){
+                                            no[1]+=flipnonplayer+1;
+                                            no[0]-=flipnonplayer;
+                                            }
+                              else{
+                                   no[0]+=flipnonplayer+1;
+                                   no[1]-=flipnonplayer;
+                                   }
+                              if(no[0]>no[1]) return 64-2*no[1];
+                              else if(no[0]<no[1]) return 2*no[0]-64;
+                              else return 0;
+                              }
+         //game ends
+         else{
+              if(no[0]>no[1]) return 64-2*no[1];
+              else if(no[0]<no[1]) return 2*no[0]-64;
+              else return 0;
+              }
+         }
+}
+
 //compute score by depth-first search using minimax algorithm
 //with alpha-beta pruning
 //cmpscore=compare score, for alpha-beta pruning
@@ -2443,7 +2981,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                           }
                                           //if pass turn
                                           //use depthleft not depthleft-1 to preserve no. of disks
-                                          return score(board,depthleft,3-player,no,alpha,beta,display);
+                                          return score(board,depthleft,3-player,no,alphaGet,betaGet,display);
                                           }
                    return alpha;
                    }
@@ -2483,7 +3021,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                 }
                                 //if pass turn
                                 //use depthleft not depthleft-1 to preserve no. of disks
-                                return score(board,depthleft,3-player,no,alpha,beta,display);
+                                return score(board,depthleft,3-player,no,alphaGet,betaGet,display);
                                 }
           return beta;
           }
@@ -2503,8 +3041,8 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
      
      if(player==1){
                    //if player 1: max mode
-                   alpha = alphaGet;
-				   beta = betaGet;
+                   alpha = - LARGE;
+				   beta = LARGE;
                    for(index=0;index<60;index++){
                                                  position=moveOrder[index];
                                                  //check before flip
@@ -2523,7 +3061,8 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                                          scorearray[movenum-1]=candidate;
                                                                                          posarray[movenum-1]=position;
                                                                                          //[this line to return score is deleted in shallow search]
-                                                                                         if(candidate>alpha) alpha=candidate; //update score
+                                                                                         //NO UPDATE ALPHA, BETA IN SHALLOW SEARCH
+                                                                                         /*if(candidate>alpha) alpha=candidate; //update score*/
                                                                                          }
                                                                         }
                                                  }
@@ -2540,14 +3079,14 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                           }
                                           //if pass turn
                                           //use depthleft not depthleft-1 to preserve no. of disks
-                                          return score(board,depthleft,3-player,no,alpha,beta,display);
+                                          return score(board,depthleft,3-player,no,alphaGet,betaGet,display);
                                           }
                    //[this line to return score is deleted in shallow search]
                    }
      else{
           //if player 2: min mode
-		 alpha = alphaGet;
-          beta = betaGet;
+		 alpha = - LARGE;
+          beta = LARGE;
           for(index=0;index<60;index++){
                                         position=moveOrder[index];
                                         if(board[position]==0){
@@ -2565,7 +3104,8 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                                 scorearray[movenum-1]=candidate;
                                                                                 posarray[movenum-1]=position;
                                                                                 //[this line to return score is deleted in shallow search]
-                                                                                if(candidate<beta) beta=candidate; //update score
+                                                                                //NO UPDATE ALPHA, BETA IN SHALLOW SEARCH
+                                                                                /*if(candidate<beta) beta=candidate; //update score*/
                                                                                 }
                                                                }
                                         }
@@ -2582,7 +3122,7 @@ int score(int board[64],int depthleft,int player,int no[2],int alphaGet,int beta
                                                                 }
                                 //if pass turn
                                 //use depthleft not depthleft-1 to preserve no. of disks
-                                return score(board,depthleft,3-player,no,alpha,beta,display);
+                                return score(board,depthleft,3-player,no,alphaGet,betaGet,display);
                                 }
           //[this line to return score is deleted in shallow search]
           }

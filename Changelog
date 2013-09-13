@@ -692,3 +692,12 @@ date: Sep 9, 2013 lines: 4448 lines
 -----------------------------------
 - changed default depthperfect from +6 to +8
 - corrected some spacing when pass turn
+
+version 87
+date: Sep 12, 2013 lines: 4988 lines
+------------------------------------
+- wrote function searchDecider to group fsearch and prepare for endsearch
+- FIXED CRITICAL BUG in alpha-beta pruning!! -> 10% speedup
+- wrote function endsearch, endscore, endscore63
+- added command 'endsearch'
+  -- endsearch is about 0.5% faster than fsearch
