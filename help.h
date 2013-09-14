@@ -58,8 +58,7 @@ speed: speed
         printf(R"(
 load: load <filename>
     Available in main menu.
-    Load the game from FILENAME. FILENAME refers to the file FILENAME.ohl which
-    must be in the same folder as the program.
+    Load the game from the file FILENAME.ohl.
 
 )");
         return true;
@@ -109,8 +108,7 @@ new: new
         printf(R"(
 save: save <filename>
     Available in-game and on O-hello's turns.
-    Save the current game state in the file FILENAME.ohl. The file will be
-    created in the same folder as the program.
+    Save the current game state in the file FILENAME.ohl.
 
 )");
         return true;

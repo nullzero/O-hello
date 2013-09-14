@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "88";
+const char __version__[] = "89";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "September 13, 2013";
+const char __date__[] = "September 14, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -133,11 +133,16 @@ struct undoStruct{
 //End of Oak's definitions
 
 int depthShallow(int depth, bool endgame){
-	int depthAdjust = depth;
-	if(endgame) depthAdjust -= 6;
-	if(depthAdjust >= 5) return depthAdjust - 4;
-	else if(depthAdjust == 4 or depthAdjust == 3) return 1;
-	else return 0;
+	if(endgame){
+	    if(depth >= 14) return (depth - 12) / 2 * 2;
+        else if(depth == 13) return 2;
+        else if(depth >= 9) return 1;
+        else return 0;
+    }else{
+	    if(depth >= 6) return depth - 5;
+        else if(depth == 5 or depth == 4) return 1;
+	    else return 0;
+    }
 }
 
 FILE *save; //save file

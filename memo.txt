@@ -1,11 +1,8 @@
 URGENT>>>
-* BUG!! program saves file in wrong folder (bug in xxx but not in zzz?????) (Oak)
 * polish load/save
   - texture doesn't work??? (need Oak's help)
 
-* find optimal depth shallow again
 * make setting file
-* NEWLINE BACKSPACE BUG
 * WRITE SEPARATE END-GAME FUNCTION
   - implement wld search
 * solve graphic problem (off screen)
@@ -21,3 +18,7 @@ URGENT>>>
 ** continue to optimize/organize
 ** compatible with windows
 ** change to bit system
+
+UNFIXABLE??
+* program saves file in wrong folder (bug in xxx but not in zzz)
+* newline backspace bug

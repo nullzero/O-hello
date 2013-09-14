@@ -697,7 +697,7 @@ version 87
 date: Sep 12, 2013 lines: 4988 lines
 ------------------------------------
 - wrote function searchDecider to group fsearch and prepare for endsearch
-- FIXED CRITICAL BUG in alpha-beta pruning!! -> 10% speedup
+- FIXED CRITICAL BUG in alpha-beta pruning!! -> 12% speedup
 - wrote function endsearch, endscore, endscore63
 - added command 'endsearch'
   -- endsearch is about 0.5% faster than fsearch
@@ -707,3 +707,10 @@ date: Sep 13, 2013 lines: 4975 lines
 ------------------------------------
 - improved endscore63 a little bit
 - added help entry 'endsearch'
+
+version 89
+date: Sep 14, 2013 lines: 4980 lines
+------------------------------------
+- edited help entry for load and save a little bit
+- adjusted depthshallow -> 25% speedup!!
+  -- end-game node 18% speedup, time 32% speedup!!
