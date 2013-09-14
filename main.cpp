@@ -1,9 +1,9 @@
 // project O-hello
 
 //general info
-const char __version__[] = "87";
+const char __version__[] = "88";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "September 12, 2013";
+const char __date__[] = "September 13, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
@@ -84,6 +84,12 @@ enum COLOR {BC, XC, OC};
 enum INPUT_MODE {MENUMODE, PLAYMODE};
 const int UNINIT = -1;
 const int LARGE = 2147483647;
+
+const int scoreFromNo[65] = {-64, -62, -60, -58, -56, -54, -52, -50, -48, -46,
+    -44, -42, -40, -38, -36, -34, -32, -30, -28, -26, -24, -22, -20, -18, -16,
+    -14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22,
+    24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60,
+    62, 64};
 
 char UNIVERSALSTRING[100];
 
@@ -2777,38 +2783,19 @@ int endscore63(int board[64], int player, int no[2], int display){
     if(node%setting["rotatetime"].get_int()==0) nodedisplay(display);
     
     int flipplayer;
-    int flipnonplayer;
     int i=0;
     while(board[i]!=0) i++; //find the remaining square
     flipplayer=flipnum(board,i,player);
     if(flipplayer!=0){
-                      if(player==1){
-                                    no[0]+=flipplayer+1;
-                                    no[1]-=flipplayer;
-                                    }
-                      else{
-                           no[1]+=flipplayer+1;
-                           no[0]-=flipplayer;
-                           }
-                      if(no[0]>no[1]) return 64-2*no[1];
-                      else if(no[0]<no[1]) return 2*no[0]-64;
-                      else return 0;
+                      if(player==1) return scoreFromNo[no[0]+flipplayer+1];
+                      else return scoreFromNo[no[0]-flipplayer];
                       }
     else{
          //player must pass
-         flipnonplayer=flipnum(board,i,3-player);
-         if(flipnonplayer!=0){
-                              if(player==1){
-                                            no[1]+=flipnonplayer+1;
-                                            no[0]-=flipnonplayer;
-                                            }
-                              else{
-                                   no[0]+=flipnonplayer+1;
-                                   no[1]-=flipnonplayer;
-                                   }
-                              if(no[0]>no[1]) return 64-2*no[1];
-                              else if(no[0]<no[1]) return 2*no[0]-64;
-                              else return 0;
+         flipplayer=flipnum(board,i,3-player);
+         if(flipplayer!=0){
+                              if(player==1) return scoreFromNo[no[0]-flipplayer];
+                              else return scoreFromNo[no[0]+flipplayer+1];
                               }
          //game ends
          else{

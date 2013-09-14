@@ -701,3 +701,9 @@ date: Sep 12, 2013 lines: 4988 lines
 - wrote function endsearch, endscore, endscore63
 - added command 'endsearch'
   -- endsearch is about 0.5% faster than fsearch
+
+version 88
+date: Sep 13, 2013 lines: 4975 lines
+------------------------------------
+- improved endscore63 a little bit
+- added help entry 'endsearch'

@@ -4,7 +4,6 @@ URGENT>>>
   - texture doesn't work??? (need Oak's help)
 
 * find optimal depth shallow again
-* add endsearch in help entry
 * make setting file
 * NEWLINE BACKSPACE BUG
 * WRITE SEPARATE END-GAME FUNCTION

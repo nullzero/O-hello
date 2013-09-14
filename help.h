@@ -13,22 +13,23 @@ M = available in main menu
 G = available in-game
 O = available as one-letter command on O-hello's turns
 
-hello   M     - say hello to program
-speed   M     - test speed of computer
-load    M     - load game from file
-help    M G   - view this text
-menu    M G O - go to main menu
-quit    M G O - exit program
-new       G O - restart game using current settings
-save      G O - save game in file
-undo      G   - undo move
-redo      G   - redo move
-reflect   G   - reflect board (horizontally)
-fsearch   G   - fixed depth search
-tsearch   G   - time limit search
-set     M G   - set variable
-show    M G   - show variable
-reset   M G   - reset variable to default
+hello     M     - say hello to program
+speed     M     - test speed of computer
+load      M     - load game from file
+help      M G   - view this text
+menu      M G O - go to main menu
+quit      M G O - exit program
+new         G O - restart game using current settings
+save        G O - save game in file
+undo        G   - undo move
+redo        G   - redo move
+reflect     G   - reflect board (horizontally)
+fsearch     G   - fixed depth search
+tsearch     G   - time limit search
+endsearch   G   - end-game search
+set       M G   - set variable
+show      M G   - show variable
+reset     M G   - reset variable to default
 
 )");
 		return true;
@@ -162,6 +163,16 @@ tsearch: tsearch <time>
     Available in-game.
     Execute a time limit search using limit TIME second(s) (TIME is a number
     greater than 0). Return the search position, score and statistics. 
+
+)");
+        return true;
+    }
+    if(x == "endsearch" and l.empty()){
+            printf(R"(
+endsearch: endsearch
+    Available in-game.
+    Execute a search until end-game positions. Speed is currently very close
+    to that of fsearch. Return the search position, score and statistics. 
 
 )");
         return true;
