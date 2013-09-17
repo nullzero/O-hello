@@ -714,3 +714,8 @@ date: Sep 14, 2013 lines: 4980 lines
 - edited help entry for load and save a little bit
 - adjusted depthshallow -> 25% speedup!!
   -- end-game node 18% speedup, time 32% speedup!!
+
+version 90
+date: Sep 16, 2013 lines: 5517 lines
+------------------------------------
+- implemented wld search (not finished)

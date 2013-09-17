@@ -3,8 +3,12 @@ URGENT>>>
   - texture doesn't work??? (need Oak's help)
 
 * make setting file
-* WRITE SEPARATE END-GAME FUNCTION
-  - implement wld search
+* WLD SEARCH
+  - in wldsearch also use depthshallow and update alpha/beta
+    -- make sure wld/endsearch use alpha/beta cutoff
+  - compare speed
+  - implement into main search system / save system / weight test / etc.
+  - make help entry
 * solve graphic problem (off screen)
 * check correctness / awkwardness / blah blah (Oak only)
 * combine comhuman + human + … together (Oak only)
@@ -14,10 +18,13 @@ URGENT>>>
   - rewrite tsearch accordingly
     -- 2,4,6,8,10,...
 * IMPLEMENT PARITY
-* implement negascout?
 ** continue to optimize/organize
 ** compatible with windows
-** change to bit system
+
+CURRENTLY OUT OF REACH>>
+* change to bit system
+* implement negascout/MTD(f) -> need transposition table to work well
+  - transposition table needs bitboard to work well
 
 UNFIXABLE??
 * program saves file in wrong folder (bug in xxx but not in zzz)
