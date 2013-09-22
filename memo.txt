@@ -3,12 +3,6 @@ URGENT>>>
   - texture doesn't work??? (need Oak's help)
 
 * make setting file
-* WLD SEARCH
-  - in wldsearch also use depthshallow and update alpha/beta
-    -- make sure wld/endsearch use alpha/beta cutoff
-  - compare speed
-  - implement into main search system / save system / weight test / etc.
-  - make help entry
 * solve graphic problem (off screen)
 * check correctness / awkwardness / blah blah (Oak only)
 * combine comhuman + human + … together (Oak only)

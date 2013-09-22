@@ -26,7 +26,8 @@ redo        G   - redo move
 reflect     G   - reflect board (horizontally)
 fsearch     G   - fixed depth search
 tsearch     G   - time limit search
-endsearch   G   - end-game search
+endsearch   G   - end-game search, gives exact score
+wldsearch   G   - end-game search, gives win/loss/draw value
 set       M G   - set variable
 show      M G   - show variable
 reset     M G   - reset variable to default
@@ -58,7 +59,8 @@ speed: speed
         printf(R"(
 load: load <filename>
     Available in main menu.
-    Load the game from the file FILENAME.ohl.
+    Load the game from the file FILENAME.ohl
+    See also 'save'
 
 )");
         return true;
@@ -100,6 +102,7 @@ new: new
     Restart the game using current settings and reset undo data. If the game
     was loaded from file, the game will be reloaded. Otherwise, the game will
     restart from the initial board postition.
+    See also 'undo'
 
 )");
         return true;
@@ -108,7 +111,8 @@ new: new
         printf(R"(
 save: save <filename>
     Available in-game and on O-hello's turns.
-    Save the current game state in the file FILENAME.ohl.
+    Save the current game state in the file FILENAME.ohl
+    See also 'load'
 
 )");
         return true;
@@ -121,6 +125,7 @@ undo: undo [<number>]
     Undo human's moves (excluding passes) for NUMBER times. If not specified,
     NUMBER is set to 1. 'undo all' undoes every move since the beginning of the
     game.
+    See also 'new', 'redo'
 
 )");
         return true;
@@ -132,6 +137,7 @@ redo: redo [<number>]
     Available in-game.
     Redo human's moves (excluding passes) for NUMBER times. If not specified,
     NUMBER is set to 1. 'redo all' restores the game to its furthest position.
+    See also 'undo'
 
 )");
         return true;
@@ -147,10 +153,11 @@ reflect: reflect
     }
     if(x == "fsearch" and l.empty()){
         printf(R"(
-fsearch: fsearch <number>
+fsearch: fsearch <depth>
     Available in-game.
-    Execute a fixed depth search using depth NUMBER (NUMBER is an integer at
-    least 1). Return the search position, score and statistics. 
+    Execute a fixed depth search using depth DEPTH (DEPTH is a positive integer)
+    Return the search position, score and statistics.
+    See also 'tsearch', 'endsearch', 'wldsearch'
 
 )");
         return true;
@@ -159,8 +166,9 @@ fsearch: fsearch <number>
         printf(R"(
 tsearch: tsearch <time>
     Available in-game.
-    Execute a time limit search using limit TIME second(s) (TIME is a number
-    greater than 0). Return the search position, score and statistics. 
+    Execute a time limit search using limit TIME second(s) (TIME is a positive
+    number). Return the search position, score and statistics.
+    See also 'fsearch'
 
 )");
         return true;
@@ -169,8 +177,24 @@ tsearch: tsearch <time>
             printf(R"(
 endsearch: endsearch
     Available in-game.
-    Execute a search until end-game positions. Speed is currently very close
-    to that of fsearch. Return the search position, score and statistics. 
+    Execute a search until end-game positions and return the exact score.
+    Currently, its speed is no different that that of fsearch. Return the search
+    position, score and statistics.
+    See also 'fsearch', 'wldsearch'
+
+)");
+        return true;
+    }
+    if(x == "wldsearch" and l.empty()){
+            printf(R"(
+wldsearch: wldsearch <depth>
+    Available in-game.
+    Execute a search until end-game positions and return the win/loss/draw
+    value. It first executes a normal search (fsearch) to depth DEPTH before
+    attempting win/loss/draw search. This guarantees that the result will not be
+    worse than using fsearch with depth DEPTH. Return the search position, score
+    and statistics.
+    See also 'fsearch, 'endsearch'
 
 )");
         return true;
@@ -183,6 +207,7 @@ set: set <variable> [<value>]
     directly. In such cases, 'set <variable>' must be used instead, and you
     will be asked to input VALUE later.
     Type 'help var' to find out more about variables.
+    See also 'show', 'reset'
 
 )");
         return true;
@@ -195,6 +220,7 @@ show: show <variable>
     Display the current value of VARIABLE. 'show all' displays current values
     of all variables.
     Type 'help var' to find out more about variables.
+    See also 'set', 'reset'
 
 )");
         return true;
@@ -206,6 +232,7 @@ reset: reset <variable>
     Available in main menu and in-game.
     Reset VARIABLE to its default value. 'reset all' resets all variables.
     Type 'help var' to find out more about variables.
+    See also 'set', 'show'
 
 )");
         return true;
@@ -368,7 +395,8 @@ type    : bool
     (tsearch), and can input any value for depth and depthperfect. RAW MODE is
     more flexible than DEFAULT mode.
     In DEFAULT MODE, user can select between only mode 1 (fsearch) and 2
-    (tsearch), and has to choose from specific values of depth and depthperfect.
+    (tsearch), and has to choose from specific values of depth, depthperfect,
+    and depthwld.
     DEFAULT MODE is more user-friendly than raw mode.
 
 )");
@@ -391,7 +419,7 @@ type    : vint
     wd1  - \
     wm1  - |
     wp1  - |
-    wc1  - | end-game counterparts
+    wc1  - | end-game counterparts of above
     wxx1 - |
     wcc1 - |
     we1  - |

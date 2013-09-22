@@ -719,3 +719,16 @@ version 90
 date: Sep 16, 2013 lines: 5517 lines
 ------------------------------------
 - implemented wld search (not finished)
+
+version 91
+date: Sep 21, 2013 lines: 5609 lines
+------------------------------------
+- finished function wldsearch
+  -- used wldFactor for depthshallow
+  -- adjusted searchDecider accordingly
+- added variable depthwld, doubledepthwld into system
+  -- changed saveNumber to 91
+- minor correction when load: check time <= 0 not < 0
+- adjusted interface to be compatible with depthwld
+  -- added depthwld in predetermined levels
+- made help entry on wldsearch

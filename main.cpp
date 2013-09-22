@@ -1,14 +1,14 @@
 // project O-hello
 
 //general info
-const char __version__[] = "90";
+const char __version__[] = "91";
 const char __author__[] = "Nat Sothanaphan & Sorawee Porncharoenwase";
-const char __date__[] = "September 16, 2013";
+const char __date__[] = "September 21, 2013";
 const char __language__[] = "C++";
 const char __compiler__[] = "G++";
 
 //version of save file
-const int __saveNumber__ = 83;
+const int __saveNumber__ = 91;
 
 #include <cstdlib>
 #include <cstring>
@@ -149,6 +149,8 @@ int depthShallow(int depth, bool endgame){
     }
 }
 
+const int wldFactor = 2;
+
 FILE *save; //save file
 
 //used in function 'flip' and 'move'
@@ -167,7 +169,7 @@ struct triad{
 //used in function 'settings'
 //to return AI settings
 struct comset{
-	int mode, depth, depthperfect;
+	int mode, depth, depthperfect, depthwld;
 	float times;
 };
 
@@ -184,16 +186,16 @@ void speedtest();
 void sayhello();
 int human(int board[64],int no[2],int player);
 void humansave(int board[64],int player);
-int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,float times);
-void comhumansave(int board[64],int player,int complayer,int mode,int depth,int depthperfect,float times);
-int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]);
-void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]);
+int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,int depthwld,float times);
+void comhumansave(int board[64],int player,int complayer,int mode,int depth,int depthperfect,int depthwld,float times);
+int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],int doubledepthwld[2],float doubletimes[2]);
+void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],int doubledepthwld[2],float doubletimes[2]);
 void weightfortest(int doubleweight[2][100],int player);
 void weighttest();
-triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2],int doubleweight[2][100],int numgame,int numrand);
+triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2],int doubledepthwld[2],float doubletimes[2],int doubleweight[2][100],int numgame,int numrand);
 int input(int board[64],int& player,int no[2], std::vector<undoStruct>&, int&, int&);
 void shownode(int node);
-int searchDecider(int board[64], int depth, int depthperfect, int player, int no[2], int display);
+int searchDecider(int board[64], int depth, int depthperfect, int depthwld, int player, int no[2], int display);
 int random(int board[64],int player,int no[2],int display);
 int fsearch(int board[64],int depthwant,int player,int no[2],int display);
 int tsearch(int board[64],float times,int player,int no[2],int display);
@@ -202,7 +204,7 @@ int score63(int board[64],int player,int no[2],int display);
 int endsearch(int board[64], int player, int no[2], int display);
 int endscore(int board[64], int depthleft, int player, int no[2], int alphaGet, int betaGet, int display);
 int endscore63(int board[64], int player, int no[2], int display);
-int wldsearch(int board[64], int player, int no[2], int display, int normalDepth);
+int wldsearch(int board[64], int player, int no[2], int display, int initialDepth);
 int wldscore(int board[64], int depthleft, int player, int no[2], int alphaGet, int betaGet, int display);
 int wldscore63(int board[64], int player, int no[2], int display);
 void nodedisplay(int display);
@@ -317,16 +319,19 @@ void newgame(){
     int mode;
     int depth;
     int depthperfect;
+    int depthwld;
     float times;
     int doublemode[2];
     int doubledepth[2];
     int doubledepthperfect[2];
+    int doubledepthwld[2];
     float doubletimes[2];
     int sentboard[64];
     int sentno[2];
     int sentdoublemode[2];
     int sentdoubledepth[2];
     int sentdoubledepthperfect[2];
+    int sentdoubledepthwld[2];
     float sentdoubletimes[2];
     comset pack;
 	
@@ -418,6 +423,7 @@ void newgame(){
 			mode = pack.mode;
 			depth = pack.depth;
 			depthperfect = pack.depthperfect;
+            depthwld = pack.depthwld;
 			times = pack.times;
 			int numvalue;
 			if(inp[0] == '2') numvalue = OC;
@@ -425,7 +431,7 @@ void newgame(){
 			do{
 				for(int i = 0; i < 64; i++) sentboard[i] = board[i];
 			 	for(int i = 0; i < 2; i++) sentno[i] = no[i];
-			}while(comhuman(sentboard, sentno, player, numvalue, mode, depth, depthperfect, times) == EXIT);
+			}while(comhuman(sentboard, sentno, player, numvalue, mode, depth, depthperfect, depthwld, times) == EXIT);
 	    }else if(inp == "4"){
 			//computer vs computer
 			for(int i = 0; i < 2; i++){
@@ -436,6 +442,7 @@ void newgame(){
 	            doublemode[i] = pack.mode;
 	            doubledepth[i] = pack.depth;
 	            doubledepthperfect[i] = pack.depthperfect;
+                doubledepthwld[i] = pack.depthwld;
 	            doubletimes[i] = pack.times;
 	            printf("\n");
 			}
@@ -445,8 +452,9 @@ void newgame(){
 	            for(int i = 0; i < 2; i++) sentdoublemode[i] = doublemode[i];
 	            for(int i = 0; i < 2; i++) sentdoubledepth[i] = doubledepth[i];
 	            for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
+                for(int i = 0; i < 2; i++) sentdoubledepthwld[i] = doubledepthwld[i];
 	            for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
-			}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
+			}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubledepthwld, sentdoubletimes) == EXIT);
 		}else if(inp == "5"){
 			weighttest();
 		}else if(inp == "6"){
@@ -476,7 +484,7 @@ comset comsettings(){
 		pack.mode = uget(int)([](int x){ return 0 <= x and x <= 2; }, "invalid: mode must be between 0 and 2");
 		
 		if(pack.mode == 1){
-			printf("\ninput search depth and depthperfect\n\n");
+			printf("\ninput search depth, depthperfect, depthwld\n\n");
             texture inp;
             while(true){
                 inp = getl();
@@ -495,6 +503,14 @@ comset comsettings(){
                     continue;
                 }
                 pack.depthperfect = x;
+                //depthwld
+                if(inp.empty()) inp = getl();
+                x = std::stoi(inp.read());
+                if(x <= 0){
+                    alert("depthwld must be more than 0. input again.");
+                    continue;
+                }
+                pack.depthwld = x;
                 if(not inp.empty()){
                     alert("too many parameters. input again.");
                     continue;
@@ -534,18 +550,20 @@ comset comsettings(){
 		}
 
 		if(pack.mode == 1){
-			printf("\n");
-			printf("select search depth:\n");
-			printf("--------------------\n");
-			printf(" 1  - depth 1\n");
-			printf(" 2  - depth 2\n");
-			printf(" 3  - depth 3\n");
-			printf(" 4  - depth 4\n");
-			printf(" 4a - depth 4 + end-game 12\n");
-			printf(" 6  - depth 6\n");
-			printf(" 6a - depth 6 + end-game 14\n");
-			printf(" 8  - depth 8 + end-game 16\n");
-			printf(" 10 - depth 10 + end-game 18\n\n");
+			printf(R"(
+select search depth:
+--------------------
+ 1  - depth 1
+ 2  - depth 2
+ 3  - depth 3
+ 4  - depth 4
+ 4a - depth 4, exact 12
+ 6  - depth 6
+ 6a - depth 6, exact 14, win/loss/draw 16
+ 8  - depth 8, exact 16, win/loss/draw 18
+ 10 - depth 10, exact 18, win/loss/draw 20
+
+)");
 			
 			newsetdepth:
 			
@@ -553,30 +571,39 @@ comset comsettings(){
 			if(option == "1"){
 				pack.depth = 1;
 				pack.depthperfect = 1;
+                pack.depthwld = 1;
 			}else if(option == "2"){
 				pack.depth = 2;
 				pack.depthperfect = 2;
+                pack.depthwld = 2;
 			}else if(option == "3"){
 				pack.depth = 3;
 				pack.depthperfect = 3;
+                pack.depthwld = 3;
 			}else if(option == "4"){
 				pack.depth = 4;
 				pack.depthperfect = 4;
+                pack.depthwld = 4;
 			}else if(option == "4a"){
 				pack.depth = 4;
 				pack.depthperfect = 12;
+                pack.depthwld = 12;
 			}else if(option == "6"){
 				pack.depth = 6;
 				pack.depthperfect = 6;
+                pack.depthwld = 6;
 			}else if(option == "6a"){
 				pack.depth = 6;
 				pack.depthperfect = 14;
+                pack.depthwld = 16;
 			}else if(option == "8"){
 				pack.depth = 8;
 				pack.depthperfect = 16;
+                pack.depthwld = 18;
 			}else if(option == "10"){
 				pack.depth = 10;
 				pack.depthperfect = 18;
+                pack.depthwld = 20;
 			}else{
 				alert("invalid selection");
 				goto newsetdepth;
@@ -617,10 +644,12 @@ bool load(const char* filename2){
     int mode;
     int depth;
     int depthperfect;
+    int depthwld;
     float times;
     int doublemode[2];
     int doubledepth[2];
     int doubledepthperfect[2];
+    int doubledepthwld[2];
     float doubletimes[2];
     //the sents: for sending to game engine
     //so that the original arrays are kept
@@ -629,6 +658,7 @@ bool load(const char* filename2){
     int sentdoublemode[2];
     int sentdoubledepth[2];
     int sentdoubledepthperfect[2];
+    int sentdoubledepthwld[2];
     float sentdoubletimes[2];
     
     save = fopen(strcat(filename, ".ohl"), "r");
@@ -785,6 +815,7 @@ bool load(const char* filename2){
 		//get depth or times
 		depth = -1;
 		depthperfect = -1;
+        depthwld = -1;
 		times = -1;
 		if(mode == 1){
 			fscanf(save, "%d", &depth);
@@ -793,9 +824,12 @@ bool load(const char* filename2){
 			fscanf(save, "%d", &depthperfect);
 			if(depthperfect < 1) CORRUPTION();
 			printf("\nvalue depthperfect = %d", depthperfect);
+            fscanf(save, "%d", &depthwld);
+            if(depthwld < 1) CORRUPTION();
+            printf("\nvalue depthwld = %d", depthwld);
 		}else if(mode == 2){
 			fscanf(save, "%f", &times);
-			if(times < 0) CORRUPTION();
+			if(times <= 0) CORRUPTION();
 			printf("\nvalue times = %f", times);
 		}
         printf("\n\n");
@@ -803,7 +837,7 @@ bool load(const char* filename2){
 		do{
 			for(int i = 0; i < 64; i++) sentboard[i] = board[i];
 			for(int i = 0; i < 2; i++) sentno[i] = no[i];
-		}while(comhuman(sentboard, sentno, player, (loadmode == 2) ? 2 : 1, mode, depth, depthperfect, times) == EXIT);
+		}while(comhuman(sentboard, sentno, player, (loadmode == 2) ? 2 : 1, mode, depth, depthperfect, depthwld, times) == EXIT);
 		return true;
 	}else if(loadmode == 4){
 		//computer vs computer
@@ -825,10 +859,13 @@ bool load(const char* filename2){
 				fscanf(save, "%d", &doubledepthperfect[i]);
 				if(doubledepthperfect[i] < 1) CORRUPTION();
 				printf("\nvalue doubledepthperfect[%d] = %d", i, doubledepthperfect[i]);
+                fscanf(save, "%d", &doubledepthwld[i]);
+                if(doubledepthwld[i] < 1) CORRUPTION();
+                printf("\nvalue doubledepthwld[%d] = %d", i, doubledepthwld[i]);
 			}
 			if(doublemode[i] == 2){
 				fscanf(save, "%f", &doubletimes[i]);
-				if(doubletimes[i] < 0) CORRUPTION();
+				if(doubletimes[i] <= 0) CORRUPTION();
 				printf("\nvalue doubletimes[%d] = %f", i, doubletimes[i]);
 			}
 		}
@@ -840,8 +877,9 @@ bool load(const char* filename2){
 			for(int i = 0; i < 2; i++) sentdoublemode[i] = doublemode[i];
 			for(int i = 0; i < 2; i++) sentdoubledepth[i] = doubledepth[i];
 			for(int i = 0; i < 2; i++) sentdoubledepthperfect[i] = doubledepthperfect[i];
+            for(int i = 0; i < 2; i++) sentdoubledepthwld[i] = doubledepthwld[i];
 			for(int i = 0; i < 2; i++) sentdoubletimes[i] = doubletimes[i];
-		}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubletimes) == EXIT);
+		}while(comcom(sentboard, sentno, player, sentdoublemode, sentdoubledepth, sentdoubledepthperfect, sentdoubledepthwld, sentdoubletimes) == EXIT);
 		return true;
 	}else{
         CORRUPTION();
@@ -1067,7 +1105,7 @@ void humansave(int board[64],int player){
 
 //human vs computer,computer vs human
 //complayer=player that computer plays as
-int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,float times){
+int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth,int depthperfect,int depthwld,float times){
     std::vector<undoStruct> undoData;
     int undoItr = -1;
     int i,j,k; //for reflect
@@ -1099,12 +1137,12 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
 											space(10);
                                             //get position
                                             if(mode==0) position=random(board,player,no,1);
-                                            if(mode==1) position = searchDecider(board, depth, depthperfect, player, no, 1);
+                                            if(mode==1) position = searchDecider(board, depth, depthperfect, depthwld, player, no, 1);
                                             if(mode==2) position=tsearch(board,times,player,no,1);
                                             printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
                                             printf("\npress any other key to continue");
                                             letter=getch();
-                                            if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
+                                            if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,depthwld,times); goto loop2;}
                                             if(letter=='n') return EXIT;
                                             if(letter=='m') return 0;
                                             if(letter=='q') finish(0);
@@ -1129,7 +1167,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
                            loop1:
                            position=input(board,player,no, undoData, undoItr, lastmove); //get position
                            //-999 means save
-                           if(position==-999){comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
+                           if(position==-999){comhumansave(board,player,complayer,mode,depth,depthperfect,depthwld,times); goto loop2;}
                            //-1 means undo
                            if(position==-1){
 							   goto loop2;
@@ -1192,7 +1230,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
          printf("\n's' to save  'n' for new game  'm' for menu  'q' to quit");
          do{
             letter=getch();
-            if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,times); goto loop2;}
+            if(letter=='s'){printf("\n"); comhumansave(board,player,complayer,mode,depth,depthperfect,depthwld,times); goto loop2;}
             if(letter=='n') return EXIT;
             if(letter=='m') return 0;
             if(letter=='q') finish(0);
@@ -1215,7 +1253,7 @@ int comhuman(int board[64],int no[2],int player,int complayer,int mode,int depth
 }
 
 //save engine of human vs computer,computer vs human
-void comhumansave(int board[64],int player,int complayer,int mode,int depth,int depthperfect,float times){
+void comhumansave(int board[64],int player,int complayer,int mode,int depth,int depthperfect,int depthwld,float times){
      char filename[100];
      strcpy(filename, UNIVERSALSTRING);
      save=fopen(strcat(filename,".ohl"),"w");
@@ -1230,7 +1268,7 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
      //print mode
      fprintf(save," %d",mode);
      //print depth or times
-     if(mode == 1) fprintf(save," %d %d",depth,depthperfect);
+     if(mode == 1) fprintf(save," %d %d %d",depth,depthperfect,depthwld);
      if(mode == 2) fprintf(save," %f",times);
      fclose(save);
      printf("\ngame saved in %s",filename);
@@ -1238,7 +1276,7 @@ void comhumansave(int board[64],int player,int complayer,int mode,int depth,int 
 }
 
 //computer vs computer
-int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]){
+int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],int doubledepthwld[2],float doubletimes[2]){
     printf(""); //prevent bug
     int i;
     int position = UNINIT;
@@ -1262,12 +1300,12 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
 					  space(10);
                       //get position
                       if(doublemode[player-1]==0) position=random(board,player,no,1);
-                      if(doublemode[player-1]==1) position = searchDecider(board, doubledepth[player-1], doubledepthperfect[player-1], player, no, 1);
+                      if(doublemode[player-1]==1) position = searchDecider(board, doubledepth[player-1], doubledepthperfect[player-1], doubledepthwld[player-1], player, no, 1);
                       if(doublemode[player-1]==2) position=tsearch(board,doubletimes[player-1],player,no,1);
                       printf("\n\n's' to save  'n' for new game  'm' for menu  'q' to quit");
                       printf("\npress any other key to continue");
                       letter=getch();
-                      if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubletimes); goto loop2;}
+                      if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubledepthwld,doubletimes); goto loop2;}
                       if(letter=='n') return EXIT;
                       if(letter=='m') return 0;
                       if(letter=='q') finish(0);
@@ -1306,7 +1344,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
          printf("\n's' to save  'n' for new game  'm' for menu  'q' to quit");
          do{
             letter=getch();
-            if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubletimes); goto loop2;}
+            if(letter=='s'){printf("\n"); comcomsave(board,player,doublemode,doubledepth,doubledepthperfect,doubledepthwld,doubletimes); goto loop2;}
             if(letter=='n') return EXIT;;
             if(letter=='m') return 0;
             if(letter=='q') finish(0);
@@ -1322,7 +1360,7 @@ int comcom(int board[64],int no[2],int player,int doublemode[2],int doubledepth[
 }
 
 //save engine of computer vs computer
-void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2]){
+void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],int doubledepthperfect[2],int doubledepthwld[2],float doubletimes[2]){
      char filename[100];
      int i;
      alert("input file name (no extension)");
@@ -1352,7 +1390,7 @@ void comcomsave(int board[64],int player,int doublemode[2],int doubledepth[2],in
                        //print doublemode
                        fprintf(save," %d",doublemode[i]);
                        //print doubledepth or doubletimes
-                       if(doublemode[i]==1) fprintf(save," %d %d",doubledepth[i],doubledepthperfect[i]);
+                       if(doublemode[i]==1) fprintf(save," %d %d %d",doubledepth[i],doubledepthperfect[i],doubledepthwld[i]);
                        if(doublemode[i]==2) fprintf(save," %f",doubletimes[i]);
                        }
      fclose(save);
@@ -1372,6 +1410,7 @@ void weighttest(){
 	int doublemode[2];
 	int doubledepth[2];
 	int doubledepthperfect[2];
+    int doubledepthwld[2];
 	float doubletimes[2];
 	int doubleweight[2][100]; //weights for 2 players
 	triad result;
@@ -1383,7 +1422,7 @@ void weighttest(){
 	setting["weight"].show();
 	printf("parameters: mode, depth/time, [weights]\n");
 	printf("mode      : 0 = random, 1 = fsearch, 2 = tsearch\n");
-	printf("for mode 1: input depth, depthperfect, [weights]\n");
+	printf("for mode 1: input depth, depthperfect, depthwld, [weights]\n");
 	printf("for mode 2: input time, [weights]\n");
 
     texture inp;
@@ -1417,6 +1456,14 @@ void weighttest(){
                 continue;
             }
             doubledepthperfect[i] = x;
+            //depthwld
+            if(inp.empty()) inp = getl();
+            x = std::stoi(inp.read());
+            if(x <= 0){
+                alert("depthwld must be more than 0. input parameters again.");
+                continue;
+            }
+            doubledepthwld[i] = x;
 		}else if(doublemode[i] == 2){
             //time
             if(inp.empty()) inp = getl();
@@ -1483,7 +1530,7 @@ void weighttest(){
 
 	//computer 1 vs computer 2
 	printf("\noutput  : ");
-	result=gamefortest(doublemode,doubledepth,doubledepthperfect,doubletimes,doubleweight,numgame,numrand);
+	result=gamefortest(doublemode,doubledepth,doubledepthperfect,doubledepthwld,doubletimes,doubleweight,numgame,numrand);
 	printf("%d %d %d",result.win,result.lose,result.draw);
 
 	score1=result.win+(float)result.draw/2;
@@ -1502,12 +1549,13 @@ void weighttest(){
 		std::swap(doublemode[0], doublemode[1]);
 		std::swap(doubledepth[0], doubledepth[1]);
 		std::swap(doubledepthperfect[0], doubledepthperfect[1]);
+        std::swap(doubledepthwld[0], doubledepthwld[1]);
 		std::swap(doubletimes[0], doubletimes[1]);
 		//weight
 		for(int i = 0; i < int(setting["weight"].get_vint().size()); i++)
 			std::swap(doubleweight[0][i], doubleweight[1][i]); // TODO
 	
-		result = gamefortest(doublemode,doubledepth,doubledepthperfect,doubletimes,doubleweight,numgame,numrand);     
+		result = gamefortest(doublemode,doubledepth,doubledepthperfect,doubledepthwld,doubletimes,doubleweight,numgame,numrand);     
 		printf("%d %d %d",result.lose,result.win,result.draw);
 		//here we switched position of result.lose and result.win
 
@@ -1523,7 +1571,7 @@ void weighttest(){
 	return;
 }
 
-triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2],float doubletimes[2],int doubleweight[2][100],int numgame,int numrand){
+triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2],int doubledepthwld[2],float doubletimes[2],int doubleweight[2][100],int numgame,int numrand){
      triad result;
      result.win = 0;
      result.lose = 0;
@@ -1558,7 +1606,7 @@ triad gamefortest(int doublemode[2],int doubledepth[2],int doubledepthperfect[2]
                                   //not random
                                   weightfortest(doubleweight,player); //set weight
                                   //get position
-                                  if(doublemode[player-1]==1) position = searchDecider(board, doubledepth[player-1], doubledepthperfect[player-1], player, no, 0);
+                                  if(doublemode[player-1]==1) position = searchDecider(board, doubledepth[player-1], doubledepthperfect[player-1], doubledepthwld[player-1], player, no, 0);
                                   if(doublemode[player-1]==2) position=tsearch(board,doubletimes[player-1],player,no,0);
                                   }
                              flips=flip(board,position,player); //flip!
@@ -1748,7 +1796,7 @@ int input(int board[64],int& player,int no[2], std::vector<undoStruct>& undoData
 	if(option == "wldsearch"){
         int depth;
         if(vec.empty()){
-            alert("input depth");
+            alert("input initial depth");
             depth = uget(int)([](int a){ return a >= 1; }, "invalid depth. please input depth again.");
         }else{
             depth = std::stoi(vec.read());
@@ -1803,10 +1851,14 @@ void shownode(int node){
      printf("  ");
 }
 
-int searchDecider(int board[64], int depth, int depthperfect, int player, int no[2], int display){
+int searchDecider(int board[64], int depth, int depthperfect, int depthwld, int player, int no[2], int display){
+    //ENDSEARCH
     if(no[0] + no[1] >= 64 - depthperfect) return endsearch(board, player, no, display);
     //if (depth +1) squares left - better search perfectly
-    else if(no[0] + no[1] >= 63 - depth) return endsearch(board, player, no ,display);
+    else if(no[0] + no[1] >= 63 - depth) return endsearch(board, player, no, display);
+    //WLDSEARCH
+    else if(no[0] + no[1] >= 64 - depthwld) return wldsearch(board, player, no, display, depth);
+    //FSEARCH
     else return fsearch(board, depth, player, no, display);
 }
 
@@ -3243,7 +3295,7 @@ int endscore63(int board[64], int player, int no[2], int display){
 }
 
 //win-loss-draw solver
-int wldsearch(int board[64], int player, int no[2], int display, int normalDepth){
+int wldsearch(int board[64], int player, int no[2], int display, int initialDepth){
     struct timeb time1,time2; //for 'ftime'
     int scores[64]; //keep scores of each position
     int bestscore = UNINIT; //best of scores[64]
@@ -3304,16 +3356,20 @@ int wldsearch(int board[64], int player, int no[2], int display, int normalDepth
                        goto finish;
                        }
     
-    //at least don't give position worse than fsearch using normalDepth
-    depthshallow = normalDepth;
-    enginestate=0;
+    enginestate = 0;
     
-    //for the shallow search------------------------------------
+    //FIRST: SEARCH USING initialDepth-------------------------------------------
     
+    //makes sense only if 0 < initialDepth < depthwant
+    initialDepth = fmin(initialDepth, depthwant - 1);
+    if(initialDepth > 0){
+    
+    //for the shallow search
+    depthshallow = depthShallow(initialDepth, false);
     if(depthshallow>0){
                        //set extreme value
                        alpha = -LARGE;
-                       beta = LARGE;
+                       beta = LARGE;   
                        //get score for all valid moves
                        for(k=0;k<moves.num;k++){
                                                 position=moves.board[k];
@@ -3347,7 +3403,43 @@ int wldsearch(int board[64], int player, int no[2], int display, int normalDepth
                                                   }
                        }
     
-    //for the deep search---------------------------------------
+    //for the deep search (initialDepth)
+    
+                       //set extreme value
+                       alpha = -LARGE;
+                       beta = LARGE;          
+                       //get score for all valid moves
+                       for(k=0;k<moves.num;k++){
+                                                position=moves.board[k];
+                                                flips=flip(board,position,player); //flip!
+                                                //update no[2] (as nonew[2])
+                                                nonew[player-1]=no[player-1]+flips.num+1;
+                                                nonew[2-player]=no[2-player]-flips.num;
+                                                //get score
+                                                scores[k]=score(flips.board,initialDepth-1,3-player,nonew,alpha,beta,display);
+                                                if(player==1){ //if player 1: max mode
+                                                              if(scores[k]>alpha) alpha=scores[k];
+                                                              }
+                                                else{ //if player 2: min mode
+                                                     if(scores[k]<beta) beta=scores[k];
+                                                     }
+                                                }
+                       //rearrange moves by scores from deep search (initialDepth)
+                       orderInitialDepth:
+                       for(k=0;k<moves.num-1;k++){
+                                                  if((player==1 and scores[k]<scores[k+1]) or (player==2 and scores[k]>scores[k+1])){
+                                                                a=scores[k]; //switch score
+                                                                scores[k]=scores[k+1];
+                                                                scores[k+1]=a;
+                                                                a=moves.board[k]; //switch position
+                                                                moves.board[k]=moves.board[k+1];
+                                                                moves.board[k+1]=a;
+                                                                goto orderInitialDepth;
+                                                                }
+                                                  }
+    }
+    
+    //SECOND: SEARCH USING WLD VALUES---------------------------------------------
     
     //set extreme value (wld value)
     alpha = -1;
@@ -3489,8 +3581,8 @@ int wldscore(int board[64], int depthleft, int player, int no[2], int alphaGet, 
      if(depthleft == 1) return wldscore63(board,player,no,display);
      
      //determine shallow depth
-     //assume wld equivalent to endsearch + 2 depth
-	 depthshallow = depthShallow(depthleft + 2, true);
+     //assume wld equivalent to endsearch + wldFactor depth
+	 depthshallow = depthShallow(depthleft - wldFactor, true);
      
      //if no shallow search -- no record on position scores,move list, etc.
      //===================================================================
